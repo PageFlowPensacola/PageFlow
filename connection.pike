@@ -1,14 +1,10 @@
-inherit hook;
-inherit irc_callback;
-inherit annotated;
-
 void session_cleanup() {
 	//Go through all HTTP sessions and dispose of old ones
 	G->G->http_session_cleanup = call_out(session_cleanup, 86400);
-	G->G->DB->generic_query("delete from stillebot.http_sessions where active < now () - '7 days'::interval");
+  // TODO perhaps restore dB session management
 }
 
-__async__ void http_request(Protocols.HTTP.Server.Request req)
+__async__ void http_handler(Protocols.HTTP.Server.Request req)
 {
 	req->misc->session = await(G->G->DB->load_session(req->cookies->session));
 	//TODO maybe: Refresh the login token. Currently the tokens don't seem to expire,
@@ -59,8 +55,6 @@ __async__ void http_request(Protocols.HTTP.Server.Request req)
 	req->response_and_finish(resp);
 }
 
-void http_handler(Protocols.HTTP.Server.Request req) {spawn_task(http_request(req));}
-
 void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 {
 	if (function f = bounce(this_function)) {f(frm, conn); return;}
@@ -100,29 +94,6 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 	if (!stringp(data->cmd)) return;
 	if (data->cmd == "init")
 	{
-		if (string other = !is_active && get_active_bot()) {
-			//If we are definitely not active and there's someone who is,
-			//send the request over there instead. Browsers don't all follow
-			//302 redirects for websockets, and even if they did, session and
-			//login information would be lost (since the websocket would be
-			//going to an unrelated origin). So instead, we notify the client
-			//of the situation. This DOES mean that we have to give the JS the
-			//session cookie, but that's only a minor security issue - you'd
-			//have to know how to retrieve that, and then use it to gain access
-			//to the real server. In theory, the transfer cookie could be some
-			//completely separate identifier, which we first stash into the DB
-			//somewhere before notifying the client; this would be valid for
-			//some extremely short duration, after which the client would be
-			//told "redirect back to default".
-			conn->sock->send_text(Standards.JSON.encode(([
-				"cmd": "*DC*",
-				"error": "This bot is not active, see other",
-				"redirect": other,
-				"xfr": conn->session->cookie,
-			])));
-			conn->sock->close(); destruct(conn->sock);
-			return;
-		}
 		//Initialization is done with a type and a group.
 		//The type has to match a module ("inherit websocket_handler")
 		//The group has to be a string or integer.
@@ -205,7 +176,6 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 	mapping conn = (["sock": sock, //Minstrel Hall style floop
 		"session": ({ }), //Queue of requests awaiting the session
 		"remote_ip": remote_ip,
-		"hostname": deduce_host(req->request_headers),
 	]);
 	sock->set_id(conn);
 	G->G->DB->load_session(req->cookies->session)->then() {
@@ -219,11 +189,11 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 
 protected void create(string name)
 {
-	::create(name);
+	// ::create(name); subclassing, to reenstate later.
 	if (mixed id = m_delete(G->G, "http_session_cleanup")) remove_call_out(id);
 	session_cleanup();
 	register_bouncer(ws_handler); register_bouncer(ws_msg); register_bouncer(ws_close);
 
 		if (G->G->httpserver) G->G->httpserver->callback = http_handler;
-			else G->G->httpserver = Protocols.WebSocket.Port(http_handler, ws_handler, listen_port, listen_addr);
+			else G->G->httpserver = Protocols.WebSocket.Port(http_handler, ws_handler, 8002, "");
 }

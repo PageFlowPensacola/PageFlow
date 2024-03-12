@@ -177,10 +177,6 @@ class ircsettings
 		if (has_suffix(address, "/")) address = address[..<1]; //Strip trailing slash
 		G->G->instance_config->http_address = address;
 		G->G->instance_config->listen_address = win->listen_address->get_text();
-		Stdio.write_file("instance-config.json", Standards.JSON.encode(G->G->instance_config, 7));
-		werror("Saving to DB.\n");
-		spawn_task(G->G->DB->generic_query("update stillebot.settings set credentials = :c",
-			(["c": c]))); //TODO: On moving back to Sql.Sql, check JSON encoding.
 		closewindow();
 	}
 }
