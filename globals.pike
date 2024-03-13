@@ -105,3 +105,7 @@ object retain = class {
 		else module[key] = G->G[key];
 	}
 }();
+
+mapping(string:mixed) jsonify(mixed data, int|void jsonflags) {
+	return (["data": string_to_utf8(Standards.JSON.encode(data, jsonflags)), "type": "application/json"]);
+}
