@@ -6,6 +6,12 @@ Borrowing to the point of theft from https://github.com/Rosuav/StilleBot.
   * gtk2 (`brew install gtk+`)
   * Pike 9+
 
+## Development
+
+There's an `.editorconfig` file to help with consistency between devs and environments.
+For VS Code [this extension](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig) will enable it.
+There are extensions for other editors as well.
+
 ### Pike
 
 Can install with `brew install pike` BUT we want version 9 for async.
