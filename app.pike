@@ -42,5 +42,6 @@ int main(int argc,array(string) argv)
 	add_constant("G", this);
 	G->argv = argv;
   bootstrap_all();
+
   return -1;
 }

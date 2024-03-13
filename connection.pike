@@ -6,7 +6,7 @@ void session_cleanup() {
 
 __async__ void http_handler(Protocols.HTTP.Server.Request req)
 {
-	req->misc->session = await(G->G->DB->load_session(req->cookies->session));
+	req->misc->session = ([]); // = await(G->G->DB->load_session(req->cookies->session));
 	//TODO maybe: Refresh the login token. Currently the tokens don't seem to expire,
 	//but if they do, we can get the refresh token via authcookie (if present).
 	[function handler, array args] = find_http_handler(req->not_query);
@@ -48,9 +48,11 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 	resp->extra_heads["Access-Control-Allow-Private-Network"] = "true";
 	mapping sess = req->misc->session;
 	if (sizeof(sess) && !sess->fake) {
+		/*
 		if (!sess->cookie) sess->cookie = await(G->G->DB->generate_session_cookie());
 		G->G->DB->save_session(sess);
 		resp->extra_heads["Set-Cookie"] = "session=" + sess->cookie + "; Path=/; Max-Age=604800; SameSite=Lax; HttpOnly";
+		*/
 	}
 	req->response_and_finish(resp);
 }
