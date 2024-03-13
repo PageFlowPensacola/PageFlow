@@ -6,6 +6,8 @@ protected void create(string n)
 	foreach (Program.annotations(this_program); string anno;)
 		if (stringp(anno) && sscanf(anno, "G->G->%s", string gl) && gl) // add p to string to make it a predicate: stringp.
 			if (!G->G[gl]) G->G[gl] = ([]);
+  catch {G->G->instance_config = Standards.JSON.decode_utf8(Stdio.read_file("instance-config.json"));};
+
 }
 
 
