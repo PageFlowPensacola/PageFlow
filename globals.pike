@@ -73,3 +73,35 @@ function|void bounce(function f)
 	if (current != f) return current;
 	return UNDEFINED;
 }
+
+@"G->G->exports";
+class annotated {
+	protected void create(string name) {
+		//TODO: Find a good way to move prev handling into the export class or object below
+		mapping prev = G->G->exports[name];
+		G->G->exports[name] = ([]);
+		foreach (Array.transpose(({indices(this), annotations(this)})), [string key, mixed ann]) {
+			if (ann) foreach (indices(ann), mixed anno) {
+				if (objectp(anno) && anno->is_callable_annotation) anno(this, name, key);
+			}
+		}
+		//Purge any that are no longer being exported (handles renames etc)
+		if (prev) foreach (prev - G->G->exports[name]; string key;)
+			add_constant(key);
+	}
+}
+object export = class {
+	constant is_callable_annotation = 1;
+	protected void `()(object module, string modname, string key) {
+		add_constant(key, module[key]);
+		G->G->exports[modname][key] = 1;
+	}
+}();
+
+object retain = class {
+	constant is_callable_annotation = 1;
+	protected void `()(object module, string modname, string key) {
+		if (!G->G[key]) G->G[key] = module[key];
+		else module[key] = G->G[key];
+	}
+}();

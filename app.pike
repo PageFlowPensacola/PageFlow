@@ -2,7 +2,7 @@
 
 */
 
-array(string) bootstrap_files = ({"globals.pike", "connection.pike", "window.pike", "modules", "modules/http"});
+array(string) bootstrap_files = ({"globals.pike", "database.pike", "connection.pike", "window.pike", "modules", "modules/http"});
 array(string) restricted_update;
 mapping G = ([]);
 
