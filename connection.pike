@@ -1,3 +1,5 @@
+Crypto.SHA256.HMAC jwt_hmac = Crypto.SHA256.HMAC(G->G->instance_config->jwt_signing_key);
+
 void session_cleanup() {
 	//Go through all HTTP sessions and dispose of old ones
 	G->G->http_session_cleanup = call_out(session_cleanup, 86400);
@@ -7,6 +9,14 @@ void session_cleanup() {
 __async__ void http_handler(Protocols.HTTP.Server.Request req)
 {
 	req->misc->session = ([]); // = await(G->G->DB->load_session(req->cookies->session));
+
+	sscanf(req->request_headers->authorization || "nope", "Bearer %s", string bearer);
+	if(bearer) {
+		req->misc->auth = Web.decode_jwt(jwt_hmac, bearer);
+	}
+
+	catch {req->misc->json = Standards.JSON.decode_utf8(req->body_raw);};
+
 	//TODO maybe: Refresh the login token. Currently the tokens don't seem to expire,
 	//but if they do, we can get the refresh token via authcookie (if present).
 	[function handler, array args] = find_http_handler(req->not_query);

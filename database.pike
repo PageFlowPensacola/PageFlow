@@ -14,7 +14,7 @@ __async__ array(mapping) run_query(string query, mapping bindings) {
 
 }
 
-__async__ mapping get_templates_for_org(int org_id) {
+__async__ array(mapping) get_templates_for_org(int org_id) {
 
 	string query = #"
 		select pg.page_group_id
@@ -47,6 +47,25 @@ __async__ mapping get_templates_for_org(int org_id) {
 
 	return await(run_query(query, bindings));
 
+}
+
+__async__ mapping|zero load_password_for_email(string email) {
+
+	string query = #"
+		select u.password
+		, u.active
+		from user u
+		where u.email = :email
+		and u.deleted = 0;
+	";
+
+	mapping bindings = (["email":email]);
+
+	array results = await(run_query(query, bindings));
+	write("From database: %O\n", results);
+	if (sizeof(results)) {
+		return results[0];
+	}
 }
 
 
