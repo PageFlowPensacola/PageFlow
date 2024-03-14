@@ -1,8 +1,9 @@
+- implement template handler
+
 - S3 client connectivity (for uploading files)
 - http statics handler (images, cache-busting, javascript)
-- authentication routine (parsing JWTs)
 - http request decorator to demand authentication
-- authentication endpoint
+
 - inheritable REST endpoint
 - inheritable web socket handler
 - create markdown system for serving html responses

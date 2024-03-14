@@ -15,11 +15,13 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 		req->misc->auth = Web.decode_jwt(jwt_hmac, bearer);
 	}
 
+
 	catch {req->misc->json = Standards.JSON.decode_utf8(req->body_raw);};
 
 	//TODO maybe: Refresh the login token. Currently the tokens don't seem to expire,
 	//but if they do, we can get the refresh token via authcookie (if present).
 	[function handler, array args] = find_http_handler(req->not_query);
+
 	//If we receive URL-encoded form data, assume it's UTF-8.
 	if (req->request_headers["content-type"] == "application/x-www-form-urlencoded" && mappingp(req->variables))
 	{
@@ -209,3 +211,4 @@ protected void create(string name)
 		if (G->G->httpserver) G->G->httpserver->callback = http_handler;
 			else G->G->httpserver = Protocols.WebSocket.Port(http_handler, ws_handler, 8002, "");
 }
+
