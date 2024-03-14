@@ -8,11 +8,13 @@ void session_cleanup() {
 
 __async__ void http_handler(Protocols.HTTP.Server.Request req)
 {
+  // @TODO clean this old code up.
 	req->misc->session = ([]); // = await(G->G->DB->load_session(req->cookies->session));
 
+  // sscanf can do similar job to regex, but more simply. Doesn't do backtracking.
 	sscanf(req->request_headers->authorization || "nope", "Bearer %s", string bearer);
 	if(bearer) {
-		req->misc->auth = Web.decode_jwt(jwt_hmac, bearer);
+		req->misc->auth = Web.decode_jwt(jwt_hmac, bearer); // will be null if invalid
 	}
 
 
@@ -23,6 +25,7 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 	[function handler, array args] = find_http_handler(req->not_query);
 
 	//If we receive URL-encoded form data, assume it's UTF-8.
+	// Deprecated leftover Stolebot code.
 	if (req->request_headers["content-type"] == "application/x-www-form-urlencoded" && mappingp(req->variables))
 	{
 		//NOTE: We currently don't UTF-8-decode the keys; they should usually all be ASCII anyway.
@@ -211,4 +214,3 @@ protected void create(string name)
 		if (G->G->httpserver) G->G->httpserver->callback = http_handler;
 			else G->G->httpserver = Protocols.WebSocket.Port(http_handler, ws_handler, 8002, "");
 }
-
