@@ -1,0 +1,6 @@
+{
+	"jwt_signing_key": "3Y.......Y",
+	"database": {
+		"connection_string": "mysql://user:pass@mysql-test.gotagtech.com:3306/database"
+	}
+}
