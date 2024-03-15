@@ -10,3 +10,9 @@
 
 - (JS) grab pike from git, build
 - mysql deprecations (we have altered pike's database code)
+
+- consider modules directory structure. will we have any non-http modules?
+
+Serve a front end.
+	Static file subsystem for js, css, html
+		maybe not markdown. just a single static html page.
