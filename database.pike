@@ -74,9 +74,10 @@ protected void create(string name) {
 	G->G->DB = this;
 
 	::create(name);
-	dbconn = Sql.Sql(G->G->instance_config->database->connection_string);
-
-	write("%O\n", dbconn);
-	// foo();
+	if (G->G->instance_config->database->connection_string) {
+		werror("DB Connecting\n");
+		dbconn = Sql.Sql(G->G->instance_config->database->connection_string);
+		write("%O\n", dbconn);
+	}
 
 }
