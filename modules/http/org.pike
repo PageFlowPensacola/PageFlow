@@ -49,6 +49,6 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 
 protected void create(string name) {
 	::create(name);
-
-	G->G->http_endpoints["/org/%s"] = http_request();
+	// Stick callback into the G->G->http_endpoints mapping for this org
+	G->G->http_endpoints["/org/%[^\0]"] = http_request; // [^\0] accepts any character except NUL.
 }
