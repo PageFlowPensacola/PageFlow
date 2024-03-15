@@ -14,7 +14,7 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 
 	string keystring = keys*".";
 
-	object handler = G->G->restful_endpoints(keystring);
+	object handler = G->G->restful_endpoints[keystring];
 	if(!handler) {
 		return 0;
 	}
