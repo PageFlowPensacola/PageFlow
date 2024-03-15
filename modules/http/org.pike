@@ -8,6 +8,9 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	// Generally path_variables is an array of alternating keys and values
 	// For example, if the path is /org/1/department/2/employee/3
 	// then path_variables = ({"org", "1", "department", "2", "employee", "3"})
+	if (has_suffix(tail, "/")) {
+		tail = tail[0..<2];
+	}
 	array(string) path_variables = ({"org"}) + tail / "/";
 	// Split the path vars into pairs
 	// First from each pair is the key, second is the value

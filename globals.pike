@@ -39,11 +39,11 @@ class http_endpoint
 class restful_endpoint
 {
 
-	mapping(string:mixed)|string|Concurrent.Future handle_list(Protocols.HTTP.Server.Request req) { };
-	mapping(string:mixed)|string|Concurrent.Future handle_detail(Protocols.HTTP.Server.Request req, string id) { };
-	mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols.HTTP.Server.Request req) { };
-	mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string id) { };
-	mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols.HTTP.Server.Request req, string id) { };
+	mapping(string:mixed)|string|Concurrent.Future handle_list(Protocols.HTTP.Server.Request req, string ...path_values) { };
+	mapping(string:mixed)|string|Concurrent.Future handle_detail(Protocols.HTTP.Server.Request req, string ...path_values /* even number ones plus one */) { };
+	mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols.HTTP.Server.Request req, string ...path_values) { };
+	mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string ...path_values /* even number ones plus one */) { };
+	mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols.HTTP.Server.Request req, string ...path_values /* even number ones plus one */) { };
 
 	protected void create(string name)
 	{
