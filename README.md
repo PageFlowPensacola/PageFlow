@@ -13,3 +13,9 @@ For VS Code [this extension](https://marketplace.visualstudio.com/items?itemName
 There are extensions for other editors as well.
 
 ### Pike
+
+Array `({})`
+Mapping `([])`
+Set `(<>)`
+Split string `string / "boundary"`
+While app is running, type `update` to hot reload.
