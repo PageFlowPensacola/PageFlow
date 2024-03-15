@@ -19,3 +19,5 @@ Mapping `([])`
 Set `(<>)`
 Split string `string / "boundary"`
 While app is running, type `update` to hot reload.
+A file is a class (or "program" (from LPC)) in Pike, so at top of file you can: `inherit`.
+	Create a program within a program (file/class) using the `class` keyword. This will be of _type_ `program`.
