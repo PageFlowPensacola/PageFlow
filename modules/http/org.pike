@@ -1,12 +1,12 @@
-inherit http_handler;
+inherit http_endpoint;
 
 
 mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req, string tail) {
 
 
-	if(!req->misc->auth) return (["error": 400]);
+	if(!req->misc->auth) return (["error": 403]);
 
-	array(string) path_variables = (["org"])+tail/"/";
+	array(string) path_variables = ({"org"}) + tail / "/";
 
 	array keys = (path_variables/2.0)[*][0];
 	array values = (path_variables/2)[*][1];
