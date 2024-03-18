@@ -9,7 +9,7 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	// For example, if the path is /org/1/department/2/employee/3
 	// then path_variables = ({"org", "1", "department", "2", "employee", "3"})
 	if (has_suffix(tail, "/")) {
-		tail = tail[0..<2];
+		tail = tail[..<1]; // Remove trailing slash. Slice to remove one last character, like -1 in Python.
 	}
 	array(string) path_variables = ({"org"}) + tail / "/";
 	// Split the path vars into pairs
