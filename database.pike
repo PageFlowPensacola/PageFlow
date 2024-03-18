@@ -10,12 +10,34 @@ __async__ array(mapping) run_query(string query, mapping bindings) {
 	//write("%O\n", await(Protocols.HTTP.Promise.do_method("GET", "http://localhost:8002/")));
 	//write("Query result: %O\n", dbconn->typed_query(query));
 
-	return dbconn->typed_query(query, bindings);
+	array|zero result = dbconn->typed_query(query, bindings);
+	if (!result) return result;
+	foreach(result, mapping row) {
+		// clean out the keys with dots (the table-name qualified keys)
+		foreach(indices(row), string key) {
+			if (has_value(key, ".")) m_delete(row, key);
+		}
+	}
+	return result;
 
 }
 
 __async__ array(mapping) get_templates_for_org(int org_id) {
 
+	string query = #"
+		SELECT * FROM page_type t
+		JOIN page_type_group g ON t.page_type_id = g.page_type_id
+		WHERE t.page_template_url IS NOT NULL and t.org_id = :org_id
+	";
+
+	mapping bindings = (["org_id":org_id]);
+
+	return await(run_query(query, bindings));
+
+}
+
+__async__ array(mapping) get_template_pages(int org_id, int page_group_id) {
+	// TODO: simplify this query
 	string query = #"
 		select pg.page_group_id
 		, pg.org_id
@@ -40,10 +62,10 @@ __async__ array(mapping) get_templates_for_org(int org_id) {
 		left join page_type pt on (ptg.page_type_id = pt.page_type_id)
 		left join template_signatory ts on (pg.page_group_id = ts.page_group_id)
 		left join audit_rect ar on (pt.page_type_id = ar.page_type_id)
-		where pg.org_id = :org_id
+		where pg.page_group_id = :page_group_id
 	";
 
-	mapping bindings = (["org_id":org_id]);
+	mapping bindings = (["org_id":org_id, "page_group_id":page_group_id]);
 
 	return await(run_query(query, bindings));
 
@@ -62,7 +84,7 @@ __async__ mapping|zero load_password_for_email(string email) {
 	mapping bindings = (["email":email]);
 
 	array results = await(run_query(query, bindings));
-	write("From database: %O\n", results);
+	// write("From database: %O\n", results);
 	if (sizeof(results)) {
 		return results[0];
 	}
