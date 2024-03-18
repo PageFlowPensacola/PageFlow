@@ -50,7 +50,14 @@ function render() {
 render();
 
 if (user.token) {
-	console.log("Have a token, fetching templates");
+	console.log("Have a token, fetching details for a template.");
+	const templateDeetsReq = await fetch("/org/" + org_id + "/templates/3518320/audit_rect", {
+		headers: {
+			Authorization: "Bearer " + user.token
+		}
+	});
+	const deets = await templateDeetsReq.json();
+	console.log("Template details:", deets);
 	const response = await fetch("/org/" + org_id + "/templates/", {
 		headers: {
 			Authorization: "Bearer " + user.token

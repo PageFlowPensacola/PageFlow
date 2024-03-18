@@ -25,9 +25,11 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	// then the last element is an array of ids
 	// array modulo 2 will give us the remainder of the
 	// array divided by 2
-	array residual_key = path_variables%2; // used as a value
 
+	array residual_key = path_variables%2; // used as a value
+	// werror("residual_key: %O\n", residual_key);
 	string keystring = keys*".";
+	//werror("keystring: %O\n", keystring);
 
 	object handler = G->G->restful_endpoints[keystring];
 	if(!handler) {
