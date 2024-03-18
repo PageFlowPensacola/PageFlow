@@ -28,6 +28,7 @@ __async__ array(mapping) get_templates_for_org(int org_id) {
 		SELECT * FROM page_type t
 		JOIN page_type_group g ON t.page_type_id = g.page_type_id
 		WHERE t.page_template_url IS NOT NULL and t.org_id = :org_id
+		ORDER by t.page_type_id
 	";
 
 	mapping bindings = (["org_id":org_id]);
