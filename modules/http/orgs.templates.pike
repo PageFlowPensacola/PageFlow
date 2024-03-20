@@ -13,7 +13,7 @@ mapping(string:mixed)|string|Concurrent.Future handle_detail(Protocols.HTTP.Serv
 
 __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols.HTTP.Server.Request req, string org, string template) {
 
-	werror("handle_list: %O %O %O\n", "GOTYA", org, template);
+	werror("handle_list: %O %O\n", org, template);
 	/*
 		parse the body pdf and break into page pngs
 		upload the pages to the storage
@@ -29,7 +29,7 @@ __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols
 	// results will contain the stdout, stderr, and exit code of the process
 	mapping results = await(run_promise(({"convert", "-density", "300", "-depth", "8", "-quality", "85", "-", "png:-"}),
 	(["stdin": req->body_raw])));
-	//werror("thing: %O\n", indices(thing));
+	//werror("results: %O\n", indices(results));
 	werror("input file size: %O\n", sizeof(results->stdout));
 	// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/_Stdio/Buffer.html#Buffer
 	Stdio.Buffer data = Stdio.Buffer(results->stdout);
