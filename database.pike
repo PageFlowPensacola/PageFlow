@@ -1,7 +1,7 @@
 inherit annotated;
 
 Sql.Sql dbconn;
-
+Concurrent.Promise query_pending;
 
 __async__ array(mapping) run_query(string query, mapping bindings) {
 
@@ -9,18 +9,45 @@ __async__ array(mapping) run_query(string query, mapping bindings) {
 	//write("Query result: %O\n", await(dbconn->promise_query(query))->get());
 	//write("%O\n", await(Protocols.HTTP.Promise.do_method("GET", "http://localhost:8002/")));
 	//write("Query result: %O\n", dbconn->typed_query(query));
+	write("%O\n", dbconn->promise_query);
+	write("Waiting for query: %O\n", query[..64]);
 
-	array|zero result = dbconn->typed_query(query, bindings);
-	if (!result) return result;
-	foreach(result, mapping row) {
-		// clean out the keys with dots (the table-name qualified keys)
-		foreach(indices(row), string key) {
-			if (has_value(key, ".")) m_delete(row, key);
+	object pending = query_pending;
+	object completion = query_pending = Concurrent.Promise();
+
+	if (pending) await(pending->future()); //If there's a queue, put us at the end of it.
+	array|zero result;
+	mixed ex = catch {
+		result = dbconn->typed_query(query, bindings);
+		//write ("---the query: %O\n", promise);
+		//mixed result = await(promise)->get();
+
+		write ("---result: %O\n", result);
+
+		if (result) {
+			foreach(result, mapping row) {
+				// clean out the keys with dots (the table-name qualified keys)
+				foreach(indices(row), string key) {
+					if (has_value(key, ".")) m_delete(row, key);
+				}
+			}
 		}
-	}
+		write("-----processed result\n" );
+	};
+
+	write("------passed catch block\n");
+	completion->success(1);
+	if (query_pending == completion) query_pending = 0;
+	write("Query complete: %O\n", result);
+
+	if (ex) throw(ex);
+
+
 	return result;
 
 }
+
+
 
 __async__ array(mapping) get_templates_for_org(int org_id) {
 

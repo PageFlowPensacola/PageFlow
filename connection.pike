@@ -8,6 +8,8 @@ void session_cleanup() {
 
 __async__ void http_handler(Protocols.HTTP.Server.Request req)
 {
+
+	write("incoming http request: %O\n", req->not_query);
   // @TODO clean this old code up.
 	req->misc->session = ([]); // = await(G->G->DB->load_session(req->cookies->session));
 
