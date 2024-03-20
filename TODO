@@ -18,3 +18,7 @@
 Serve a front end.
 Static file subsystem for js, css, html
 maybe not markdown. just a single static html page.
+
+## BEFORE MOVING TO PRODUCTION
+
+Enforce ip restrictions at both token generation and login
