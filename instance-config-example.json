@@ -2,5 +2,12 @@
 	"jwt_signing_key": "3Y.......Y",
 	"database": {
 		"connection_string": "mysql://user:pass@mysql-test.gotagtech.com:3306/database"
+	},
+	"aws": {
+		"pdf_bucket_name":"pdfs.gotagtech.com",
+		"image_bucket_name":"images.gotagtech.com",
+		"region":"us-east-2",
+		"key_id":"AK...98",
+		"secret":"P...7"
 	}
 }
