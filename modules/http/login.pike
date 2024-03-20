@@ -4,6 +4,7 @@ Crypto.SHA256.HMAC jwt_hmac = Crypto.SHA256.HMAC(G->G->instance_config->jwt_sign
 
 __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Request req) {
 
+	write("LOGIN %O\n", req->misc->json);
 
 	mapping|zero result_set = await(G->G->DB->load_password_for_email(req->misc->json->email));
 	write("%O\n", req->misc->json->password);

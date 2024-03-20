@@ -126,3 +126,81 @@ object retain = class {
 mapping(string:mixed) jsonify(mixed data, int|void jsonflags) {
 	return (["data": string_to_utf8(Standards.JSON.encode(data, jsonflags)), "type": "application/json"]);
 }
+
+// The following builds on Process module
+// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Process/create_process.html#create_process
+Concurrent.Future run_promise(string|array(string) cmd, mapping modifiers = ([]))
+{
+  string gotstdout="", gotstderr="", stdin_str;
+  int exitcode;
+
+  if((modifiers->stdout && !callablep(modifiers->stdout))
+    || (modifiers->stderr && !callablep(modifiers->stderr)))
+    throw( ({ "Can not redirect stdout or stderr in Process.run, "
+              "please use Process.Process instead.", backtrace() }) );
+
+  object(Stdio.File)|zero mystdout = Stdio.File();
+  object(Stdio.File)|zero mystderr = Stdio.File();
+  object(Stdio.File)|zero mystdin;
+
+  object|zero p;
+  if(stringp(modifiers->stdin))
+  {
+    mystdin = Stdio.File();
+    stdin_str = modifiers->stdin;
+    p = Process.Process(cmd, modifiers + ([
+                  "stdout":mystdout->pipe(),
+                  "stderr":mystderr->pipe(),
+                  "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
+                ]));
+  }
+  else
+    p = Process.Process(cmd, modifiers + ([
+                  "stdout":mystdout->pipe(),
+                  "stderr":mystderr->pipe(),
+                ]));
+
+  object promise = Concurrent.Promise();
+  void done() {
+    if (mystdin || mystdout || mystderr) return;
+    exitcode = p->wait();
+    promise->success(([ "stdout"  : gotstdout,
+              "stderr"  : gotstderr,
+              "exitcode": exitcode   ]));
+  }
+  mystdout->set_read_callback( lambda( mixed i, string data) {
+                                 if (modifiers->stdout) modifiers->stdout(data);
+                                 else gotstdout += data;
+                               } );
+  mystderr->set_read_callback( lambda( mixed i, string data) {
+                                 if (modifiers->stderr) modifiers->stderr(data);
+                                 else gotstderr += data;
+                               } );
+  mystdout->set_close_callback( lambda () {
+				  mystdout->set_read_callback(0);
+				  catch { mystdout->close(); };
+				  mystdout = 0; done();
+				});
+  mystderr->set_close_callback( lambda () {
+				  mystderr->set_read_callback(0);
+				  catch { mystderr->close(); };
+				  mystderr = 0; done();
+				});
+
+  if (mystdin) {
+    if (stdin_str != "") {
+      Shuffler.Shuffler sfr = Shuffler.Shuffler();
+      Shuffler.Shuffle sf = sfr->shuffle( mystdin );
+      sf->add_source(stdin_str);
+      sf->set_done_callback (lambda (mixed ...) {
+                               catch { mystdin->close(); };
+                               mystdin = 0; done();
+                             });
+      sf->start();
+    } else {
+      catch { mystdin->close(); };
+      mystdin = 0;
+    }
+  }
+  return promise->future();
+}

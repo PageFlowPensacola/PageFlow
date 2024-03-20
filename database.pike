@@ -18,7 +18,7 @@ __async__ array(mapping) run_query(string query, mapping bindings) {
 	if (pending) await(pending->future()); //If there's a queue, put us at the end of it.
 	array|zero result;
 	mixed ex = catch {
-		result = await(dbconn->promise_query(query, bindings));
+		result = await(dbconn->promise_query(query, bindings))->get();
 		//write ("---the query: %O\n", promise);
 		//mixed result = await(promise)->get();
 

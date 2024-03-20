@@ -3,7 +3,6 @@ inherit http_endpoint;
 
 mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req, string tail) {
 
-
 	if(!req->misc->auth) return (["error": 403]);
 	// Generally path_variables is an array of alternating keys and values
 	// For example, if the path is /org/1/department/2/employee/3
@@ -27,7 +26,7 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	// array divided by 2
 
 	array residual_key = path_variables%2; // used as a value
-	// werror("residual_key: %O\n", residual_key);
+	//werror("residual_key: %O\n", residual_key);
 	string keystring = keys*".";
 	//werror("keystring: %O\n", keystring);
 
@@ -48,6 +47,7 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 		}
 	} else {
 		if (req->request_type == "POST") {
+			werror("POST\n");
 			return handler->handle_create(req, @values);
 		} else if (req->request_type == "GET") {
 			return handler->handle_list(req, @values);
