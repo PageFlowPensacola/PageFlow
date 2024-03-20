@@ -11,7 +11,7 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	if (has_suffix(tail, "/")) {
 		tail = tail[..<1]; // Remove trailing slash. Slice to remove one last character, like -1 in Python.
 	}
-	array(string) path_variables = ({"org"}) + tail / "/";
+	array(string) path_variables = ({"orgs"}) + tail / "/";
 	// Split the path vars into pairs
 	// First from each pair is the key, second is the value
 	// path_variables/2.0 is an array of key/val pair arrays,
@@ -62,5 +62,5 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 protected void create(string name) {
 	::create(name);
 	// Stick callback into the G->G->http_endpoints mapping for this org
-	G->G->http_endpoints["/org/%[^\0]"] = http_request; // [^\0] accepts any character except NUL.
+	G->G->http_endpoints["/orgs/%[^\0]"] = http_request; // [^\0] accepts any character except NUL.
 }
