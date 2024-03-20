@@ -41,14 +41,23 @@ __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols
 		//werror("data: %O\n", data);
 		//werror("data: %O\n", sizeof(data));
 		while (array chunk = data->sscanf("%4H%8s")) {// four byte Hollerrith string, followed by 8 byte string
-			// The four byte Hollerrith string might be empty and won't contain all the data.
-			// But the 8 bytes following it will contain the rest of the chunk, which includes the CRC (cyclic redundancy check)
+			// The (length-preceded) four byte Hollerrith string might be empty and won't contain all the data.
+			// We are chunking by Hollorith string, which is a 4 byte string that contains the length of the chunk.
+			// But the 8 bytes following it will contain the rest of the chunk, which includes the CRC (cyclic redundancy check) hash.
 			current_page+=sprintf("%4H%s", @chunk);
 			if (chunk[0] == "" && has_prefix(chunk[1], "IEND")) break; // break at the end marker
 		}
 		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
 		object page = Image.PNG.decode(current_page);
 		werror("Page info %O\n", page);
+		// Send to aws
+		werror("G->G->instance_config->aws->key_id %O\n", G->G->instance_config->aws->key_id);
+		mapping s3 = await(run_promise(({"aws", "s3", "ls", sprintf("s3://%O", G->G->instance_config->aws->pdf_bucket_name), }),
+			(["env": getenv() | ([
+				"AWS_ACCESS_KEY_ID": G->G->instance_config->aws->key_id,
+				"AWS_SECRET_ACCESS_KEY": G->G->instance_config->aws->secret,
+				"AWS_DEFAULT_REGION": G->G->instance_config->aws->region
+			])])));
 	}
 };
 mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string org, string template, string audit_rect) { };
