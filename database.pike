@@ -100,6 +100,31 @@ __async__ mapping|zero load_password_for_email(string email) {
 	}
 }
 
+__async__ mapping|zero get_user_details(string email) {
+
+	string query = #"
+		SELECT u.user_id
+ , u.first_name
+ , u.last_name
+ , u.org_id as primary_org
+ , uo.org_id
+ , o.display_name
+ FROM user u
+ JOIN user_org uo ON u.user_id = uo.user_id
+ JOIN org o ON o.org_id = uo.org_id
+ WHERE u.email = :email
+ AND u.deleted = 0;
+";
+
+	mapping bindings = (["email":email]);
+
+	array results = await(run_query(query, bindings);
+	// write("From database: %O\n", results);
+	if (sizeof(results)) {
+		return results[0];
+	}
+}
+
 
 protected void create(string name) {
 
