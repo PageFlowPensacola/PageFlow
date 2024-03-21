@@ -4,8 +4,6 @@ Crypto.SHA256.HMAC jwt_hmac = Crypto.SHA256.HMAC(G->G->instance_config->jwt_sign
 
 __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Request req) {
 
-	write("LOGIN %O\n", req->misc->json);
-
 	string query = #"
 		select u.password
 		, u.active
@@ -25,7 +23,7 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 		return (["error": 400, "type":"text/plain", "data":"Password validation failed."]);
 	}
 
-	string jwt = Web.encode_jwt(jwt_hmac, (["email": req->misc->json->email, "iss":"https://gotagtech.com"]));
+	string jwt = Web.encode_jwt(jwt_hmac, (["email": req->misc->json->email, "iss":"https://gotagtech.com", "id": result_set->user_id]));
 
 	return jsonify((["token": jwt]));
 
