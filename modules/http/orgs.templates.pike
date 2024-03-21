@@ -13,7 +13,12 @@ mapping(string:mixed)|string|Concurrent.Future handle_detail(Protocols.HTTP.Serv
 
 __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols.HTTP.Server.Request req, string org, string template) {
 
-	werror("handle_list: %O %O\n", org, template);
+	//werror("handle_list: %O %O\n", org, template);
+
+		mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
+		/* werror("user: %O\n", user->primary_org);
+		return "ok"; */
+
 	/*
 		parse the body pdf and break into page pngs
 		upload the pages to the storage
@@ -36,6 +41,7 @@ __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols
 	// stdout will be a string containing the output of the process
 	// pngs are chunked files.
 	constant PNG_HEADER = "\x89PNG\r\n\x1a\n"; // 8 byte standard header
+	int count = 0;
 	while(data->read(8) == PNG_HEADER) {
 		string current_page = PNG_HEADER;
 		//werror("data: %O\n", data);
@@ -49,16 +55,22 @@ __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols
 		}
 		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
 		object page = Image.PNG.decode(current_page);
-		werror("Page info %O\n", page);
+		//werror("Page info %O\n", page);
 		// Send to aws
 		werror("G->G->instance_config->aws->key_id %O\n", G->G->instance_config->aws->key_id);
-		mapping s3 = await(run_promise(({"aws", "s3", "ls", sprintf("s3://%O", G->G->instance_config->aws->pdf_bucket_name), }),
-			(["env": getenv() | ([
+		string org_name = user->orgs[user->primary_org];
+		// TODO support specifying the org
+		mapping s3 = await(run_promise(({"aws", "s3", "cp", "-", sprintf("s3://%s/%d/templatepage2.png", G->G->instance_config->aws->pdf_bucket_name, user->primary_org), }),
+			(["stdin": current_page,
+				"env": getenv() | ([
 				"AWS_ACCESS_KEY_ID": G->G->instance_config->aws->key_id,
 				"AWS_SECRET_ACCESS_KEY": G->G->instance_config->aws->secret,
 				"AWS_DEFAULT_REGION": G->G->instance_config->aws->region
 			])])));
-	}
+			werror("s3: %O\n", s3);
+			count++;
+	} // end while data (pages)
+	return sprintf("%d pages uploaded\n", count);
 };
 mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string org, string template, string audit_rect) { };
 mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols.HTTP.Server.Request req, string org, string template, string audit_rect) { };

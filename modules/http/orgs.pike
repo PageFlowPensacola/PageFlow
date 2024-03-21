@@ -47,7 +47,6 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 		}
 	} else {
 		if (req->request_type == "POST") {
-			werror("POST\n");
 			return handler->handle_create(req, @values);
 		} else if (req->request_type == "GET") {
 			return handler->handle_list(req, @values);

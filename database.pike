@@ -9,8 +9,8 @@ __async__ array(mapping) run_query(string query, mapping bindings) {
 	//write("Query result: %O\n", await(dbconn->promise_query(query))->get());
 	//write("%O\n", await(Protocols.HTTP.Promise.do_method("GET", "http://localhost:8002/")));
 	//write("Query result: %O\n", dbconn->typed_query(query));
-	write("%O\n", dbconn->promise_query);
-	write("Waiting for query: %O\n", query[..64]);
+	//write("%O\n", dbconn->promise_query);
+	//write("Waiting for query: %O\n", query[..64]);
 
 	object pending = query_pending;
 	object completion = query_pending = Concurrent.Promise();
@@ -22,7 +22,7 @@ __async__ array(mapping) run_query(string query, mapping bindings) {
 		//write ("---the query: %O\n", promise);
 		//mixed result = await(promise)->get();
 
-		write ("---result: %O\n", result);
+		//write ("---result: %O\n", result);
 
 		if (result) {
 			foreach(result, mapping row) {
@@ -32,13 +32,12 @@ __async__ array(mapping) run_query(string query, mapping bindings) {
 				}
 			}
 		}
-		write("-----processed result\n" );
+		//write("-----processed result\n" );
 	};
 
-	write("------passed catch block\n");
+	//write("------passed catch block\n");
 	completion->success(1);
 	if (query_pending == completion) query_pending = 0;
-	write("Query complete: %O\n", result);
 
 	if (ex) throw(ex);
 
@@ -100,8 +99,67 @@ __async__ mapping|zero load_password_for_email(string email) {
 	}
 }
 
+__async__ mapping|zero insert_template(string page_group_name, string page_group_type, int org_id, int create_user_id) {
+
+	string query = #"
+		INSERT INTO page_group (
+			page_group_name, page_group_type, active, org_id, create_user_id, create_date, last_update_user_id, last_update_date
+		)
+		VALUES (:page_group_name, :page_group_type, :org_id, :create_user_id, now(), :last_update_user_id, now()
+	";
+
+	mapping bindings = (["page_group_name":page_group_name, "page_group_type":page_group_type, "org_id":org_id, "create_user_id":create_user_id, "last_update_user_id":create_user_id]);
+
+	array results = await(run_query(query, bindings));
+
+	return results[0];
+}
+
+__async__ mapping|zero insert_template_page(int page_type_id, string name, string url, int org_id) {
+
+	string query = #"
+		INSERT INTO audit_rect (page_type_id, name, url, org_id)
+		VALUES (:page_type_id, :name, :url, :org_id)
+	";
+
+	mapping bindings = (["page_type_id":page_type_id, "name":name, "url":url, "org_id":org_id]);
+
+	array results = await(run_query(query, bindings));
+
+	return results[0];
+}
+
+__async__ mapping|zero insert_template_signatory(int page_type_id, string name, string email, int org_id) {
+
+	string query = #"
+		INSERT INTO template_signatory (page_type_id, name, email, org_id)
+		VALUES (:page_type_id, :name, :email, :org_id)
+	";
+
+	mapping bindings = (["page_type_id":page_type_id, "name":name, "email":email, "org_id":org_id]);
+
+	array results = await(run_query(query, bindings));
+
+	return results[0];
+}
+
+__async__ mapping|zero insert_audit_rect(int page_type_id, string name, string url, int org_id) {
+
+	string query = #"
+		INSERT INTO audit_rect (page_type_id, name, url, org_id)
+		VALUES (:page_type_id, :name, :url, :org_id)
+	";
+
+	mapping bindings = (["page_type_id":page_type_id, "name":name, "url":url, "org_id":org_id]);
+
+	array results = await(run_query(query, bindings));
+
+	return results[0];
+}
+
 __async__ mapping|zero get_user_details(string email) {
 
+	if (!email) return 0;
 	string query = #"
 		SELECT u.user_id
  , u.first_name
@@ -113,16 +171,28 @@ __async__ mapping|zero get_user_details(string email) {
  JOIN user_org uo ON u.user_id = uo.user_id
  JOIN org o ON o.org_id = uo.org_id
  WHERE u.email = :email
- AND u.deleted = 0;
+ AND u.deleted = 0
 ";
 
 	mapping bindings = (["email":email]);
 
-	array results = await(run_query(query, bindings);
-	// write("From database: %O\n", results);
-	if (sizeof(results)) {
-		return results[0];
+	mapping user = ([]);
+
+	array results = await(run_query(query, bindings));
+
+	if (sizeof(results) == 0) return 0;
+
+	user = results[0];
+	user["email"] = email;
+	user["orgs"] = ([]);
+
+	foreach(results, mapping row) {
+		user["orgs"][row["org_id"]] = row["display_name"];
 	}
+	m_delete(user, "org_id");
+	m_delete(user, "display_name");
+
+	return user;
 }
 
 
