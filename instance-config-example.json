@@ -1,8 +1,7 @@
 {
 	"jwt_signing_key": "3Y.......Y",
-	"database": {
-		"connection_string": "mysql://user:pass@mysql-test.gotagtech.com:3306/database"
-	},
+	"mysql_connection_string": "mysql://user:pass@mysql-test.gotagtech.com:3306/database",
+	"pgsql_connection_string": "pgsql://user:pass@mysql-test.gotagtech.com:3306/database",
 	"aws": {
 		"pdf_bucket_name":"pdfs.gotagtech.com",
 		"image_bucket_name":"images.gotagtech.com",

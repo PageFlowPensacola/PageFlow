@@ -80,7 +80,7 @@ __async__ array(mapping) get_template_pages(int org_id, int page_group_id) {
 
 }
 
-__async__ mapping|zero insert_template(string page_group_name, string page_group_type, int org_id, int create_user_id) {
+__async__ mapping|zero insert_template(string template_name, string page_group_type, int org_id, int create_user_id) {
 
 	string query = #"
 		INSERT INTO page_group (
@@ -89,7 +89,7 @@ __async__ mapping|zero insert_template(string page_group_name, string page_group
 		VALUES (:page_group_name, :page_group_type, :org_id, :create_user_id, now(), :last_update_user_id, now()
 	";
 
-	mapping bindings = (["page_group_name":page_group_name, "page_group_type":page_group_type, "org_id":org_id, "create_user_id":create_user_id, "last_update_user_id":create_user_id]);
+	mapping bindings = (["page_group_name":template_name, "page_group_type":page_group_type, "org_id":org_id, "create_user_id":create_user_id, "last_update_user_id":create_user_id]);
 
 	array results = await(run_query(query, bindings));
 
@@ -182,9 +182,9 @@ protected void create(string name) {
 	G->G->DB = this;
 
 	::create(name);
-	if (G->G->instance_config->database->connection_string) {
+	if (G->G->instance_config->mysql_connection_string) {
 		werror("DB Connecting\n");
-		dbconn = Sql.Sql(G->G->instance_config->database->connection_string);
+		dbconn = Sql.Sql(G->G->instance_config->mysql_connection_string);
 		write("%O\n", dbconn);
 	}
 
