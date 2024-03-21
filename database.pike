@@ -80,25 +80,6 @@ __async__ array(mapping) get_template_pages(int org_id, int page_group_id) {
 
 }
 
-__async__ mapping|zero load_password_for_email(string email) {
-
-	string query = #"
-		select u.password
-		, u.active
-		from user u
-		where u.email = :email
-		and u.deleted = 0;
-	";
-
-	mapping bindings = (["email":email]);
-
-	array results = await(run_query(query, bindings));
-	// write("From database: %O\n", results);
-	if (sizeof(results)) {
-		return results[0];
-	}
-}
-
 __async__ mapping|zero insert_template(string page_group_name, string page_group_type, int org_id, int create_user_id) {
 
 	string query = #"
