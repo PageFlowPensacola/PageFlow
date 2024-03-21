@@ -12,11 +12,11 @@ mapping(string:mixed)|string|Concurrent.Future handle_detail(Protocols.HTTP.Serv
 };
 
 __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols.HTTP.Server.Request req) {
-	mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
-	werror("user: %O\n", user);
+	mapping result = await(G->G->DB->insert_template(req->misc->json->name));
+	werror("result: %O\n", result);
 	//werror("body: %O\n", req->body_raw);
 	//string template_name = req->body_raw->name;
-	return "ok";
+	return jsonify((["id": result]));
 };
 mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string org, string template, string audit_rect) { };
 mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols.HTTP.Server.Request req, string org, string template, string audit_rect) { };

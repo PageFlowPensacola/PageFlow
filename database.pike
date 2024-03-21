@@ -1,15 +1,18 @@
 inherit annotated;
 
-Sql.Sql dbconn;
+Sql.Sql mysqlconn, pgsqlconn;
 Concurrent.Promise query_pending;
 
-__async__ array(mapping) run_query(string query, mapping bindings) {
+Concurrent.Future run_my_query(string query, mapping|void bindings) {return run_query(mysqlconn, query, bindings);}
+Concurrent.Future run_pg_query(string query, mapping|void bindings) {return run_query(pgsqlconn, query, bindings);}
+
+__async__ array(mapping) run_query(Sql.Sql conn, string query, mapping bindings) {
 
 	// TODO: figure out why promise queries are failing with broken promise error
-	//write("Query result: %O\n", await(dbconn->promise_query(query))->get());
+	//write("Query result: %O\n", await(mysqlconn->promise_query(query))->get());
 	//write("%O\n", await(Protocols.HTTP.Promise.do_method("GET", "http://localhost:8002/")));
-	//write("Query result: %O\n", dbconn->typed_query(query));
-	//write("%O\n", dbconn->promise_query);
+	//write("Query result: %O\n", mysqlconn->typed_query(query));
+	//write("%O\n", mysqlconn->promise_query);
 	//write("Waiting for query: %O\n", query[..64]);
 
 	object pending = query_pending;
@@ -18,7 +21,7 @@ __async__ array(mapping) run_query(string query, mapping bindings) {
 	if (pending) await(pending->future()); //If there's a queue, put us at the end of it.
 	array|zero result;
 	mixed ex = catch {
-		result = await(dbconn->promise_query(query, bindings))->get();
+		result = await(conn->promise_query(query, bindings))->get();
 		//write ("---the query: %O\n", promise);
 		//mixed result = await(promise)->get();
 
@@ -59,7 +62,7 @@ __async__ array(mapping) get_templates_for_org(int org_id) {
 
 	mapping bindings = (["org_id":org_id]);
 
-	return await(run_query(query, bindings));
+	return await(run_pg_query(query, bindings));
 
 }
 
@@ -76,24 +79,25 @@ __async__ array(mapping) get_template_pages(int org_id, int page_group_id) {
 
 	mapping bindings = (["org_id":org_id, "page_group_id":page_group_id]);
 
-	return await(run_query(query, bindings));
+	return await(run_my_query(query, bindings));
 
 }
 
-__async__ mapping|zero insert_template(string template_name, string page_group_type, int org_id, int create_user_id) {
+__async__ int|zero insert_template(string template_name) {
 
 	string query = #"
-		INSERT INTO page_group (
-			page_group_name, page_group_type, active, org_id, create_user_id, create_date, last_update_user_id, last_update_date
+		INSERT INTO templates (
+			name
 		)
-		VALUES (:page_group_name, :page_group_type, :org_id, :create_user_id, now(), :last_update_user_id, now()
+		VALUES (:name)
+		RETURNING id
 	";
 
-	mapping bindings = (["page_group_name":template_name, "page_group_type":page_group_type, "org_id":org_id, "create_user_id":create_user_id, "last_update_user_id":create_user_id]);
+	mapping bindings = (["name":template_name]);
 
-	array results = await(run_query(query, bindings));
+	array results = await(run_pg_query(query, bindings));
 
-	return results[0];
+	return results[0]->id;
 }
 
 __async__ mapping|zero insert_template_page(int page_type_id, string name, string url, int org_id) {
@@ -105,7 +109,7 @@ __async__ mapping|zero insert_template_page(int page_type_id, string name, strin
 
 	mapping bindings = (["page_type_id":page_type_id, "name":name, "url":url, "org_id":org_id]);
 
-	array results = await(run_query(query, bindings));
+	array results = await(run_my_query(query, bindings));
 
 	return results[0];
 }
@@ -119,7 +123,7 @@ __async__ mapping|zero insert_template_signatory(int page_type_id, string name, 
 
 	mapping bindings = (["page_type_id":page_type_id, "name":name, "email":email, "org_id":org_id]);
 
-	array results = await(run_query(query, bindings));
+	array results = await(run_my_query(query, bindings));
 
 	return results[0];
 }
@@ -133,7 +137,7 @@ __async__ mapping|zero insert_audit_rect(int page_type_id, string name, string u
 
 	mapping bindings = (["page_type_id":page_type_id, "name":name, "url":url, "org_id":org_id]);
 
-	array results = await(run_query(query, bindings));
+	array results = await(run_my_query(query, bindings));
 
 	return results[0];
 }
@@ -159,7 +163,7 @@ __async__ mapping|zero get_user_details(string email) {
 
 	mapping user = ([]);
 
-	array results = await(run_query(query, bindings));
+	array results = await(run_my_query(query, bindings));
 
 	if (sizeof(results) == 0) return 0;
 
@@ -183,9 +187,14 @@ protected void create(string name) {
 
 	::create(name);
 	if (G->G->instance_config->mysql_connection_string) {
-		werror("DB Connecting\n");
-		dbconn = Sql.Sql(G->G->instance_config->mysql_connection_string);
-		write("%O\n", dbconn);
+		werror("Mysql DB Connecting\n");
+		mysqlconn = Sql.Sql(G->G->instance_config->mysql_connection_string);
+		write("%O\n", mysqlconn);
+	}
+	if (G->G->instance_config->pgsql_connection_string) {
+		werror("Postgres DB Connecting\n");
+		pgsqlconn = Sql.Sql(G->G->instance_config->pgsql_connection_string);
+		write("%O\n", pgsqlconn);
 	}
 
 }

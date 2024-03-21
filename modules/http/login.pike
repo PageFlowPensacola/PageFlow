@@ -15,7 +15,7 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 
 	mapping bindings = (["email":req->misc->json->email]);
 
-	array results = await(G->G->DB->run_query(query, bindings));
+	array results = await(G->G->DB->run_my_query(query, bindings));
 
 	mapping|zero result_set = sizeof(results) && results[0];
 
