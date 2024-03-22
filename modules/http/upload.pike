@@ -75,5 +75,13 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 			])])));
 			werror("s3: %O\n", s3); */
 	} // end while data (pages)
+	// Update the template record with the number of pages
+	string query = #"
+		UPDATE templates
+		SET page_count = :page_count
+		WHERE id = :template_id
+	";
+	mapping bindings = (["template_id":req->variables->template_id, "page_count":count]);
+	await(G->G->DB->run_pg_query(query, bindings));
 	return sprintf("%d pages uploaded\n", count);
 };

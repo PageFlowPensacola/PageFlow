@@ -54,10 +54,8 @@ __async__ array(mapping) run_query(Sql.Sql conn, string query, mapping bindings)
 __async__ array(mapping) get_templates_for_org(int org_id) {
 
 	string query = #"
-		SELECT * FROM page_type t
-		JOIN page_type_group g ON t.page_type_id = g.page_type_id
-		WHERE t.page_template_url IS NOT NULL and t.org_id = :org_id
-		ORDER by t.page_type_id
+		SELECT id, name, page_count FROM templates
+		WHERE primary_org_id = :org_id
 	";
 
 	mapping bindings = (["org_id":org_id]);
