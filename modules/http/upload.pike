@@ -1,14 +1,16 @@
 inherit http_endpoint;
 
 __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Request req) {
-		if (req->method != "POST") {
+	werror("req: %O\n", typeof(req->request_type));
+		if (req->request_type != "POST") {
 			return ([ "error": 405 ]);
 		}
-	//werror("req: %O\n", req);
+		//werror("req: %O\n", req);
 
-		mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
-		/* werror("user: %O\n", user->primary_org);
-		return "ok"; */
+		// if user necessary:
+		// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
+		// string org_name = user->orgs[user->primary_org];
+
 
 	/*
 		parse the body pdf and break into page pngs
@@ -26,7 +28,7 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 	mapping results = await(run_promise(({"convert", "-density", "300", "-depth", "8", "-quality", "85", "-", "png:-"}),
 	(["stdin": req->body_raw])));
 	//werror("results: %O\n", indices(results));
-	werror("input file size: %O\n", sizeof(results->stdout));
+	werror("input file size: %O, %O\n", sizeof(results->stdout), sizeof(req->body_raw));
 	// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/_Stdio/Buffer.html#Buffer
 	Stdio.Buffer data = Stdio.Buffer(results->stdout);
 	// stdout will be a string containing the output of the process
@@ -46,20 +48,32 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 		}
 		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
 		object page = Image.PNG.decode(current_page);
-		//werror("Page info %O\n", page);
-		// Send to aws
-		werror("G->G->instance_config->aws->key_id %O\n", G->G->instance_config->aws->key_id);
-		string org_name = user->orgs[user->primary_org];
+
+		// could confirm template Id exists in templates table,
+		// but we just created it so it should be there
+
+		string query = #"
+		INSERT INTO template_pages
+			(template_id, page_number, page_data)
+		VALUES
+			(:template_id, :page_number, :page_data)
+		";
+
+		mapping bindings = (
+			["template_id":req->variables->template_id, "page_number":++count, "page_data":current_page]
+		);
+
+		mapping results = await(G->G->DB->run_pg_query(query, bindings));
+		werror("results: %O\n", results);
 		// TODO support specifying the org
-		mapping s3 = await(run_promise(({"aws", "s3", "cp", "-", sprintf("s3://%s/%d/templatepage2.png", G->G->instance_config->aws->pdf_bucket_name, user->primary_org), }),
+		/* mapping s3 = await(run_promise(({"aws", "s3", "cp", "-", sprintf("s3://%s/%d/templatepage2.png", G->G->instance_config->aws->pdf_bucket_name, user->primary_org), }),
 			(["stdin": current_page,
 				"env": getenv() | ([
 				"AWS_ACCESS_KEY_ID": G->G->instance_config->aws->key_id,
 				"AWS_SECRET_ACCESS_KEY": G->G->instance_config->aws->secret,
 				"AWS_DEFAULT_REGION": G->G->instance_config->aws->region
 			])])));
-			werror("s3: %O\n", s3);
-			count++;
+			werror("s3: %O\n", s3); */
 	} // end while data (pages)
 	return sprintf("%d pages uploaded\n", count);
 };
