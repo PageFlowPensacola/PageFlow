@@ -56,6 +56,7 @@ __async__ array(mapping) get_templates_for_org(int org_id) {
 	string query = #"
 		SELECT id, name, page_count FROM templates
 		WHERE primary_org_id = :org_id
+		AND page_count IS NOT NULL
 	";
 
 	mapping bindings = (["org_id":org_id]);
@@ -79,23 +80,6 @@ __async__ array(mapping) get_template_pages(int org_id, int page_group_id) {
 
 	return await(run_my_query(query, bindings));
 
-}
-
-__async__ int|zero insert_template(string template_name) {
-
-	string query = #"
-		INSERT INTO templates (
-			name
-		)
-		VALUES (:name)
-		RETURNING id
-	";
-
-	mapping bindings = (["name":template_name]);
-
-	array results = await(run_pg_query(query, bindings));
-
-	return results[0]->id;
 }
 
 __async__ mapping|zero insert_template_page(int page_type_id, string name, string url, int org_id) {
