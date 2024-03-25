@@ -1,5 +1,5 @@
 import {choc, set_content, on, DOM} from "https://rosuav.github.io/choc/factory.js";
-const {BUTTON, FORM, H2, INPUT, LABEL, LI, SECTION, UL} = choc; //autoimport
+const {BUTTON, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, SECTION, UL} = choc; //autoimport
 
 // TODO return user orgs on login. For now, hardcode the org ID.
 let org_id;
@@ -8,6 +8,36 @@ let user = JSON.parse(localStorage.getItem("user") || "{}");
 const state = {
 	templates: [],
 	current_template: null,
+};
+
+function signatory_fields(template) {
+	return FIELDSET([
+		LEGEND("Potential Signatories"),
+		UL({class: 'signatory_fields'}, [
+			template.signatories?.map(
+				(field) => LI(
+					LABEL(INPUT({class: 'signatory-field', 'data-id': field.id, type: 'text', value: field.signatory_field})),
+				)
+			),
+			LI(
+				LABEL(INPUT({class: 'signatory-field', type: 'text', value: ''})),
+			)
+		])
+	]);
+}
+
+function template_thumbnails(template) {
+	const base_url = "/orgs/" + org_id + "/templates/" + state.current_template.id + "/pages/";
+	return UL({class: 'template_thumbnails'}, [
+		template.pages.map(
+			(number) => LI(
+				FIGURE([
+					IMG({src: base_url + number, alt: "Page " + number, width: 100, height: 100}),
+					FIGCAPTION(["Page: ", number])
+				])
+			)
+		)
+	])
 };
 
 function render() {
@@ -28,6 +58,8 @@ function render() {
 		if (state.current_template) {
 			set_content("main", SECTION([
 				H2(state.current_template.name),
+				signatory_fields(state.current_template),
+				template_thumbnails(state.current_template),
 			]));
 		} else {
 			set_content("main", SECTION([
@@ -74,26 +106,28 @@ if (user.token) {
 	fetch_templates(org_id);
 }
 
+async function update_template_details(id) {
+	console.log("Fetching template details for", user.token);
+	const resp = await fetch("/orgs/" + org_id + "/templates/" + id, {
+		headers: {
+			Authorization: "Bearer " + user.token
+		}
+	});
+	if (!resp.ok) {
+		return;
+	}
+	const template = await resp.json();
+	state.current_template = template;
+	state.current_template.id = id;
+	//console.log("Template is", state.current_template);
+	render();
+}
+
 let urlfragment = window.location.hash.slice(1); // always a string, even if no fragment.
 if (urlfragment.startsWith("template-")) {
 	update_template_details(urlfragment.slice(9));
 }
 
-function signatoryFields(template) {
-	return FIELDSET([
-		LEGEND("Potential Signatories"),
-		UL({class: 'signatoryFields'}, [
-			template.signatoryFields?.map(
-				(field) => LI(
-					LABEL(INPUT({class: 'signatory-field', 'data-id': field.id, type: 'text', value: field.name})),
-				)
-			),
-			LI(
-				LABEL(INPUT({class: 'signatory-field', type: 'text', value: ''})),
-			)
-		])
-	]);
-}
 
 on("submit", "#loginform", async function (evt) {
 	evt.preventDefault();
@@ -123,21 +157,6 @@ on("change", "#blankcontract", async function (e) {
 	}
 
 });
-
-async function update_template_details(id) {
-	const resp = await fetch("/orgs/" + org_id + "/templates/" + id, {
-		headers: {
-			Authorization: "Bearer " + user.token
-		}
-	});
-	if (!resp.ok) {
-		return;
-	}
-	const template = await resp.json();
-	state.current_template = template;
-	//console.log("Template is", template);
-	render();
-}
 
 on("click", ".specified-template", async function (e) {
 	update_template_details(e.match.dataset.id);
