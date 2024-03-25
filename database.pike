@@ -139,11 +139,10 @@ __async__ mapping|zero get_user_details(string email) {
 	user["orgs"] = ([]);
 
 	foreach(results, mapping row) {
-		user["orgs"][row["org_id"]] = row["display_name"];
+		user["orgs"][(string)row["org_id"]] = row["display_name"];
 	}
 	m_delete(user, "org_id");
 	m_delete(user, "display_name");
-
 	return user;
 }
 
