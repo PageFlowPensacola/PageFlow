@@ -9,17 +9,27 @@ __async__ mapping(string:mixed)|string handle_list(Protocols.HTTP.Server.Request
 
 __async__ mapping(string:mixed)|string|Concurrent.Future handle_detail(Protocols.HTTP.Server.Request req, string org, string template_id) {
 
-	string query = #"
+	mapping details = await(G->G->DB->run_pg_query(#"
 		SELECT t.name as template_name, p.page_number as page_number
 		FROM templates t
 		JOIN template_pages p ON t.id = p.template_id
 		WHERE t.id = :template_id
 		AND t.primary_org_id = :org_id
-	";
+	", (["org_id":org, "template_id":template_id])));
 
-	mapping bindings = (["org_id":org, "template_id":template_id]);
-
-	return jsonify(await(G->G->DB->run_pg_query(query, bindings)));
+	mapping template = (
+		[
+			"name": details[0]->template_name,
+			"pages": details->page_number, // Pike Automapping
+			"signatories": await(G->G->DB->run_pg_query(#"
+		SELECT s.name as signatory_field
+		FROM template_signatories s
+		JOIN templates t ON s.template_id = t.id
+		WHERE t.id = :template_id
+		AND t.primary_org_id = :org_id
+	", (["org_id":org, "template_id":template_id])))
+		]);
+	return jsonify(template);
 
 };
 
