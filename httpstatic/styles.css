@@ -1,0 +1,8 @@
+main li {
+	margin-left: 10px;
+	cursor: pointer;
+}
+
+main ul {
+	list-style-type: none;
+}
