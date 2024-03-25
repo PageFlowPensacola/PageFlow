@@ -56,11 +56,15 @@ function render() {
 			);
 		} // no user token end
 		set_content("header", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out")]);
-		if (state.current_template) {
+	if (state.current_template) {
+		console.log("Rendering template", state.current_template);
 			set_content("main", SECTION([
 				H2(state.current_template.name),
-				signatory_fields(state.current_template),
-				template_thumbnails(state.current_template),
+				state.current_template.page ?
+					P("Current page: " + state.current_template.page)
+					:
+				[signatory_fields(state.current_template),
+				template_thumbnails(state.current_template),]
 			]));
 		} else {
 			set_content("main", SECTION([
@@ -107,8 +111,7 @@ if (user.token) {
 	fetch_templates(org_id);
 }
 
-async function update_template_details(id) {
-	console.log("Fetching template details for", user.token);
+async function update_template_details(id, page) {
 	const resp = await fetch("/orgs/" + org_id + "/templates/" + id, {
 		headers: {
 			Authorization: "Bearer " + user.token
@@ -127,14 +130,17 @@ async function update_template_details(id) {
 	});
 	const pagesUrls = await pagesResp.json();
 	state.current_template.pages = pagesUrls.pages;
+	if (page) {
+		state.current_template.page = page;
+	}
 	console.log("Template is", state.current_template);
 
 	render();
 }
 
-let urlfragment = window.location.hash.slice(1); // always a string, even if no fragment.
-if (urlfragment.startsWith("template-")) {
-	update_template_details(urlfragment.slice(9));
+const params = new URLSearchParams(window.location.hash.slice(1));
+if (params.get("template")) {
+	update_template_details(params.get("template"), params.get("page"));
 }
 
 
