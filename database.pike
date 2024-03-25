@@ -65,22 +65,7 @@ __async__ array(mapping) get_templates_for_org(int org_id) {
 
 }
 
-__async__ array(mapping) get_template_pages(int org_id, int page_group_id) {
-	// TODO: simplify this query
-	string query = #"
-		SELECT ts.name as signatory_name, ar.* FROM template_signatory ts
-		JOIN audit_rect ar
-		JOIN page_type pt
-		JOIN page_type_group pg
-		ON pg.page_type_id = pt.page_type_id
-		WHERE pg.page_group_id = :page_group_id
-	";
 
-	mapping bindings = (["org_id":org_id, "page_group_id":page_group_id]);
-
-	return await(run_my_query(query, bindings));
-
-}
 
 __async__ mapping|zero insert_template_page(int page_type_id, string name, string url, int org_id) {
 
