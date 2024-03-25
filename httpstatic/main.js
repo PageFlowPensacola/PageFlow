@@ -2,14 +2,13 @@ import {choc, set_content, on, DOM} from "https://rosuav.github.io/choc/factory.
 const {A, BUTTON, DETAILS, FORM, INPUT, LABEL, LI, SECTION, SUMMARY, UL} = choc; //autoimport
 
 // TODO return user orgs on login. For now, hardcode the org ID.
-let org_id = 271540;
+let org_id;
+let user = JSON.parse(localStorage.getItem("user") || "{}");
 
 const state = {
 	templates: [],
 };
 
-let user = JSON.parse(localStorage.getItem("user") || "{}");
-console.log("User is", user);
 function render() {
 		if (!user.token) {
 			set_content("header",
@@ -27,60 +26,48 @@ function render() {
 			set_content("header", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out")]);
 
 			if (state.templates) {
-				set_content("main", state.templates.map(t => SECTION([
-					INPUT({id: "blankcontract", type: "file", accept: "image/pdf"}),
+				set_content("main", SECTION([
+					FORM({id: "template_submit"},[
+						INPUT({value: "", id: "newTemplateName"}),
+						INPUT({id: "blankcontract", type: "file", accept: "image/pdf"}),
+						INPUT({type: "submit", value: "Upload"}),
+					]),
 					UL(
-						state.templates.map((document) => LI({'class': 'contract-item'},
-							DETAILS({'data-name': document.name}, [
-									SUMMARY(document.name), /* signatoryFields(document),  */UL(
-								document.pages.map((page) => LI(
-									A({href: `${page.page_template_url}?t=${user.token}`, 'data-page': page.page_number}, page.page_type_name)
-									)
-								)
-								)]
-							)) // close LI
+						state.templates.map((template) => LI({'class': 'contract-item', 'data-name': template.name},
+							[template.name, " (", template.page_count, ")"]
+							) // close LI
 						) // close map
 					) // close UL
-				])
-				));
+				]))
+
 			}; // end if state templates
 		}
 }
 
 render();
 
-if (user.token) {
-	console.log("Have a token, fetching details for a template.");
-	const templateDeetsReq = await fetch("/orgs/" + org_id + "/templates/3518320/audit_rect", {
+const fetch_templates = async (org_id) => {
+	console.log("Fetching templates for org", org_id);
+	const response = await fetch("/orgs/" + org_id + "/templates", {
 		headers: {
 			Authorization: "Bearer " + user.token
 		}
 	});
-	const deets = await templateDeetsReq.json();
-	console.log("Template details:", deets);
-	const response = await fetch("/orgs/" + org_id + "/templates/", {
-		headers: {
-			Authorization: "Bearer " + user.token
-		}
-	});
-	const unmappedTemplates = await response.json();
-	console.log("Unmapped templates:", unmappedTemplates);
-  const templateCollection = {};
-  unmappedTemplates.forEach((t) => {
-    const parts = t.page_type_name.split('-');
-    const pageNo = parts.pop();
-    const docName = parts.join('-');
-    if (!templateCollection[docName]) templateCollection[docName] = {};
-    templateCollection[docName][pageNo] = t;
-  });
-  Object.values(templateCollection).forEach((pages) => {
-		state.templates.push({
-			name: Object.values(pages)[0].page_type_name.split('-').slice(0, -1).join('-'),
-			pages: Object.entries(pages).sort((a, b) => a[0] - b[0]).map(x => x[1])
-		});
-  });
-	console.log("Templates:", state.templates);
+	const templates = await response.json();
+	console.log("Templates are", templates, org_id);
+	state.templates = templates;
 	render();
+}
+
+if (user.token) {
+	const userDetailsReq = await fetch("/user", {
+		headers: {
+			Authorization: "Bearer " + user.token
+		}
+	});
+	const userDetails = await userDetailsReq.json();
+	org_id = userDetails.primary_org;
+	fetch_templates(org_id);
 }
 
 on("submit", "#loginform", async function (evt) {
@@ -102,4 +89,34 @@ on("click", "#logout", function () {
 	localStorage.removeItem("user");
 	user = null;
 	render();
+});
+
+on("change", "#blankcontract", async function (e) {
+	const file = e.match.files[0];
+	if (file && DOM("#newTemplateName").value === "") {
+		DOM("#newTemplateName").value = file.name;
+	}
+
+});
+
+on("submit", "#template_submit", async function (e) {
+	e.preventDefault();
+	let resp = await fetch("/orgs/" + org_id + "/templates", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: "Bearer " + user.token
+		},
+		body: JSON.stringify({name: DOM("#newTemplateName").value})
+	});
+	const template_info = await resp.json();
+	console.log("Template is", template_info, DOM("#blankcontract").files[0]);
+	resp = await fetch(`/upload?template_id=${template_info.id}`, {
+		method: "POST",
+		headers: {
+			Authorization: "Bearer " + user.token
+		},
+		body: DOM("#blankcontract").files[0]
+	});
+	fetch_templates(org_id);
 });
