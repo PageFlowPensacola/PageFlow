@@ -22,3 +22,4 @@ maybe not markdown. just a single static html page.
 ## BEFORE MOVING TO PRODUCTION
 
 Enforce ip restrictions at both token generation and login
+add user_org joins to relevant queries to authorize user has access to this org
