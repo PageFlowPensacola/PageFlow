@@ -30,7 +30,7 @@ __async__ mapping(string:mixed)|Concurrent.Future handle_list(Protocols.HTTP.Ser
 	";
 	mapping bindings = (["org_id":org, "template_id":template_id]);
 	array(mapping(string:mixed)) pages = await(G->G->DB->run_pg_query(query, bindings));
-	/*"data:image/png;base64," + MIME.encode_base64(imgdata)*/
+	// again Automap
 	return jsonify((["pages": "data:image/png;base64," + MIME.encode_base64(pages->page_data[*])[*]]));
 
 };

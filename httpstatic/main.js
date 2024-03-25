@@ -1,5 +1,5 @@
 import {choc, set_content, on, DOM} from "https://rosuav.github.io/choc/factory.js";
-const {BUTTON, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, SECTION, UL} = choc; //autoimport
+const {BUTTON, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, P, SECTION, UL} = choc; //autoimport
 
 // TODO return user orgs on login. For now, hardcode the org ID.
 let org_id;
@@ -27,13 +27,14 @@ function signatory_fields(template) {
 }
 
 function template_thumbnails(template) {
+	// return P("Click on a page to view it in full size.");
 	const base_url = "/orgs/" + org_id + "/templates/" + state.current_template.id + "/pages/";
 	return UL({class: 'template_thumbnails'}, [
 		template.pages.map(
-			(number) => LI(
+			(url, idx) => LI(
 				FIGURE([
-					IMG({src: base_url + number, alt: "Page " + number, width: 100, height: 100}),
-					FIGCAPTION(["Page: ", number])
+					IMG({src: url, alt: "Page " + (idx + 1)}),
+					FIGCAPTION(["Page: ", (idx + 1)])
 				])
 			)
 		)
@@ -119,7 +120,15 @@ async function update_template_details(id) {
 	const template = await resp.json();
 	state.current_template = template;
 	state.current_template.id = id;
-	//console.log("Template is", state.current_template);
+	const pagesResp = await fetch("/orgs/" + org_id + "/templates/" + id + "/pages", {
+		headers: {
+			Authorization: "Bearer " + user.token
+		}
+	});
+	const pagesUrls = await pagesResp.json();
+	state.current_template.pages = pagesUrls.pages;
+	console.log("Template is", state.current_template);
+
 	render();
 }
 

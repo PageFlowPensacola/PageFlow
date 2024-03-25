@@ -6,3 +6,14 @@ main li {
 main ul {
 	list-style-type: none;
 }
+
+.template_thumbnails {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1em;
+}
+
+.template_thumbnails img {
+	max-width: 200px;
+	cursor: pointer;
+}
