@@ -8,7 +8,8 @@ __async__ mapping(string:mixed)|string handle_list(Protocols.HTTP.Server.Request
 };
 
 __async__ mapping(string:mixed)|string|Concurrent.Future handle_detail(Protocols.HTTP.Server.Request req, string org, string template_id) {
-
+	if (! (int) org) return ([ "error": 403 ]);
+	if (!template_id) return 0;
 	mapping details = await(G->G->DB->run_pg_query(#"
 		SELECT t.name as template_name, p.page_number as page_number
 		FROM templates t

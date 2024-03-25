@@ -37,7 +37,7 @@ function render() {
 					INPUT({type: "submit", value: "Upload"}),
 				]),
 				UL(
-					state.templates.map((template) => LI({'class': 'contract-item', 'data-name': template.name, 'data-id': template.id},
+					state.templates.map((template) => LI({'class': 'specified-template', 'data-name': template.name, 'data-id': template.id},
 						[template.name, " (", template.page_count, ")"]
 						) // close LI
 					) // close map
@@ -74,6 +74,27 @@ if (user.token) {
 	fetch_templates(org_id);
 }
 
+let urlfragment = window.location.hash.slice(1); // always a string, even if no fragment.
+if (urlfragment.startsWith("template-")) {
+	update_template_details(urlfragment.slice(9));
+}
+
+function signatoryFields(template) {
+	return FIELDSET([
+		LEGEND("Potential Signatories"),
+		UL({class: 'signatoryFields'}, [
+			template.signatoryFields?.map(
+				(field) => LI(
+					LABEL(INPUT({class: 'signatory-field', 'data-id': field.id, type: 'text', value: field.name})),
+				)
+			),
+			LI(
+				LABEL(INPUT({class: 'signatory-field', type: 'text', value: ''})),
+			)
+		])
+	]);
+}
+
 on("submit", "#loginform", async function (evt) {
 	evt.preventDefault();
 	let form = evt.match.elements;
@@ -103,20 +124,23 @@ on("change", "#blankcontract", async function (e) {
 
 });
 
-on("click", ".contract-item", async function (e) {
-	state.current_template = {
-		name: e.match.dataset.name,
-		id: e.match.dataset.id,
-	};
-	let resp = await fetch("/orgs/" + org_id + "/templates/" + e.match.dataset.id, {
+async function update_template_details(id) {
+	const resp = await fetch("/orgs/" + org_id + "/templates/" + id, {
 		headers: {
 			Authorization: "Bearer " + user.token
 		}
 	});
-	const current_template_pages = await resp.json();
-	state.current_template.pages = current_template_pages;
-	console.log("Template pages", state.current_template);
+	if (!resp.ok) {
+		return;
+	}
+	const template = await resp.json();
+	state.current_template = template;
+	//console.log("Template is", template);
 	render();
+}
+
+on("click", ".specified-template", async function (e) {
+	update_template_details(e.match.dataset.id);
 });
 
 on("submit", "#template_submit", async function (e) {
