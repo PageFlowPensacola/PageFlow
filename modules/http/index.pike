@@ -9,6 +9,10 @@ constant markdown = #"# PageFlow Index Screen
 * This variable has no value but a default: $$bar||bar-default$$
 ";
 
+void websocket_cmd_hello(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	werror("Got a hello! %O\n", msg);
+}
+
 mapping(string:mixed) http_request(Protocols.HTTP.Server.Request req) {
 	return render(req,
 	([

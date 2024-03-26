@@ -10,6 +10,8 @@ const state = {
 	current_template: null,
 };
 
+ws_sync.send({cmd: "hello"});
+
 function signatory_fields(template) {
 	return FIELDSET([
 		LEGEND("Potential Signatories"),

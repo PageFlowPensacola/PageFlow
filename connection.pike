@@ -1,17 +1,9 @@
 Crypto.SHA256.HMAC jwt_hmac = Crypto.SHA256.HMAC(G->G->instance_config->jwt_signing_key);
 
-void session_cleanup() {
-	//Go through all HTTP sessions and dispose of old ones
-	G->G->http_session_cleanup = call_out(session_cleanup, 86400);
-  // TODO perhaps restore dB session management
-}
-
 __async__ void http_handler(Protocols.HTTP.Server.Request req)
 {
 
 	write("incoming http request: %O\n", req->not_query);
-  // @TODO clean this old code up.
-	req->misc->session = ([]); // = await(G->G->DB->load_session(req->cookies->session));
 
   // sscanf can do similar job to regex, but more simply. Doesn't do backtracking.
 	sscanf(req->request_headers->authorization || "nope", "Bearer %s", string bearer);
@@ -63,51 +55,13 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 	resp->extra_heads->Connection = "close";
 	resp->extra_heads["Access-Control-Allow-Origin"] = "*";
 	resp->extra_heads["Access-Control-Allow-Private-Network"] = "true";
-	mapping sess = req->misc->session;
-	if (sizeof(sess) && !sess->fake) {
-		/*
-		if (!sess->cookie) sess->cookie = await(G->G->DB->generate_session_cookie());
-		G->G->DB->save_session(sess);
-		resp->extra_heads["Set-Cookie"] = "session=" + sess->cookie + "; Path=/; Max-Age=604800; SameSite=Lax; HttpOnly";
-		*/
-	}
 	req->response_and_finish(resp);
 }
 
 void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 {
 	if (function f = bounce(this_function)) {f(frm, conn); return;}
-	//Depending on timings, we might not have loaded the session yet. Hold all messages till we have.
-	if (arrayp(conn->session)) {conn->session += ({frm}); return;}
-	//Check for an expired session. It's highly unlikely that a websocket will be idle for a week
-	//without anything pinging the session, but much more likely that the user logs out in another
-	//tab, which should kick the websocket's session and login.
-	//Note that this is the only place we reload the session. Changes to an existing session are not
-	//currently picked up. That means, if you log in again (eg to add scopes), the token will most
-	//likely be broken. This may require redefining "http_sessions_deleted" to "session_login_changed"
-	//or something, and using it for both. Reconsider this if tokens get removed from session though.
-	if (conn->session->user && !conn->session->fake && G->G->http_sessions_deleted[conn->session->cookie]) {
-		//This is only relevant if the user's logged in; otherwise, I don't think anyone will
-		//much care if a still-connected socket remains. We then keep a list of removed sessions.
-		string cookie = conn->session->cookie;
-		conn->session = ({frm});
-		G->G->DB->load_session(cookie)->then() { //TODO: Deduplicate, again
-			if (sizeof(__ARGS__[0]) < 2) {
-				//No active session. Kick the socket.
-				conn->sock->send_text(Standards.JSON.encode(([
-					"cmd": "*DC*",
-					"error": "Logged out.",
-				])));
-				return;
-			}
-			//Otherwise, we have a session, so go ahead and use it (freshly loaded).
-			//And we can drop it from the deleted list, so we don't keep checking.
-			array pending = conn->session;
-			conn->session = __ARGS__[0];
-			m_delete(G->G->http_sessions_deleted, conn->session->cookie);
-			ws_msg(pending[*], conn);
-		};
-	}
+
 	mixed data;
 	if (catch {data = Standards.JSON.decode(frm->text);}) return; //Ignore frames that aren't text or aren't valid JSON
 	if (!stringp(data->cmd)) return;
@@ -119,26 +73,6 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 		if (conn->type) return; //Can't init twice
 		object handler = G->G->websocket_types[data->type];
 		if (!handler) return; //Ignore any unknown types.
-		//If this socket was redirected from a different node, it will include a
-		//session transfer cookie. (See above; currently, a "transfer cookie" is
-		//just the session cookie itself, but that may change.)
-		if (stringp(data->xfr) && data->xfr != conn->session->cookie) {
-			conn->session = ({frm});
-			G->G->DB->load_session(data->xfr)->then() { //TODO: Deduplicate with below?
-				array pending = conn->session;
-				conn->session = __ARGS__[0];
-				ws_msg(pending[*], conn);
-			};
-			return;
-		}
-		[object channel, string grp] = handler->split_channel(data->group);
-		//Previously, this transformation would transform to logins.
-		//if (channel) data->group = grp + channel->name;
-		if (channel) data->group = grp + "#" + channel->userid;
-		//NOTE: Don't save the channel object itself here, in case code gets
-		//updated. We want to fetch up the latest channel object whenever it's
-		//needed. But it'll be useful to synchronize the group, regardless of
-		//whether it was requested by name or ID.
 		if (string err = handler->websocket_validate(conn, data)) {
 			conn->sock->send_text(Standards.JSON.encode((["error": err])));
 			conn->sock->close(); destruct(conn->sock);
@@ -147,12 +81,6 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 		string group = (stringp(data->group) || intp(data->group)) ? data->group : "";
 		conn->type = data->type; conn->group = group;
 		handler->websocket_groups[group] += ({conn->sock});
-		string uid = conn->session->user->?id;
-		if (object h = uid && uid != "0" && uid != "3141592653589793" && G->G->websocket_types->prefs) {
-			//You're logged in. Provide automated preference synchronization.
-			h->websocket_groups[conn->prefs_uid = uid] += ({conn->sock});
-			call_out(h->websocket_cmd_prefs_send, 0, conn, ([]));
-		}
 	}
 	string type = has_prefix(data->cmd||"", "prefs_") ? "prefs" : conn->type;
 	if (object handler = G->G->websocket_types[type]) handler->websocket_msg(conn, data);
@@ -192,8 +120,7 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 	//End lifted from Pike's sources
 	string remote_ip = req->get_ip(); //Not available after accepting the socket for some reason
 	Protocols.WebSocket.Connection sock = req->websocket_accept(0);
-	mapping conn = (["sock": sock, //Minstrel Hall style floop
-		"session": ({ }), //Queue of requests awaiting the session
+	mapping conn = (["sock": sock, //Minstrel Hall style floop (reference loop to the socket)
 		"remote_ip": remote_ip,
 	]);
 	sock->set_id(conn);
@@ -203,9 +130,6 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 
 protected void create(string name)
 {
-	// ::create(name); subclassing, to reenstate later.
-	if (mixed id = m_delete(G->G, "http_session_cleanup")) remove_call_out(id);
-	session_cleanup();
 	register_bouncer(ws_handler); register_bouncer(ws_msg); register_bouncer(ws_close);
 
 		if (G->G->httpserver) G->G->httpserver->callback = http_handler;
