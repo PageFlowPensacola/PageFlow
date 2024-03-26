@@ -5,12 +5,15 @@ const {BUTTON, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND
 let org_id;
 let user = JSON.parse(localStorage.getItem("user") || "{}");
 
-const state = {
+
+export function socket_auth() {
+	return user?.token;
+}
+
+const localState = {
 	templates: [],
 	current_template: null,
 };
-
-ws_sync.send({cmd: "hello"});
 
 function signatory_fields(template) {
 	return FIELDSET([
@@ -28,9 +31,9 @@ function signatory_fields(template) {
 	]);
 }
 
-function template_thumbnails(template) {
+function template_thumbnails(state, template) {
 	// return P("Click on a page to view it in full size.");
-	const base_url = "/orgs/" + org_id + "/templates/" + state.current_template.id + "/pages/";
+	const base_url = "/orgs/" + org_id + "/templates/" + localState.current_template.id + "/pages/";
 	return UL({class: 'template_thumbnails'}, [
 		template.pages.map(
 			(url, idx) => LI(
@@ -43,8 +46,12 @@ function template_thumbnails(template) {
 	])
 };
 
+function hellobutton() {
+	return BUTTON({class: 'hello', }, "Hello");
+}
+
 function render() {
-		if (!user.token) {
+		if (!user?.token) {
 			return set_content("header",
 				FORM({id:"loginform"}, [
 					LABEL([
@@ -53,20 +60,21 @@ function render() {
 					LABEL([
 						"Password: ", INPUT({type: "password", name: "password"})
 					]),
-					BUTTON("Log in")
+					BUTTON("Log in"),
+					hellobutton(),
 				])
 			);
 		} // no user token end
-		set_content("header", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out")]);
-	if (state.current_template) {
-		console.log("Rendering template", state.current_template);
+		set_content("header", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
+	if (localState.current_template) {
+		console.log("Rendering template", localState.current_template);
 			set_content("main", SECTION([
-				H2(state.current_template.name),
-				state.current_template.page ?
-					P("Current page: " + state.current_template.page)
+				H2(localState.current_template.name),
+				localState.current_template.page ?
+					P("Current page: " + localState.current_template.page)
 					:
-				[signatory_fields(state.current_template),
-				template_thumbnails(state.current_template),]
+				[signatory_fields(localState.current_template),
+				template_thumbnails(localState, localState.current_template),]
 			]));
 		} else {
 			set_content("main", SECTION([
@@ -76,14 +84,14 @@ function render() {
 					INPUT({type: "submit", value: "Upload"}),
 				]),
 				UL(
-					state.templates.map((template) => LI({'class': 'specified-template', 'data-name': template.name, 'data-id': template.id},
+					localState.templates.map((template) => LI({'class': 'specified-template', 'data-name': template.name, 'data-id': template.id},
 						[template.name, " (", template.page_count, ")"]
 						) // close LI
 					) // close map
 				) // close UL
 			]))
 
-		}; // end if state template_pages (or template listing)
+		}; // end if localState template_pages (or template listing)
 
 }
 
@@ -98,19 +106,12 @@ const fetch_templates = async (org_id) => {
 	});
 	const templates = await response.json();
 	//console.log("Templates are", templates, org_id);
-	state.templates = templates;
+	localState.templates = templates;
 	render();
 }
 
 if (user.token) {
-	const userDetailsReq = await fetch("/user", {
-		headers: {
-			Authorization: "Bearer " + user.token
-		}
-	});
-	const userDetails = await userDetailsReq.json();
-	org_id = userDetails.primary_org;
-	fetch_templates(org_id);
+	get_user_details();
 }
 
 async function update_template_details(id, page) {
@@ -123,19 +124,19 @@ async function update_template_details(id, page) {
 		return;
 	}
 	const template = await resp.json();
-	state.current_template = template;
-	state.current_template.id = id;
+	localState.current_template = template;
+	localState.current_template.id = id;
 	const pagesResp = await fetch("/orgs/" + org_id + "/templates/" + id + "/pages", {
 		headers: {
 			Authorization: "Bearer " + user.token
 		}
 	});
 	const pagesUrls = await pagesResp.json();
-	state.current_template.pages = pagesUrls.pages;
+	localState.current_template.pages = pagesUrls.pages;
 	if (page) {
-		state.current_template.page = page;
+		localState.current_template.page = page;
 	}
-	console.log("Template is", state.current_template);
+	console.log("Template is", localState.current_template);
 
 	render();
 }
@@ -145,6 +146,19 @@ if (params.get("template")) {
 	update_template_details(params.get("template"), params.get("page"));
 }
 
+async function get_user_details() {
+	if (!user.token) {
+		return;
+	}
+	const userDetailsReq = await fetch("/user", {
+		headers: {
+			Authorization: "Bearer " + user.token
+		}
+	});
+	const userDetails = await userDetailsReq.json();
+	ws_group = org_id = userDetails.primary_org;
+	ws_sync.reconnect();
+}
 
 on("submit", "#loginform", async function (evt) {
 	evt.preventDefault();
@@ -155,6 +169,7 @@ on("submit", "#loginform", async function (evt) {
 	if (token) {
 		user = {email: form.email.value, token: token.token};
 		localStorage.setItem("user", JSON.stringify(user));
+		await get_user_details();
 		render();
 	} else {
 		alert("Invalid username or password");
@@ -164,6 +179,7 @@ on("submit", "#loginform", async function (evt) {
 on("click", "#logout", function () {
 	localStorage.removeItem("user");
 	user = null;
+	ws_sync.reconnect();
 	render();
 });
 
@@ -198,4 +214,8 @@ on("submit", "#template_submit", async function (e) {
 		body: DOM("#blankcontract").files[0]
 	});
 	fetch_templates(org_id);
+});
+
+on("click", ".hello", function () {
+	ws_sync.send({cmd: "hello"});
 });

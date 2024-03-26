@@ -20,7 +20,8 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 	mapping|zero result_set = sizeof(results) && results[0];
 
 	if(!result_set || !Crypto.Password.verify(req->misc->json->password, result_set->password) || !result_set->active) {
-		return (["error": 400, "type":"text/plain", "data":"Password validation failed."]);
+		// Pipe to merge two mappings: jsonify() and [("error": 400)]
+		return jsonify((["data":"Password validation failed."])) | (["error": 400]);
 	}
 
 	string jwt = Web.encode_jwt(jwt_hmac, (["email": req->misc->json->email, "iss":"https://gotagtech.com", "id": result_set->user_id]));

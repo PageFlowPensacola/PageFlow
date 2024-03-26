@@ -42,6 +42,7 @@ export function connect(group, handler)
 		reconnect_delay = 250;
 		verbose("conn", "Socket connection established.");
 		const msg = {cmd: "init", type: handler.ws_type || ws_type, group};
+		if (handler.socket_auth) msg.auth = handler.socket_auth();
 		if (redirect_host && redirect_xfr) msg.xfr = redirect_xfr;
 		socket.send(JSON.stringify(msg));
 		//NOTE: It's possible that the server is about to kick us (for any of a number of reasons,
@@ -144,6 +145,12 @@ export function connect(group, handler)
 async function init() {default_handler = await import(ws_code); connect(ws_group);}
 if (document.readyState !== "loading") init();
 else window.addEventListener("DOMContentLoaded", init);
+
+export function reconnect(sendid) {
+	const sock = send_sockets[sendid] || send_socket;
+	console.log("Reconnecting socket" + (sendid ? " " + sendid : "") + "...");
+	if (sock) sock.onclose();
+}
 
 export function send(msg, sendid) {
 	const quiet = default_handler?.ws_config?.quiet?.send;

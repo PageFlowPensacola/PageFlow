@@ -73,6 +73,9 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 		if (conn->type) return; //Can't init twice
 		object handler = G->G->websocket_types[data->type];
 		if (!handler) return; //Ignore any unknown types.
+		if (data->auth) {
+			conn->auth = Web.decode_jwt(jwt_hmac, data->auth); // will be null if invalid
+		}
 		if (string err = handler->websocket_validate(conn, data)) {
 			conn->sock->send_text(Standards.JSON.encode((["error": err])));
 			conn->sock->close(); destruct(conn->sock);
