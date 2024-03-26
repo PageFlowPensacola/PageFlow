@@ -14,7 +14,7 @@ class CompilerErrors {
 	}
 }
 
-object bootstrap(string c)
+object bootstrap(string c) // c is the code file to compile
 {
 	sscanf(explode_path(c)[-1], "%s.pike", string name);
 	program|object compiled;

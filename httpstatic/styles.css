@@ -1,7 +1,24 @@
-header {
+* {
+	box-sizing: border-box;
+}
+
+body {
+	display: flex;
+	font-family: Arial, sans-serif;
+	flex-direction: column;
+	justify-content: space-between;
+	min-height: 96vh;
+}
+
+header,
+footer {
+	flex-grow: 0;
 	background-color: #333;
 	color: white;
 	padding: 10px;
+}
+
+header {
 	height: 80px;
 	display: flex;
 	justify-content: space-between;
@@ -9,21 +26,13 @@ header {
 }
 
 footer {
-	background-color: #333;
-	color: white;
 	padding: 10px;
 	height: 40px;
 }
 
-body {
-	font-family: Arial, sans-serif;
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	min-height: 96vh;
-}
 
 main {
+	flex-grow: 1;
 	margin: 20px auto;
 	max-width: calc(100% - 80px);
 	border: 1px solid #ccc;

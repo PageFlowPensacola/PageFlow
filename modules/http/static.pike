@@ -59,8 +59,6 @@ mapping(string:mixed)|Concurrent.Future http_request(Protocols.HTTP.Server.Reque
 //Handle /favicon.ico as if it were /static/favicon.ico
 mapping(string:mixed) favicon(Protocols.HTTP.Server.Request req) {return http_request(req, "favicon.ico");}
 
-mapping index(Protocols.HTTP.Server.Request req) {return http_request(req, "index.html");}
-
 string staticfile(string fn)
 {
 	//Not perfect but a lot better than nothing: add a cache-break marker
@@ -74,5 +72,5 @@ string staticfile(string fn)
 protected void create(string name) {
 	::create(name);
 	G->G->http_endpoints["favicon.ico"] = favicon;
-	G->G->http_endpoints[""] = index;
+	G->G->template_defaults["static"] = staticfile;
 }
