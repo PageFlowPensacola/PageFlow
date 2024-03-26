@@ -1,3 +1,36 @@
+header {
+	background-color: #333;
+	color: white;
+	padding: 10px;
+	height: 80px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+footer {
+	background-color: #333;
+	color: white;
+	padding: 10px;
+	height: 40px;
+}
+
+body {
+	font-family: Arial, sans-serif;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	min-height: 96vh;
+}
+
+main {
+	margin: 20px auto;
+	max-width: calc(100% - 80px);
+	border: 1px solid #ccc;
+	padding: 20px;
+	min-height: 400px;
+}
+
 main li {
 	margin-left: 10px;
 	cursor: pointer;
