@@ -197,11 +197,6 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 		"remote_ip": remote_ip,
 	]);
 	sock->set_id(conn);
-	G->G->DB->load_session(req->cookies->session)->then() {
-		array pending = conn->session;
-		conn->session = __ARGS__[0];
-		if (sizeof(pending)) ws_msg(pending[*], conn);
-	};
 	sock->onmessage = ws_msg;
 	sock->onclose = ws_close;
 }
