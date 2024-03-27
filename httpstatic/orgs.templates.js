@@ -1,14 +1,10 @@
-import {choc, set_content, on, DOM} from "https://rosuav.github.io/choc/factory.js";
-const {BUTTON, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, P, SECTION, UL} = choc; //autoimport
+import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
+const {BUTTON, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, P, SECTION, UL} = choc; //autoimport
 
 // TODO return user orgs on login. For now, hardcode the org ID.
 let org_id;
 let user = JSON.parse(localStorage.getItem("user") || "{}");
 let stateSnapshot = {};
-
-export function socket_auth() {
-	return user?.token;
-}
 
 const localState = {
 	templates: [],
@@ -16,6 +12,106 @@ const localState = {
 	pages: [],
 	current_page: null,
 };
+
+const canvas = choc.CANVAS({width:300, height:450});
+const ctx = canvas.getContext('2d');
+
+const pageImage = new Image();
+// repaint canvas when image is loaded
+pageImage.onload = repaint;
+
+let rect_start_x = 0;
+let rect_start_y = 0;
+let rect_end_x = 0;
+let rect_end_y = 0;
+let currently_dragging = false;
+let currentPage = 0;
+let hovering = -1;
+
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  currently_dragging = true;
+  rect_start_x = rect_end_x = e.offsetX;
+  rect_start_y = rect_end_y = e.offsetY;
+  e.target.setPointerCapture(e.pointerId);
+  repaint();
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (currently_dragging) {
+    rect_end_x = e.offsetX;
+    rect_end_y = e.offsetY;
+    repaint();
+  }
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  currently_dragging = false;
+  e.target.releasePointerCapture(e.pointerId);
+  let left = Math.min(rect_start_x, rect_end_x);
+  let top = Math.min(rect_start_y, rect_end_y);
+  let right = Math.max(rect_start_x, rect_end_x);
+  let bottom = Math.max(rect_start_y, rect_end_y);
+  // Now clamp to the canvas
+
+  left = Math.max(Math.min(left, e.target.width), 0) / e.target.width;
+  top = Math.max(Math.min(top, e.target.height), 0) / e.target.height;
+  right = Math.max(Math.min(right, e.target.width), 0) / e.target.width;
+  bottom = Math.max(Math.min(bottom, e.target.height), 0) / e.target.height;
+  if (right - left < .01 || bottom - top < .01) return;
+  ws_sync.send({
+    "cmd": "add_rect",
+    "rect": {
+      left, top, right, bottom
+    },
+    "page": 0,
+  });
+});
+
+function repaint() {
+  canvas.width = pageImage.width;
+  canvas.height = pageImage.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Draw stuff here
+	ctx.drawImage(pageImage, 0, 0);
+	return;
+  for (const [idx, rect] of stateSnapshot.pages[currentPage].rects.entries()) {
+    ctx.fillStyle = +hovering === idx ? "#ff88" : "#00f8";
+    const left = rect.left * canvas.width;
+    const top = rect.top * canvas.height;
+    const width = (rect.right - rect.left) * canvas.width;
+    const height = (rect.bottom - rect.top) * canvas.height;
+    ctx.fillRect(
+      left,
+      top,
+      width,
+      height
+    );
+    ctx.strokeStyle = "#00f";
+    ctx.strokeRect(
+      left,
+      top,
+      width,
+      height
+    );
+  }
+  if (currently_dragging) {
+    ctx.strokeStyle = "#f00";
+    ctx.lineWidth = 3;
+    ctx.fillStyle = "#0f08";
+    ctx.fillRect(
+      rect_start_x,
+      rect_start_y,
+      rect_end_x - rect_start_x,
+      rect_end_y - rect_start_y
+    );
+  }
+}
+
+export function socket_auth() {
+	return user?.token;
+}
+
 
 function signatory_fields(template) {
 	return FIELDSET([
@@ -68,10 +164,27 @@ export function render(state) {
 		set_content("header", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
 	if (state.page_count) {
 		console.log("Rendering template", state);
+		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page]) {
+			pageImage.src = localState.pages[localState.current_page];
+		}
 			set_content("main", SECTION([
 				H2(state.name),
 				localState.current_page ?
-					P("Current page: " + localState.current_page)
+					[
+						P("Current page: " + localState.current_page),
+
+						DIV([
+							canvas,
+							SECTION([
+							UL([
+								/* stateSnapshot.pages[currentPage].rects */[].map((rect, idx) => LI({'class': 'rect-item', 'data-rectindex': idx}, [
+									INPUT({class: 'reclabel', type: "text", value: rect.label || ""}),
+									LABEL(["Initials", INPUT({class: "initials", type: "checkbox", checked: !!rect.initials})]),
+									BUTTON({class: 'delete'}, "x")
+								]))
+							])
+						])]),
+					]
 					:
 				[signatory_fields(state),
 						UL({id: 'template_thumbnails'}, [
@@ -117,6 +230,7 @@ if (user.token) {
 }
 
 async function update_template_details(id) {
+	localState.current_template = id;
 	ws_sync.reconnect(null, ws_group = `${org_id}:${id}`);
 	localState.pages = [];
 	const resp = await fetch(`/orgs/${org_id}/templates/${id}/pages`, {
@@ -179,7 +293,7 @@ on("change", "#blankcontract", async function (e) {
 });
 
 on("click", ".specified-template", async function (e) {
-	history.replaceState(null, null, "#template-" + e.match.dataset.id);
+	history.replaceState(null, null, "#template=" + e.match.dataset.id);
 	update_template_details(e.match.dataset.id);
 });
 
@@ -206,7 +320,7 @@ on("submit", "#template_submit", async function (e) {
 
 on("click", "#template_thumbnails figure", function (e) {
 	localState.current_page = e.match.dataset.idx;
-	history.replaceState(null, null, "#template-" + localState.current_template + "-page-" + localState.current_page);
+	history.replaceState(null, null, "#template=" + localState.current_template + "&page=" + localState.current_page);
 
 	render(stateSnapshot);
 });
