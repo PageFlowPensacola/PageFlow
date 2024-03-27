@@ -3,7 +3,6 @@ inherit http_endpoint;
 
 mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req, string tail) {
 
-	if(!req->misc->auth) return (["error": 403]);
 	// Generally path_variables is an array of alternating keys and values
 	// For example, if the path is /org/1/department/2/employee/3
 	// then path_variables = ({"org", "1", "department", "2", "employee", "3"})
@@ -31,9 +30,17 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	//werror("keystring: %O\n", keystring);
 
 	object handler = G->G->restful_endpoints[keystring];
+
 	if(!handler) {
 		return 0;
 	}
+
+	if (req->request_type != "GET"
+		|| !handler->unauthenticated_landing_page
+		|| !sizeof(residual_key)) {
+			if(!req->misc->auth) return (["error": 403]);
+	}
+
 	// If there is no residual key, there's no val for final key
 	if (!sizeof(residual_key)) {
 		if (req->request_type == "GET") {

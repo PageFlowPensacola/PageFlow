@@ -50,7 +50,8 @@ function hellobutton() {
 	return BUTTON({class: 'hello', }, "Hello");
 }
 
-function render() {
+export function render(state) {
+	console.log("Rendering with state", state);
 		if (!user?.token) {
 			return set_content("header",
 				FORM({id:"loginform"}, [
@@ -67,14 +68,14 @@ function render() {
 		} // no user token end
 		set_content("header", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
 	if (localState.current_template) {
-		console.log("Rendering template", localState.current_template);
+		console.log("Rendering template", state.current_template);
 			set_content("main", SECTION([
-				H2(localState.current_template.name),
-				localState.current_template.page ?
-					P("Current page: " + localState.current_template.page)
+				H2(state.current_template.name),
+				state.current_template.page ?
+					P("Current page: " + state.current_template.page)
 					:
-				[signatory_fields(localState.current_template),
-				template_thumbnails(localState, localState.current_template),]
+				[signatory_fields(state.current_template),
+				template_thumbnails(state, state.current_template),]
 			]));
 		} else {
 			set_content("main", SECTION([
@@ -84,18 +85,17 @@ function render() {
 					INPUT({type: "submit", value: "Upload"}),
 				]),
 				UL(
-					localState.templates.map((template) => LI({'class': 'specified-template', 'data-name': template.name, 'data-id': template.id},
+					state.templates.map((template) => LI({'class': 'specified-template', 'data-name': template.name, 'data-id': template.id},
 						[template.name, " (", template.page_count, ")"]
 						) // close LI
 					) // close map
 				) // close UL
 			]))
 
-		}; // end if localState template_pages (or template listing)
+		}; // end if state template_pages (or template listing)
 
 }
 
-render();
 
 const fetch_templates = async (org_id) => {
 	//console.log("Fetching templates for org", org_id);
@@ -107,7 +107,6 @@ const fetch_templates = async (org_id) => {
 	const templates = await response.json();
 	//console.log("Templates are", templates, org_id);
 	localState.templates = templates;
-	render();
 }
 
 if (user.token) {
@@ -138,7 +137,6 @@ async function update_template_details(id, page) {
 	}
 	console.log("Template is", localState.current_template);
 
-	render();
 }
 
 const params = new URLSearchParams(window.location.hash.slice(1));
@@ -170,7 +168,6 @@ on("submit", "#loginform", async function (evt) {
 		user = {email: form.email.value, token: token.token};
 		localStorage.setItem("user", JSON.stringify(user));
 		await get_user_details();
-		render();
 	} else {
 		alert("Invalid username or password");
 	}
@@ -180,7 +177,6 @@ on("click", "#logout", function () {
 	localStorage.removeItem("user");
 	user = null;
 	ws_sync.reconnect();
-	render();
 });
 
 on("change", "#blankcontract", async function (e) {
