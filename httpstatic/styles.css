@@ -49,13 +49,13 @@ main ul {
 	list-style-type: none;
 }
 
-.template_thumbnails {
+#template_thumbnails {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 1em;
 }
 
-.template_thumbnails img {
+#template_thumbnails img {
 	max-width: 200px;
 	cursor: pointer;
 }

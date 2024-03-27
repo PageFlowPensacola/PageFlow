@@ -3,11 +3,12 @@ inherit websocket_handler;
 
 string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	if (!conn->auth && msg->group != "") return "Not logged in";
+	// TODO check for user org access
 }
 
 constant unauthenticated_landing_page = 1;
 
-constant markdown = #"# PageFlow Index Screen
+constant markdown = #"# Templates Listing
 
 ";
 
@@ -17,6 +18,11 @@ void websocket_cmd_hello(mapping(string:mixed) conn, mapping(string:mixed) msg) 
 
 // Called on connection and update.
 __async__ mapping get_state(string|int group, string|void id, string|void type){
+	werror("get_state: %O %O %O\n", group, id, type);
+	sscanf(group, "%d:%d", int org, int template);
+	if (template){
+		return await(template_details(org, template));
+	}
 	array(mapping) templates = await(G->G->DB->get_templates_for_org(group));
 	return (["templates":templates]);
 }
@@ -32,30 +38,31 @@ __async__ mapping(string:mixed)|string handle_list(Protocols.HTTP.Server.Request
 	]));
 };
 
-__async__ mapping(string:mixed)|string|Concurrent.Future handle_detail(Protocols.HTTP.Server.Request req, string org, string template_id) {
+__async__ mapping(string:mixed)|string|Concurrent.Future template_details(int org, int template_id) {
 	if (! (int) org) return ([ "error": 403 ]);
 	if (!template_id) return 0;
 	mapping details = await(G->G->DB->run_pg_query(#"
-		SELECT t.name as template_name, p.page_number as page_number
-		FROM templates t
-		JOIN template_pages p ON t.id = p.template_id
-		WHERE t.id = :template_id
-		AND t.primary_org_id = :org_id
+		SELECT name,
+		(SELECT count(*)
+		FROM template_pages
+		WHERE template_id = :template_id)
+		FROM templates
+		WHERE primary_org_id = :org_id
 	", (["org_id":org, "template_id":template_id])));
 
 	mapping template = (
 		[
 			"name": details[0]->template_name,
-			"pages": details->page_number, // Pike Automapping
+			"page_count": details[0]->count,
 			"signatories": await(G->G->DB->run_pg_query(#"
-		SELECT s.name as signatory_field
-		FROM template_signatories s
-		JOIN templates t ON s.template_id = t.id
-		WHERE t.id = :template_id
-		AND t.primary_org_id = :org_id
+			SELECT s.name as signatory_field
+			FROM template_signatories s
+			JOIN templates t ON s.template_id = t.id
+			WHERE t.id = :template_id
+			AND t.primary_org_id = :org_id
 	", (["org_id":org, "template_id":template_id])))
 		]);
-	return jsonify(template);
+	return template;
 
 };
 

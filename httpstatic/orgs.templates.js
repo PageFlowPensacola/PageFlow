@@ -13,6 +13,7 @@ export function socket_auth() {
 const localState = {
 	templates: [],
 	current_template: null,
+	pages: [],
 };
 
 function signatory_fields(template) {
@@ -31,11 +32,8 @@ function signatory_fields(template) {
 	]);
 }
 
-function template_thumbnails(state, template) {
-	// return P("Click on a page to view it in full size.");
-	const base_url = "/orgs/" + org_id + "/templates/" + localState.current_template.id + "/pages/";
-	return UL({class: 'template_thumbnails'}, [
-		template.pages.map(
+function template_thumbnails() {
+	return localState.pages.map(
 			(url, idx) => LI(
 				FIGURE([
 					IMG({src: url, alt: "Page " + (idx + 1)}),
@@ -43,7 +41,6 @@ function template_thumbnails(state, template) {
 				])
 			)
 		)
-	])
 };
 
 function hellobutton() {
@@ -67,17 +64,21 @@ export function render(state) {
 			);
 		} // no user token end
 		set_content("header", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
-	if (localState.current_template) {
-		console.log("Rendering template", state.current_template);
+	if (state.page_count) {
+		console.log("Rendering template", state);
 			set_content("main", SECTION([
-				H2(state.current_template.name),
-				state.current_template.page ?
-					P("Current page: " + state.current_template.page)
+				H2(state.name),
+				localState.page ?
+					P("Current page: " + localState.page)
 					:
-				[signatory_fields(state.current_template),
-				template_thumbnails(state, state.current_template),]
+				[signatory_fields(state),
+						UL({id: 'template_thumbnails'}, [
+							template_thumbnails(),
+						]),
+				]
 			]));
-		} else {
+	}
+	if (state.templates) {
 			set_content("main", SECTION([
 				FORM({id: "template_submit"},[
 					INPUT({value: "", id: "newTemplateName"}),
@@ -113,36 +114,20 @@ if (user.token) {
 	get_user_details();
 }
 
-async function update_template_details(id, page) {
-	const resp = await fetch("/orgs/" + org_id + "/templates/" + id, {
+async function update_template_details(id) {
+	ws_sync.reconnect(null, ws_group = `${org_id}:${id}`);
+	console.log("Fetching template details for GROUP", ws_group);
+	localState.pages = [];
+	const resp = await fetch(`/orgs/${org_id}/templates/${id}/pages`, {
 		headers: {
 			Authorization: "Bearer " + user.token
 		}
 	});
-	if (!resp.ok) {
-		return;
-	}
-	const template = await resp.json();
-	localState.current_template = template;
-	localState.current_template.id = id;
-	const pagesResp = await fetch("/orgs/" + org_id + "/templates/" + id + "/pages", {
-		headers: {
-			Authorization: "Bearer " + user.token
-		}
-	});
-	const pagesUrls = await pagesResp.json();
-	localState.current_template.pages = pagesUrls.pages;
-	if (page) {
-		localState.current_template.page = page;
-	}
-	console.log("Template is", localState.current_template);
-
+	localState.pages = await resp.json();
+	set_content("#template_thumbnails", template_thumbnails());
 }
 
 const params = new URLSearchParams(window.location.hash.slice(1));
-if (params.get("template")) {
-	update_template_details(params.get("template"), params.get("page"));
-}
 
 async function get_user_details() {
 	if (!user.token) {
@@ -154,8 +139,12 @@ async function get_user_details() {
 		}
 	});
 	const userDetails = await userDetailsReq.json();
-	ws_group = org_id = userDetails.primary_org;
-	ws_sync.reconnect();
+	org_id = userDetails.primary_org;
+	if (params.get("template")) {
+		update_template_details(params.get("template"), params.get("page"));
+	} else {
+		ws_sync.reconnect(null, ws_group = org_id);
+	}
 }
 
 on("submit", "#loginform", async function (evt) {
@@ -188,6 +177,7 @@ on("change", "#blankcontract", async function (e) {
 });
 
 on("click", ".specified-template", async function (e) {
+	history.replaceState(null, null, "#template-" + e.match.dataset.id);
 	update_template_details(e.match.dataset.id);
 });
 
