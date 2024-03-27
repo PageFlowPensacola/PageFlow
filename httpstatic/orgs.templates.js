@@ -4,7 +4,7 @@ const {BUTTON, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND
 // TODO return user orgs on login. For now, hardcode the org ID.
 let org_id;
 let user = JSON.parse(localStorage.getItem("user") || "{}");
-
+let stateSnapshot = {};
 
 export function socket_auth() {
 	return user?.token;
@@ -14,6 +14,7 @@ const localState = {
 	templates: [],
 	current_template: null,
 	pages: [],
+	current_page: null,
 };
 
 function signatory_fields(template) {
@@ -35,7 +36,7 @@ function signatory_fields(template) {
 function template_thumbnails() {
 	return localState.pages.map(
 			(url, idx) => LI(
-				FIGURE([
+				FIGURE({"data-idx": idx}, [
 					IMG({src: url, alt: "Page " + (idx + 1)}),
 					FIGCAPTION(["Page: ", (idx + 1)])
 				])
@@ -48,6 +49,7 @@ function hellobutton() {
 }
 
 export function render(state) {
+	stateSnapshot = state;
 	console.log("Rendering with state", state);
 		if (!user?.token) {
 			return set_content("header",
@@ -68,8 +70,8 @@ export function render(state) {
 		console.log("Rendering template", state);
 			set_content("main", SECTION([
 				H2(state.name),
-				localState.page ?
-					P("Current page: " + localState.page)
+				localState.current_page ?
+					P("Current page: " + localState.current_page)
 					:
 				[signatory_fields(state),
 						UL({id: 'template_thumbnails'}, [
@@ -116,7 +118,6 @@ if (user.token) {
 
 async function update_template_details(id) {
 	ws_sync.reconnect(null, ws_group = `${org_id}:${id}`);
-	console.log("Fetching template details for GROUP", ws_group);
 	localState.pages = [];
 	const resp = await fetch(`/orgs/${org_id}/templates/${id}/pages`, {
 		headers: {
@@ -141,7 +142,8 @@ async function get_user_details() {
 	const userDetails = await userDetailsReq.json();
 	org_id = userDetails.primary_org;
 	if (params.get("template")) {
-		update_template_details(params.get("template"), params.get("page"));
+		update_template_details(params.get("template"));
+		localState.current_page = params.get("page");
 	} else {
 		ws_sync.reconnect(null, ws_group = org_id);
 	}
@@ -200,6 +202,13 @@ on("submit", "#template_submit", async function (e) {
 		body: DOM("#blankcontract").files[0]
 	});
 	fetch_templates(org_id);
+});
+
+on("click", "#template_thumbnails figure", function (e) {
+	localState.current_page = e.match.dataset.idx;
+	history.replaceState(null, null, "#template-" + localState.current_template + "-page-" + localState.current_page);
+
+	render(stateSnapshot);
 });
 
 on("click", ".hello", function () {

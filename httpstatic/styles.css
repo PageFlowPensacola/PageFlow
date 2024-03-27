@@ -59,3 +59,11 @@ main ul {
 	max-width: 200px;
 	cursor: pointer;
 }
+
+#template_thumbnails figure {
+	cursor: pointer;
+}
+
+#template_thumbnails figure:hover {
+	background-color: #f9f9f9;
+}
