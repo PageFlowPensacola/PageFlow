@@ -2,7 +2,7 @@ inherit restful_endpoint;
 inherit websocket_handler;
 
 string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	msg["group"] = (string) msg["group"];
+	if (string err = ::websocket_validate(conn, msg)) return err;
 	if (!conn->auth && msg->group != "") return "Not logged in";
 	// TODO check for user org access
 }
@@ -97,7 +97,7 @@ __async__ mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols
 
 	await(G->G->DB->run_pg_query(query, bindings));
 
-	send_updates_all(org);
+	send_updates_all(org + ":");
 	send_updates_all(org + ":" + template);
 
 	return (["error": 204]);

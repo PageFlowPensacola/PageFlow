@@ -64,7 +64,6 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 		);
 
 		mapping results = await(G->G->DB->run_pg_query(query, bindings));
-		werror("results: %O\n", results);
 	} // end while data (pages)
 	// Update the template record with the number of pages
 	string query = #"
@@ -75,6 +74,6 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 	";
 	mapping bindings = (["template_id":req->variables->template_id, "page_count":count]);
 	array(mapping) primary_org_ids = await(G->G->DB->run_pg_query(query, bindings));
-	G->G->websocket_types["orgs.templates"]->send_updates_all((string) primary_org_ids[0]->primary_org_id);
+	G->G->websocket_types["orgs.templates"]->send_updates_all(primary_org_ids[0]->primary_org_id + ":");
 	return sprintf("%d pages uploaded\n", count);
 };

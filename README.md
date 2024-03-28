@@ -67,3 +67,7 @@ constant markdown = #"# PageFlow Index Screen
 
 Markdown can be rendered directly via the http module (`index.pike`, etc), or via
 a `.md` file with matching name. The one in the pike file takes precedence.
+
+### Websockets
+
+Group will always follow pattern: {org:item?}

@@ -220,7 +220,11 @@ class websocket_handler {
 
 	//Override to validate any init requests. Return 0 to allow the socket
 	//establishment, or an error message.
-	string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) { }
+	string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+		sscanf((string)msg->group, "%d:%s", int org, string subgroup);
+		if (!org) return "Bad group";
+		msg->group = sprintf("%d:%s", org, subgroup || "");
+	 }
 
 	//If msg->cmd is "init", it's a new client and base processing has already been done.
 	//If msg is 0, a client has disconnected and is about to be removed from its group.
@@ -232,6 +236,7 @@ class websocket_handler {
 	}
 
 	void websocket_cmd_chgrp(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+		werror("chgrp %O %O\n", conn, msg);
 		if (websocket_validate(conn, msg)) return;
 		websocket_groups[conn->group] -= ({conn->sock});
 		websocket_groups[conn->group = msg->group] += ({conn->sock});
