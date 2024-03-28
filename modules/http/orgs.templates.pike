@@ -17,6 +17,58 @@ void websocket_cmd_hello(mapping(string:mixed) conn, mapping(string:mixed) msg) 
 	werror("Got a hello! %O\n", conn->auth);
 }
 
+__async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	werror("Got a conn! %O\n and a signatory %O\n", conn, msg);
+	sscanf((string)conn->group, "%d:%d", int org, int template);
+	werror("org: %O, template: %O\n", org, template);
+	// If we receive an id, make it an update
+	if (msg->id) {
+		await(G->G->DB->run_pg_query(#"
+			UPDATE template_signatories
+			SET name = :name
+			WHERE id = :id
+			RETURNING id", ([
+				"id": msg->id,
+				"name": msg->name
+			])));
+	} else {
+		// Otherwise, insert a new one
+		await(G->G->DB->run_pg_query(#"
+			INSERT INTO template_signatories (
+				template_id, name
+			)
+			VALUES (:template_id, :name)
+			RETURNING id", ([
+				"template_id": template,
+				"name": msg->name
+			])));
+	}
+	G->G->websocket_types["orgs.templates"]->send_updates_all(org + ":" + template);
+}
+
+__async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	werror("Got a conn! %O\n and a rect %O\n", conn, msg);
+
+	sscanf((string)conn->group, "%d:%d", int org, int template);
+	int page = msg->page;
+	await(G->G->DB->run_pg_query(#"
+		INSERT INTO audit_rects (
+			template_id, x1, y1, x2, y2, page_number, audit_type, template_signatory_id
+		)
+		VALUES (:template_id, :x1, :y1, :x2, :y2, :page_number, :audit_type, :signatory_id)
+		RETURNING id", ([
+			"template_id": template,
+			"x1": msg->rect->left,
+			"y1": msg->rect->top,
+			"x2": msg->rect->right,
+			"y2": msg->rect->bottom,
+			"page_number": page,
+			"audit_type": "rect",
+			"signatory_id": msg->signatory_id
+		])));
+	G->G->websocket_types["orgs.templates"]->send_updates_all(org + ":" + template);
+}
+
 // Called on connection and update.
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	werror("get_state: %O %O %O\n", group, id, type);
@@ -53,7 +105,7 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 
 	mapping template = (
 		[
-			"name": details[0]->template_name,
+			"name": details[0]->name,
 			"page_count": details[0]->count,
 
 			"signatories": await(G->G->DB->run_pg_query(#"

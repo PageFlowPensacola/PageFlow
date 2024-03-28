@@ -27,7 +27,6 @@ let rect_start_y = 0;
 let rect_end_x = 0;
 let rect_end_y = 0;
 let currently_dragging = false;
-let currentPage = 0;
 let hovering = -1;
 
 canvas.addEventListener('pointerdown', (e) => {
@@ -66,7 +65,7 @@ canvas.addEventListener('pointerup', (e) => {
     "rect": {
       left, top, right, bottom
     },
-    "page": 0,
+    "page": localState.current_page
   });
 });
 
@@ -76,8 +75,7 @@ function repaint() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   // Draw stuff here
 	ctx.drawImage(pageImage, 0, 0);
-	return;
-  for (const [idx, rect] of stateSnapshot.pages[currentPage].rects.entries()) {
+  for (const [idx, rect] of stateSnapshot.rects.entries()) {
     ctx.fillStyle = +hovering === idx ? "#ff88" : "#00f8";
     const left = rect.left * canvas.width;
     const top = rect.top * canvas.height;
@@ -116,12 +114,13 @@ export function socket_auth() {
 
 
 function signatory_fields(template) {
+	console.log("Rendering signatory fields", template);
 	return FIELDSET([
 		LEGEND("Potential Signatories"),
 		UL({class: 'signatory_fields'}, [
 			template.signatories?.map(
 				(field) => LI(
-					LABEL(INPUT({class: 'signatory-field', 'data-id': field.id, type: 'text', value: field.signatory_field})),
+					LABEL(INPUT({class: 'signatory-field', 'data-id': field.signatory_id, type: 'text', value: field.signatory_field})),
 				)
 			),
 			LI(
@@ -134,7 +133,7 @@ function signatory_fields(template) {
 function template_thumbnails() {
 	return localState.pages.map(
 			(url, idx) => LI(
-				FIGURE({"data-idx": idx}, [
+				FIGURE({"data-idx": idx + 1}, [
 					IMG({src: url, alt: "Page " + (idx + 1)}),
 					FIGCAPTION(["Page: ", (idx + 1)])
 				])
@@ -356,6 +355,12 @@ on("click", ".delete-template", simpleconfirm("Delete this template", async func
 		}
 	});
 }));
+
+on('change', '.signatory-field', (e) => {
+	const id = e.match.dataset.id;
+	console.log("Setting signatory", id, e.match.value);
+	ws_sync.send({"cmd": "set_signatory", "id": +id, "name": e.match.value});
+});
 
 on("click", ".hello", function () {
 	ws_sync.send({cmd: "hello"});
