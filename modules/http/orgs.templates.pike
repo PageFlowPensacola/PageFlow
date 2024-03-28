@@ -55,13 +55,20 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 		[
 			"name": details[0]->template_name,
 			"page_count": details[0]->count,
+
 			"signatories": await(G->G->DB->run_pg_query(#"
-			SELECT s.name as signatory_field
+			SELECT s.name as signatory_field,
+			s.id as signatory_id
 			FROM template_signatories s
 			JOIN templates t ON s.template_id = t.id
 			WHERE t.id = :template_id
 			AND t.primary_org_id = :org_id
-	", (["org_id":org, "template_id":template_id])))
+	", (["org_id":org, "template_id":template_id]))),
+
+			"rects": await(G->G->DB->run_pg_query(#"
+			SELECT x1, y1, x2, y2, page_number, audit_type
+			FROM audit_rects
+			WHERE template_id = :template_id", (["template_id":template_id])))
 		]);
 	return template;
 
