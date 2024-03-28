@@ -85,8 +85,23 @@ __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols
 	//string template_name = req->body_raw->name;
 	return jsonify(result[0]);
 };
+
 mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string org, string template) { };
-mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols.HTTP.Server.Request req, string org, string template) { };
+
+__async__ mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols.HTTP.Server.Request req, string org, string template) {
+	string query = #"
+		DELETE FROM templates
+		WHERE id = :template
+		AND primary_org_id = :org";
+	mapping bindings = (["org":org, "template":template]);
+
+	await(G->G->DB->run_pg_query(query, bindings));
+
+	send_updates_all(org);
+	send_updates_all(org + ":" + template);
+
+	return (["error": 204]);
+};
 
 
 // Due to a quirk in Pike, multiple inheritance
