@@ -65,23 +65,16 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 
 		mapping results = await(G->G->DB->run_pg_query(query, bindings));
 		werror("results: %O\n", results);
-		// TODO support specifying the org
-		/* mapping s3 = await(run_promise(({"aws", "s3", "cp", "-", sprintf("s3://%s/%d/templatepage2.png", G->G->instance_config->aws->pdf_bucket_name, user->primary_org), }),
-			(["stdin": current_page,
-				"env": getenv() | ([
-				"AWS_ACCESS_KEY_ID": G->G->instance_config->aws->key_id,
-				"AWS_SECRET_ACCESS_KEY": G->G->instance_config->aws->secret,
-				"AWS_DEFAULT_REGION": G->G->instance_config->aws->region
-			])])));
-			werror("s3: %O\n", s3); */
 	} // end while data (pages)
 	// Update the template record with the number of pages
 	string query = #"
 		UPDATE templates
 		SET page_count = :page_count
 		WHERE id = :template_id
+		RETURNING primary_org_id
 	";
 	mapping bindings = (["template_id":req->variables->template_id, "page_count":count]);
-	await(G->G->DB->run_pg_query(query, bindings));
+	array(mapping) primary_org_ids = await(G->G->DB->run_pg_query(query, bindings));
+	G->G->websocket_types["orgs.templates"]->send_updates_all((string) primary_org_ids[0]->primary_org_id);
 	return sprintf("%d pages uploaded\n", count);
 };
