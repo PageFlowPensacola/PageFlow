@@ -28,7 +28,4 @@ add user_org joins to relevant queries to authorize user has access to this org
 
 Ability to load multiple template pages tabs.
 Return actual minified thumbnails.
-
-Back button (clear some state)
-Style header
-Add footer
+Manage broken/non PDF submissions
