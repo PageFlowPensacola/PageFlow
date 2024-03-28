@@ -12,6 +12,7 @@ const localState = {
 	current_template: null,
 	pages: [],
 	current_page: null,
+	uploading: 0,
 };
 
 const canvas = choc.CANVAS({width:300, height:450});
@@ -163,7 +164,8 @@ export function render(state) {
 			);
 		} // no user token end
 		set_content("#pageheader", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
-	if (state.page_count) {
+	if (typeof (state.page_count) === 'number') {
+		// If it got neither a non-zero page count or a template, it wasn't (re)rendering anything.
 		console.log("Rendering template", state);
 		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page]) {
 			pageImage.src = localState.pages[localState.current_page];
@@ -196,16 +198,23 @@ export function render(state) {
 			]));
 	}
 	if (state.templates) {
+		console.log("Rendering template listing", localState, localState.uploading);
 			set_content("main", SECTION([
-				FORM({id: "template_submit"},[
+				FORM({id: "template_submit"}, [
 					INPUT({value: "", id: "newTemplateName"}),
 					INPUT({id: "blankcontract", type: "file", accept: "image/pdf"}),
+					localState.uploading && P({style: "display:inline"}, "Uploading... "),
 					INPUT({type: "submit", value: "Upload"}),
 				]),
 				UL(
 					state.templates.map((template) => LI({class: 'template-item'},
 						[
-							SPAN({'class': 'specified-template', 'data-name': template.name, 'data-id': template.id},
+							SPAN({
+								class: 'specified-template',
+								'data-name': template.name,
+								'data-id': template.id,
+								title: "Click to view template " + template.id
+							},
 								[
 									template.name,
 									" (", template.page_count, ")"
@@ -219,19 +228,6 @@ export function render(state) {
 
 		}; // end if state template_pages (or template listing)
 
-}
-
-
-const fetch_templates = async (org_id) => {
-	//console.log("Fetching templates for org", org_id);
-	const response = await fetch("/orgs/" + org_id + "/templates", {
-		headers: {
-			Authorization: "Bearer " + user.token
-		}
-	});
-	const templates = await response.json();
-	//console.log("Templates are", templates, org_id);
-	localState.templates = templates;
 }
 
 if (user.token) {
@@ -319,13 +315,17 @@ on("click", ".specified-template", async function (e) {
 
 on("submit", "#template_submit", async function (e) {
 	e.preventDefault();
+	const submittedFile = DOM("#blankcontract").files[0];
+	const fileName = DOM("#newTemplateName").value;
+	localState.uploading++;
+	render(stateSnapshot);
 	let resp = await fetch("/orgs/" + org_id + "/templates", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
 			Authorization: "Bearer " + user.token
 		},
-		body: JSON.stringify({name: DOM("#newTemplateName").value})
+		body: JSON.stringify({name: fileName})
 	});
 	const template_info = await resp.json();
 	resp = await fetch(`/upload?template_id=${template_info.id}`, {
@@ -333,9 +333,10 @@ on("submit", "#template_submit", async function (e) {
 		headers: {
 			Authorization: "Bearer " + user.token
 		},
-		body: DOM("#blankcontract").files[0]
+		body: submittedFile
 	});
-	fetch_templates(org_id);
+	localState.uploading--;
+	render(stateSnapshot);
 });
 
 on("click", "#template_thumbnails figure", function (e) {
@@ -353,7 +354,6 @@ on("click", ".delete-template", simpleconfirm("Delete this template", async func
 			Authorization: "Bearer " + user.token
 		}
 	});
-	fetch_templates(org_id);
 }));
 
 on("click", ".hello", function () {
