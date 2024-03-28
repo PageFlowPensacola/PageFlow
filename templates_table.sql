@@ -7,7 +7,7 @@ CREATE TABLE templates (
 );
 
 CREATE TABLE template_pages (
-	template_id int NOT NULL REFERENCES templates,
+	template_id int NOT NULL REFERENCES templates ON DELETE CASCADE,
 	page_number smallint NOT NULL,
 	page_data BYTEA NOT NULL
 );
@@ -15,7 +15,7 @@ CREATE TABLE template_pages (
 CREATE TABLE template_signatories (
 	id BIGSERIAL PRIMARY KEY,
 	name varchar NOT NULL,
-	template_id int NOT NULL REFERENCES templates
+	template_id int NOT NULL REFERENCES templates ON DELETE CASCADE
 );
 
 CREATE TABLE audit_rects (
@@ -25,7 +25,7 @@ CREATE TABLE audit_rects (
   y1 smallint NOT NULL,
   x2 smallint NOT NULL,
   y2 smallint NOT NULL,
-	template_id int NOT NULL REFERENCES templates,
+	template_id int NOT NULL REFERENCES templates ON DELETE CASCADE,
   name varchar DEFAULT NULL,
-  template_signatory_id int NOT NULL REFERENCES template_signatories
+  template_signatory_id int NOT NULL REFERENCES template_signatories ON DELETE CASCADE
 );
