@@ -120,7 +120,12 @@ function signatory_fields(template) {
 		UL({class: 'signatory_fields'}, [
 			template.signatories?.map(
 				(field) => LI(
-					LABEL(INPUT({class: 'signatory-field', 'data-id': field.signatory_id, type: 'text', value: field.signatory_field})),
+					[
+						LABEL(
+							INPUT({class: 'signatory-field', 'data-id': field.signatory_id, type: 'text', value: field.signatory_field})
+						),
+						BUTTON({class: 'delete-signatory', 'data-id': field.signatory_id,}, "❌")
+					],
 				)
 			),
 			LI(
@@ -356,9 +361,13 @@ on("click", ".delete-template", simpleconfirm("Delete this template", async func
 	});
 }));
 
+on("click", ".delete-signatory", async function (e) {
+	const id = e.match.dataset.id;
+	ws_sync.send({"cmd": "delete_signatory", "id": +id});
+});
+
 on('change', '.signatory-field', (e) => {
 	const id = e.match.dataset.id;
-	console.log("Setting signatory", id, e.match.value);
 	ws_sync.send({"cmd": "set_signatory", "id": +id, "name": e.match.value});
 });
 

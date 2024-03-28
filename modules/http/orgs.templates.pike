@@ -18,9 +18,7 @@ void websocket_cmd_hello(mapping(string:mixed) conn, mapping(string:mixed) msg) 
 }
 
 __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	werror("Got a conn! %O\n and a signatory %O\n", conn, msg);
 	sscanf((string)conn->group, "%d:%d", int org, int template);
-	werror("org: %O, template: %O\n", org, template);
 	// If we receive an id, make it an update
 	if (msg->id) {
 		await(G->G->DB->run_pg_query(#"
@@ -43,6 +41,18 @@ __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(s
 				"name": msg->name
 			])));
 	}
+	G->G->websocket_types["orgs.templates"]->send_updates_all(org + ":" + template);
+}
+
+__async__ void websocket_cmd_delete_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	werror("Got a conn! %O\n and a delete request %O\n", conn, msg);
+	sscanf((string)conn->group, "%d:%d", int org, int template);
+	await(G->G->DB->run_pg_query(#"
+		DELETE FROM template_signatories
+		WHERE id = :id
+		RETURNING id", ([
+			"id": msg->id
+		])));
 	G->G->websocket_types["orgs.templates"]->send_updates_all(org + ":" + template);
 }
 

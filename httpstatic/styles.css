@@ -71,7 +71,8 @@ main ul {
 /** Buttons **/
 
 .delete-rect,
-.delete-template {
+.delete-template,
+.delete-signatory {
 	background-color: #ccc;
 	border: none;
 	width: 1.5em;
