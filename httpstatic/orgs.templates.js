@@ -257,12 +257,10 @@ function handle_url_params() {
 		update_template_details(params.get("template"));
 		localState.current_page = params.get("page");
 	} else {
-		console.log("reconnecting");
 		localState.current_template = null;
 		localState.current_page = null;
 		localState.pages = [];
 		ws_sync.reconnect(null, ws_group = org_id);
-		setTimeout(() => console.log(stateSnapshot), 1000);
 	}
 }
 
