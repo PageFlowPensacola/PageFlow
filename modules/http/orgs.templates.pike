@@ -2,6 +2,7 @@ inherit restful_endpoint;
 inherit websocket_handler;
 
 string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	msg["group"] = (string) msg["group"];
 	if (!conn->auth && msg->group != "") return "Not logged in";
 	// TODO check for user org access
 }

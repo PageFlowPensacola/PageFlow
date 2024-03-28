@@ -1,5 +1,6 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {BUTTON, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, P, SECTION, UL} = choc; //autoimport
+const {BUTTON, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, P, SECTION, SPAN, UL} = choc; //autoimport
+import { simpleconfirm } from "./utils.js";
 
 // TODO return user orgs on login. For now, hardcode the org ID.
 let org_id;
@@ -148,7 +149,7 @@ export function render(state) {
 	stateSnapshot = state;
 	console.log("Rendering with state", state);
 		if (!user?.token) {
-			return set_content("header",
+			return set_content("#pageheader",
 				FORM({id:"loginform"}, [
 					LABEL([
 						"Email: ", INPUT({name: "email"})
@@ -161,7 +162,7 @@ export function render(state) {
 				])
 			);
 		} // no user token end
-		set_content("header", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
+		set_content("#pageheader", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
 	if (state.page_count) {
 		console.log("Rendering template", state);
 		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page]) {
@@ -180,13 +181,14 @@ export function render(state) {
 								/* stateSnapshot.pages[currentPage].rects */[].map((rect, idx) => LI({'class': 'rect-item', 'data-rectindex': idx}, [
 									INPUT({class: 'reclabel', type: "text", value: rect.label || ""}),
 									LABEL(["Initials", INPUT({class: "initials", type: "checkbox", checked: !!rect.initials})]),
-									BUTTON({class: 'delete'}, "x")
+									BUTTON({class: 'delete-rect'}, "❌")
 								]))
 							])
 						])]),
 					]
 					:
-				[signatory_fields(state),
+					[
+						signatory_fields(state),
 						UL({id: 'template_thumbnails'}, [
 							template_thumbnails(),
 						]),
@@ -201,8 +203,15 @@ export function render(state) {
 					INPUT({type: "submit", value: "Upload"}),
 				]),
 				UL(
-					state.templates.map((template) => LI({'class': 'specified-template', 'data-name': template.name, 'data-id': template.id},
-						[template.name, " (", template.page_count, ")"]
+					state.templates.map((template) => LI({class: 'template-item'},
+						[
+							SPAN({'class': 'specified-template', 'data-name': template.name, 'data-id': template.id},
+								[
+									template.name,
+									" (", template.page_count, ")"
+								]),
+							BUTTON({class: 'delete-template', 'data-id': template.id}, "❌"),
+						]
 						) // close LI
 					) // close map
 				) // close UL
@@ -239,10 +248,28 @@ async function update_template_details(id) {
 		}
 	});
 	localState.pages = await resp.json();
-	set_content("#template_thumbnails", template_thumbnails());
+	DOM("#template_thumbnails") && set_content("#template_thumbnails", template_thumbnails());
 }
 
-const params = new URLSearchParams(window.location.hash.slice(1));
+function handle_url_params() {
+	const params = new URLSearchParams(window.location.hash.slice(1));
+	if (params.get("template")) {
+		update_template_details(params.get("template"));
+		localState.current_page = params.get("page");
+	} else {
+		console.log("reconnecting");
+		localState.current_template = null;
+		localState.current_page = null;
+		localState.pages = [];
+		ws_sync.reconnect(null, ws_group = org_id);
+		setTimeout(() => console.log(stateSnapshot), 1000);
+	}
+}
+
+window.onpopstate = (event) => {
+	handle_url_params();
+	console.log({"popstate event": event, hash:location.hash});
+};
 
 async function get_user_details() {
 	if (!user.token) {
@@ -255,12 +282,7 @@ async function get_user_details() {
 	});
 	const userDetails = await userDetailsReq.json();
 	org_id = userDetails.primary_org;
-	if (params.get("template")) {
-		update_template_details(params.get("template"));
-		localState.current_page = params.get("page");
-	} else {
-		ws_sync.reconnect(null, ws_group = org_id);
-	}
+	handle_url_params();
 }
 
 on("submit", "#loginform", async function (evt) {
@@ -293,7 +315,7 @@ on("change", "#blankcontract", async function (e) {
 });
 
 on("click", ".specified-template", async function (e) {
-	history.replaceState(null, null, "#template=" + e.match.dataset.id);
+	history.pushState(null, null, "#template=" + e.match.dataset.id);
 	update_template_details(e.match.dataset.id);
 });
 
@@ -320,10 +342,21 @@ on("submit", "#template_submit", async function (e) {
 
 on("click", "#template_thumbnails figure", function (e) {
 	localState.current_page = e.match.dataset.idx;
-	history.replaceState(null, null, "#template=" + localState.current_template + "&page=" + localState.current_page);
+	history.pushState(null, null, "#template=" + localState.current_template + "&page=" + localState.current_page);
 
 	render(stateSnapshot);
 });
+
+on("click", ".delete-template", simpleconfirm("Delete this template", async function (e) {
+	const id = e.match.dataset.id;
+	const resp = await fetch(`/orgs/${org_id}/templates/${id}`, {
+		method: "DELETE",
+		headers: {
+			Authorization: "Bearer " + user.token
+		}
+	});
+	fetch_templates(org_id);
+}));
 
 on("click", ".hello", function () {
 	ws_sync.send({cmd: "hello"});

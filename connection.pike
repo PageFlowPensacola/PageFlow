@@ -115,7 +115,7 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 		return;
 	}
 	//Lifted from Protocols.HTTP.Server.Request since, for some reason,
-	//this isn't done for WebSocket requests.
+	//this isn't done for WebSocket requests. (not using this.)
 	if (req->request_headers->cookie)
 		foreach (MIME.decode_headerfield_params(req->request_headers->cookie); ; ADT.OrderedMapping m)
 			foreach (m; string key; string value)

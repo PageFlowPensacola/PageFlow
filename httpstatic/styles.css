@@ -10,7 +10,7 @@ body {
 	min-height: 96vh;
 }
 
-header,
+#pageheader,
 footer {
 	flex-grow: 0;
 	background-color: #333;
@@ -18,7 +18,7 @@ footer {
 	padding: 10px;
 }
 
-header {
+#pageheader {
 	height: 80px;
 	display: flex;
 	justify-content: space-between;
@@ -66,4 +66,23 @@ main ul {
 
 #template_thumbnails figure:hover {
 	background-color: #f9f9f9;
+}
+
+/** Buttons **/
+
+.delete-rect,
+.delete-template {
+	background-color: #ccc;
+	border: none;
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 50%;
+	cursor: pointer;
+	margin-left: 10px;
+	font-size: 0.3em;
+	margin: 0, 1em;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	padding: 10px;
 }

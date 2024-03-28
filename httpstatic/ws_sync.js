@@ -44,6 +44,7 @@ export function connect(group, handler)
 		const msg = {cmd: "init", type: handler.ws_type || ws_type, group};
 		if (handler.socket_auth) msg.auth = handler.socket_auth();
 		if (redirect_host && redirect_xfr) msg.xfr = redirect_xfr;
+		//console.log("Sending init message:", msg);
 		socket.send(JSON.stringify(msg));
 		//NOTE: It's possible that the server is about to kick us (for any of a number of reasons,
 		//including that the bot is shutting down, we need to be a mod, or the type/group is just
