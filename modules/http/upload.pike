@@ -25,7 +25,7 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 	// this is where we're probably going to need a shuffler.
 	// A shuffler is a Pike thing with is a very robust was of moving data around.
 	// results will contain the stdout, stderr, and exit code of the process
-	mapping results = await(run_promise(({"convert", "-density", "300", "-depth", "8", "-quality", "85", "-", "png:-"}),
+	mapping results = await(run_promise(({"convert", "-density", "72", "-depth", "8", "-quality", "85", "-", "png:-"}),
 	(["stdin": req->body_raw])));
 	//werror("results: %O\n", indices(results));
 	werror("input file size: %O, %O\n", sizeof(results->stdout), sizeof(req->body_raw));

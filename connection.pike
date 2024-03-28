@@ -93,6 +93,7 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 void ws_close(int reason, mapping conn)
 {
 	if (function f = bounce(this_function)) {f(reason, conn); return;}
+	werror("WebSocket close: %O\n", conn);
 	if (object handler = G->G->websocket_types[conn->type])
 	{
 		handler->websocket_msg(conn, 0);

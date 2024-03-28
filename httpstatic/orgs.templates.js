@@ -236,7 +236,7 @@ if (user.token) {
 
 async function update_template_details(id) {
 	localState.current_template = id;
-	ws_sync.reconnect(null, ws_group = `${org_id}:${id}`);
+	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${id}`});
 	localState.pages = [];
 	const resp = await fetch(`/orgs/${org_id}/templates/${id}/pages`, {
 		headers: {
@@ -249,15 +249,16 @@ async function update_template_details(id) {
 
 function handle_url_params() {
 	const params = new URLSearchParams(window.location.hash.slice(1));
-	if (params.get("template")) {
+	const template_id = params.get("template") || '';
+	if (template_id) {
 		update_template_details(params.get("template"));
 		localState.current_page = params.get("page");
 	} else {
 		localState.current_template = null;
 		localState.current_page = null;
 		localState.pages = [];
-		ws_sync.reconnect(null, ws_group = org_id);
 	}
+	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${template_id}`});
 }
 
 window.onpopstate = (event) => {
