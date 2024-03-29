@@ -252,9 +252,6 @@ async function update_template_details(id) {
 }
 
 function handle_url_params() {
-	console.log(
-		"Handling URL params", user.token
-	);
 	if (!user.token) return;
 	const params = new URLSearchParams(window.location.hash.slice(1));
 	const template_id = params.get("template") || '';
@@ -298,6 +295,7 @@ on("submit", "#loginform", async function (evt) {
 		user = {email: form.email.value, token: token.token};
 		localStorage.setItem("user", JSON.stringify(user));
 		await get_user_details();
+		window.location.reload();
 	} else {
 		alert("Invalid username or password");
 	}
@@ -305,8 +303,7 @@ on("submit", "#loginform", async function (evt) {
 
 on("click", "#logout", function () {
 	localStorage.removeItem("user");
-	user = null;
-	ws_sync.reconnect();
+	window.location.reload();
 });
 
 on("change", "#blankcontract", async function (e) {
