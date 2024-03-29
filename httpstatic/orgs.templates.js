@@ -191,7 +191,6 @@ export function render(state) {
 										(signatory) => OPTION({value: signatory.signatory_id},
 											signatory.signatory_field)
 									)]),
-									LABEL(["Initials", INPUT({class: "initials", type: "checkbox", checked: !!rect.initials})]),
 									BUTTON({class: 'delete-rect'}, "❌")
 								]))
 							])

@@ -21,7 +21,7 @@ CREATE TABLE template_signatories (
 
 CREATE TABLE audit_rects (
   id BIGSERIAL PRIMARY KEY,
-  audit_type varchar NOT NULL, -- initials, signature, date
+  audit_type varchar NOT NULL, -- NOT IN USE initials, signature, date
 	template_id int NOT NULL REFERENCES templates ON DELETE CASCADE,
 	page_number smallint NOT NULL,
   x1 smallint NOT NULL,
