@@ -75,6 +75,18 @@ __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string
 	send_updates_all(conn->group);
 }
 
+__async__ void websocket_cmd_delete_rect(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	sscanf((string)conn->group, "%d:%d", int org, int template);
+	await(G->G->DB->run_pg_query(#"
+		DELETE FROM audit_rects
+		WHERE id = :id
+		AND template_id = :template", ([
+			"id": msg->id,
+			"template": template
+		])));
+	send_updates_all(conn->group);
+}
+
 // Called on connection and update.
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	werror("get_state: %O %O %O\n", group, id, type);

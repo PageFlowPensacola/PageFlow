@@ -81,7 +81,6 @@ function repaint() {
     const top = rect.y1 * canvas.height;
     const width = (rect.x2 - rect.x1) * canvas.width;
 		const height = (rect.y2 - rect.y1) * canvas.height;
-		console.log("Drawing rect", rect, left, top, width, height);
     ctx.fillRect(
       left,
       top,
@@ -181,11 +180,11 @@ export function render(state) {
 					[
 						P("Current page: " + localState.current_page),
 
-						DIV([
+						DIV({id: "auditrects"},[
 							canvas,
 							SECTION([
 							UL([
-								/* stateSnapshot.pages[currentPage].rects */[].map((rect, idx) => LI({'class': 'rect-item', 'data-rectindex': idx}, [
+								stateSnapshot.page_rects[localState.current_page - 1].map((rect) => LI({'class': 'rect-item', 'data-rectid': rect.id}, [
 									INPUT({class: 'reclabel', type: "text", value: rect.label || ""}),
 									LABEL(["Initials", INPUT({class: "initials", type: "checkbox", checked: !!rect.initials})]),
 									BUTTON({class: 'delete-rect'}, "❌")
@@ -371,6 +370,22 @@ on("click", ".delete-signatory", async function (e) {
 on('change', '.signatory-field', (e) => {
 	const id = e.match.dataset.id;
 	ws_sync.send({"cmd": "set_signatory", "id": +id, "name": e.match.value});
+});
+
+on('click', '.delete-rect', (e) => {
+  const id = e.match.closest("[data-rectid]").dataset.rectid;
+  ws_sync.send({"cmd": "delete_rect", "id": +id});
+});
+
+on('mouseover', '.rect-item', (e) => {
+  const id = e.match.closest("[data-rectid]").dataset.rectid;
+  hovering = id;
+  repaint();
+});
+
+on('mouseout', '.rect-item', () => {
+  hovering = -1;
+  repaint();
 });
 
 on("click", ".hello", function () {

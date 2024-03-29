@@ -87,3 +87,9 @@ main ul {
 	align-items: center;
 	padding: 10px;
 }
+
+#auditrects {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1em;
+}
