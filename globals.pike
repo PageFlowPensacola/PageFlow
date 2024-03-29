@@ -221,6 +221,8 @@ class websocket_handler {
 	//Override to validate any init requests. Return 0 to allow the socket
 	//establishment, or an error message.
 	string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+		// On init, we don't have a group yet, so check for it in msg.
+		// Subsequently, we will have a group in the conn.
 		sscanf((string)msg->group, "%d:%s", int org, string subgroup);
 		if (!org) return "Bad group";
 		msg->group = sprintf("%d:%s", org, subgroup || "");

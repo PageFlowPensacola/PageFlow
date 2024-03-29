@@ -252,6 +252,10 @@ async function update_template_details(id) {
 }
 
 function handle_url_params() {
+	console.log(
+		"Handling URL params", user.token
+	);
+	if (!user.token) return;
 	const params = new URLSearchParams(window.location.hash.slice(1));
 	const template_id = params.get("template") || '';
 	if (template_id) {

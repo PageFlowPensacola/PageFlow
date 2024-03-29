@@ -40,7 +40,6 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 		|| !sizeof(residual_key)) {
 			if(!req->misc->auth) return (["error": 403]);
 	}
-
 	// If there is no residual key, there's no val for final key
 	if (!sizeof(residual_key)) {
 		if (req->request_type == "GET") {
