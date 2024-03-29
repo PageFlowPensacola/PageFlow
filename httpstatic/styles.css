@@ -93,3 +93,8 @@ main ul {
 	flex-wrap: wrap;
 	gap: 1em;
 }
+
+#auditrects section {
+	display: flex;
+	align-items: center;
+}

@@ -1,5 +1,5 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {BUTTON, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, P, SECTION, SPAN, UL} = choc; //autoimport
+const {BUTTON, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
 import { simpleconfirm } from "./utils.js";
 
 // TODO return user orgs on login. For now, hardcode the org ID.
@@ -185,7 +185,12 @@ export function render(state) {
 							SECTION([
 							UL([
 								stateSnapshot.page_rects[localState.current_page - 1].map((rect) => LI({'class': 'rect-item', 'data-rectid': rect.id}, [
-									INPUT({class: 'reclabel', type: "text", value: rect.label || ""}),
+									SELECT({class: 'rectlabel', value: rect.template_signatory_id}, [
+										OPTION({value: 0}, "Select a signatory"),
+										stateSnapshot.signatories.map(
+										(signatory) => OPTION({value: signatory.signatory_id},
+											signatory.signatory_field)
+									)]),
 									LABEL(["Initials", INPUT({class: "initials", type: "checkbox", checked: !!rect.initials})]),
 									BUTTON({class: 'delete-rect'}, "❌")
 								]))
@@ -370,6 +375,12 @@ on("click", ".delete-signatory", async function (e) {
 on('change', '.signatory-field', (e) => {
 	const id = e.match.dataset.id;
 	ws_sync.send({"cmd": "set_signatory", "id": +id, "name": e.match.value});
+});
+
+on('change', '.rectlabel', (e) => {
+	const id = e.match.closest("[data-rectid]").dataset.rectid;
+	console.log(id);
+	ws_sync.send({"cmd": "set_rect_signatory", "id": +id, "signatory_id": e.match.value});
 });
 
 on('click', '.delete-rect', (e) => {
