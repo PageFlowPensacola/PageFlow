@@ -108,7 +108,7 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 	", (["org_id":org, "template_id":template_id])));
 
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
-			SELECT x1, y1, x2, y2, page_number, audit_type, template_signatory_id
+			SELECT x1, y1, x2, y2, page_number, audit_type, template_signatory_id, id
 			FROM audit_rects
 			WHERE template_id = :template_id", (["template_id":template_id])));
 

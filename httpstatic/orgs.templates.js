@@ -75,12 +75,13 @@ function repaint() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   // Draw stuff here
 	ctx.drawImage(pageImage, 0, 0);
-  for (const [idx, rect] of stateSnapshot.page_rects.entries()) {
-    ctx.fillStyle = +hovering === idx ? "#ff88" : "#00f8";
-    const left = rect.left * canvas.width;
-    const top = rect.top * canvas.height;
-    const width = (rect.right - rect.left) * canvas.width;
-    const height = (rect.bottom - rect.top) * canvas.height;
+  for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
+    ctx.fillStyle = +hovering === rect.id ? "#ff88" : "#00f8";
+    const left = rect.x1 * canvas.width;
+    const top = rect.y1 * canvas.height;
+    const width = (rect.x2 - rect.x1) * canvas.width;
+		const height = (rect.y2 - rect.y1) * canvas.height;
+		console.log("Drawing rect", rect, left, top, width, height);
     ctx.fillRect(
       left,
       top,
