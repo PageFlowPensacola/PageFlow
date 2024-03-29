@@ -29,5 +29,5 @@ CREATE TABLE audit_rects (
   x2 smallint NOT NULL,
   y2 smallint NOT NULL,
   name varchar DEFAULT NULL,
-  template_signatory_id int NOT NULL REFERENCES template_signatories ON DELETE CASCADE
+  template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE
 );
