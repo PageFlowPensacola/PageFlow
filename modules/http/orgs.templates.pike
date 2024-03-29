@@ -56,16 +56,18 @@ __async__ void websocket_cmd_delete_signatory(mapping(string:mixed) conn, mappin
 __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	sscanf((string)conn->group, "%d:%d", int org, int template);
 	int page = msg->page;
+	werror("add_rect: %O %O %O\n", conn->group, msg, page);
 	await(G->G->DB->run_pg_query(#"
 		INSERT INTO audit_rects (
 			template_id, x1, y1, x2, y2, page_number, audit_type, template_signatory_id
 		)
 		VALUES (:template_id, :x1, :y1, :x2, :y2, :page_number, :audit_type, :signatory_id)", ([
 			"template_id": template,
-			"x1": msg->rect->left,
-			"y1": msg->rect->top,
-			"x2": msg->rect->right,
-			"y2": msg->rect->bottom,
+			// multiply by 2 pow 15 to get to largest number that fits in a signed int
+			"x1": msg->rect->left * 32767,
+			"y1": msg->rect->top * 32767,
+			"x2": msg->rect->right * 32767,
+			"y2": msg->rect->bottom * 32767,
 			"page_number": page,
 			"audit_type": "rect",
 			"signatory_id": msg->signatory_id
@@ -95,6 +97,7 @@ __async__ mapping(string:mixed)|string handle_list(Protocols.HTTP.Server.Request
 __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int org, int template_id) {
 	if (! (int) org) return ([ "error": 403 ]);
 	if (!template_id) return 0;
+
 	mapping details = await(G->G->DB->run_pg_query(#"
 		SELECT name,
 		(SELECT count(*)
@@ -103,6 +106,21 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 		FROM templates
 		WHERE primary_org_id = :org_id
 	", (["org_id":org, "template_id":template_id])));
+
+	array(mapping) rects = await(G->G->DB->run_pg_query(#"
+			SELECT x1, y1, x2, y2, page_number, audit_type, template_signatory_id
+			FROM audit_rects
+			WHERE template_id = :template_id", (["template_id":template_id])));
+
+	array page_rects = allocate(details[0]->count, ({ }));
+
+	foreach(rects, mapping rect) {
+		rect-> x1 /= 32767.0;
+		rect-> y1 /= 32767.0;
+		rect-> x2 /= 32767.0;
+		rect-> y2 /= 32767.0;
+		page_rects[rect->page_number - 1] += ({ rect });
+	}
 
 	mapping template = (
 		[
@@ -118,11 +136,9 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 			AND t.primary_org_id = :org_id
 	", (["org_id":org, "template_id":template_id]))),
 
-			"rects": await(G->G->DB->run_pg_query(#"
-			SELECT x1, y1, x2, y2, page_number, audit_type
-			FROM audit_rects
-			WHERE template_id = :template_id", (["template_id":template_id])))
+			"page_rects": page_rects,
 		]);
+
 	return template;
 
 };

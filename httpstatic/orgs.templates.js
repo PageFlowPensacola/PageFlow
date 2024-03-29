@@ -75,7 +75,7 @@ function repaint() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   // Draw stuff here
 	ctx.drawImage(pageImage, 0, 0);
-  for (const [idx, rect] of stateSnapshot.rects.entries()) {
+  for (const [idx, rect] of stateSnapshot.page_rects.entries()) {
     ctx.fillStyle = +hovering === idx ? "#ff88" : "#00f8";
     const left = rect.left * canvas.width;
     const top = rect.top * canvas.height;
