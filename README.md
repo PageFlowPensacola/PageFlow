@@ -71,3 +71,7 @@ a `.md` file with matching name. The one in the pike file takes precedence.
 ### Websockets
 
 Group will always follow pattern: {org:item?}
+
+### Signature Detection
+
+git@github.com:ahmetozlu/signature_extractor.git
