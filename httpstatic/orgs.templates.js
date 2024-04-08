@@ -170,9 +170,8 @@ export function render(state) {
 		set_content("#pageheader", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
 	if (typeof (state.page_count) === 'number') {
 		// If it got neither a non-zero page count or a template, it wasn't (re)rendering anything.
-		console.log("Rendering template", state);
-		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page]) {
-			pageImage.src = localState.pages[localState.current_page];
+		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page - 1]) {
+			pageImage.src = localState.pages[localState.current_page - 1];
 		}
 			set_content("main", SECTION([
 				H2(state.name),
