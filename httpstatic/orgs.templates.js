@@ -209,7 +209,7 @@ export function render(state) {
 			set_content("main", SECTION([
 				FORM({id: "template_submit"}, [
 					INPUT({value: "", id: "newTemplateName"}),
-					INPUT({id: "blankcontract", type: "file", accept: "image/pdf"}),
+					INPUT({id: "newTemplateFile", type: "file", accept: "image/pdf"}),
 					localState.uploading && P({style: "display:inline"}, "Uploading... "),
 					INPUT({type: "submit", value: "Upload"}),
 				]),
@@ -309,7 +309,7 @@ on("click", "#logout", function () {
 	window.location.reload();
 });
 
-on("change", "#blankcontract", async function (e) {
+on("change", "#newTemplateFile", async function (e) {
 	const file = e.match.files[0];
 	if (file && DOM("#newTemplateName").value === "") {
 		DOM("#newTemplateName").value = file.name;
@@ -324,7 +324,7 @@ on("click", ".specified-template", async function (e) {
 
 on("submit", "#template_submit", async function (e) {
 	e.preventDefault();
-	const submittedFile = DOM("#blankcontract").files[0];
+	const submittedFile = DOM("#newTemplateFile").files[0];
 	const fileName = DOM("#newTemplateName").value;
 	localState.uploading++;
 	render(stateSnapshot);
