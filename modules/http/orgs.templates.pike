@@ -63,7 +63,7 @@ __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string
 		)
 		VALUES (:template_id, :x1, :y1, :x2, :y2, :page_number, :audit_type, :signatory_id)", ([
 			"template_id": template,
-			// multiply by 2 pow 15 to get to largest number that fits in a signed int
+			// multiply by 2 pow 15 (32767) to get to largest number that fits in a signed int
 			"x1": msg->rect->left * 32767,
 			"y1": msg->rect->top * 32767,
 			"x2": msg->rect->right * 32767,
