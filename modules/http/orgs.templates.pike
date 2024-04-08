@@ -131,6 +131,7 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 		WHERE template_id = :template_id)
 		FROM templates
 		WHERE primary_org_id = :org_id
+		AND id = :template_id
 	", (["org_id":org, "template_id":template_id])));
 
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
@@ -164,6 +165,8 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 
 			"page_rects": page_rects,
 		]);
+
+		werror("template: %O\n", template);
 
 	return template;
 
