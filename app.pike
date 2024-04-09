@@ -64,6 +64,9 @@ int main(int argc,array(string) argv)
 {
 	add_constant("G", this);
 	G->argv = argv;
+	if (has_value(argv, "--test")) {
+		restricted_update = ({"globals.pike", "console.pike", "database.pike", "testing.pike"});
+	}
   bootstrap_all();
 
   return -1;
