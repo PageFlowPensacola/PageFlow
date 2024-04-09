@@ -1,6 +1,8 @@
 import cv2
-from skimage import measure, color
+from skimage import measure, color, morphology
 import matplotlib.pyplot as plt
+import numpy as np
+
 testRect = {
     "audit_type": "rect",
     "id": 27,
@@ -41,12 +43,53 @@ cropped = img[slice(*translate_coords(testRect['y1'], testRect['y2'], source_ima
 cv2.imwrite("output_files/Step One Cropped.png", cropped)
 sharpened = unsharp_mask(cropped)
 cv2.imwrite("output_files/Step Two Sharpened.png", sharpened)
-img = cv2.threshold(sharpened, 127, 255, cv2.THRESH_BINARY)[1]
+img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
 blobs = img > img.mean()
 blobs_labels = measure.label(blobs, background=1)
+
 image_label_overlay = color.label2rgb(blobs_labels, image=img)
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.imshow(image_label_overlay)
+""" ax.imshow(image_label_overlay)
+ax.set_axis_off()
+plt.tight_layout()
+plt.show() """
+
+the_biggest_component = 0
+total_area = 0
+counter = 0
+average = 0.0
+for region in measure.regionprops(blobs_labels):
+		if (region.area > 10):
+				total_area = total_area + region.area
+				counter = counter + 1
+		# print region.area # (for debugging)
+		# take regions with large enough areas
+		if (region.area >= 80):
+				if (region.area > the_biggest_component):
+						the_biggest_component = region.area
+
+average = (total_area/counter)
+print("the_biggest_component: " + str(the_biggest_component))
+print("average: " + str(average))
+
+# the parameters are used to remove small size connected pixels outliar
+constant_parameter_1 = 84
+constant_parameter_2 = 250
+constant_parameter_3 = 100
+
+# the parameter is used to remove big size connected pixels outliar
+constant_parameter_4 = 18
+
+pre_version = morphology.remove_small_objects(blobs_labels, 0.5)
+image_label_overlay = color.label2rgb(pre_version, image=img)
+component_sizes = np.bincount(pre_version.ravel())
+print("component sizes are %r" % component_sizes)
+too_small = component_sizes > (119)
+print("too small are %r" % too_small)
+too_small_mask = too_small[pre_version]
+print("too small mask is %r" % too_small_mask)
+pre_version[too_small_mask] = 0
+ax.imshow(pre_version)
 ax.set_axis_off()
 plt.tight_layout()
 plt.show()
