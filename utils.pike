@@ -1,8 +1,12 @@
 protected void create (string name) {
-	templatestuff();
+	G->G->utils = this;
 }
 
-__async__ void templatestuff() {
+void test() {
+	werror("Hello World\n");
+}
+
+__async__ void audit_score() {
 	array(mapping) template_pages = await(G->G->DB->run_pg_query(#"
 			SELECT template_id, page_number, page_data
 			FROM template_pages"));

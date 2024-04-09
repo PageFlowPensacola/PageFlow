@@ -60,14 +60,17 @@ int bootstrap_all()
 	return err;
 }
 
-int main(int argc,array(string) argv)
+int | Concurrent.Future main(int argc,array(string) argv)
 {
 	add_constant("G", this);
-	G->argv = argv;
-	if (has_value(argv, "--test")) {
-		restricted_update = ({"globals.pike", "console.pike", "database.pike", "testing.pike"});
+	G->args = Arg.parse(argv);
+	if (string funcname = G->args->exec) {
+		// pike app.pike --exec=test
+		restricted_update = ({"globals.pike", "console.pike", "database.pike", "utils.pike"});
+		bootstrap_all();
+		return G->utils[funcname]();
 	}
-  bootstrap_all();
+	bootstrap_all();
 
-  return -1;
+	return -1;
 }

@@ -343,7 +343,7 @@ protected void create(string name)
 	{
 		//First time initialization
 		G->G->windows = ([]);
-		G->G->argv = GTK2.setup_gtk(G->G->argv);
+		G->G->argv = GTK2.setup_gtk(G->G->argv); // broken
 	}
 	G->G->window = this;
 	if (G->G->menuitems)
