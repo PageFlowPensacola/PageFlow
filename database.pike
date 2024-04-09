@@ -130,7 +130,17 @@ __async__ mapping|zero get_user_details(string email) {
 
 	mapping user = ([]);
 
-	array results = await(run_my_query(query, bindings));
+	array results;
+
+	mixed ex = catch {
+		results = await(run_my_query(query, bindings));
+	};
+
+	if (ex) {
+		write("Error: %t\n%O\n", ex, ex);
+		error("Error: %t\n%O\n", ex, ex);
+		return 0;
+	}
 
 	if (sizeof(results) == 0) return 0;
 
