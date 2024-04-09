@@ -29,5 +29,7 @@ CREATE TABLE audit_rects (
   x2 smallint NOT NULL,
   y2 smallint NOT NULL,
   name varchar DEFAULT NULL,
+	-- ALTER table audit_rects add column transition_score smallint NOT NULL DEFAULT 0
+	transition_score smallint NOT NULL DEFAULT 0, -- to compare against signature
   template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE
 );
