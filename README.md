@@ -75,3 +75,9 @@ Group will always follow pattern: {org:item?}
 ### Signature Detection
 
 git@github.com:ahmetozlu/signature_extractor.git
+
+### More native apps
+brew install --cask pdf-images
+brew install pdf2image
+`convert -density 300 "test_files/Residential Contract for Sale And Purchase One Initials Set.pdf" -background cyan -alpha Remove test_files/OneInitialsSet.png`
+https://imagemagick.org/script/command-line-options.php?#write
