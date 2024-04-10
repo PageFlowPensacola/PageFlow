@@ -23,6 +23,7 @@ maybe not markdown. just a single static html page.
 
 Enforce ip restrictions at both token generation and login
 add user_org joins to relevant queries to authorize user has access to this org
+Currently calls DB for each audit rect when updating transitions score.
 
 ## ENHANCEMENTS
 

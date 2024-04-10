@@ -22,20 +22,28 @@ __async__ void audit_score() {
 		mapping img = Image.PNG._decode(p->page_data);
 		object grey = img->image->grey();
 		foreach(page_rects[p->template_id+":"+p->page_number] || ({}), mapping r) {
-			int last = -1, transitions = 0, count = 0;
+			int last = -1, transition_count = 0, pixel_count = 0;
 			for (int y = r->y1; y < r->y2; ++y) {
 				for (int x = r->x1; x < r->x2; ++x) {
 					int cur = grey->getpixel(x * img->xsize / 32767, y * img->ysize / 32767)[0] > 128;
-					transitions += (cur != last);
+					transition_count += (cur != last);
 					last = cur;
-					count++;
+					pixel_count++;
+				}
+			}
+			last = -1;
+			for (int x = r->x1; x < r->x2; ++x) {
+				for (int y = r->y1; y < r->y2; ++y) {
+					int cur = grey->getpixel(x * img->xsize / 32767, y * img->ysize / 32767)[0] > 128;
+					transition_count += (cur != last);
+					last = cur;
 				}
 			}
 			await(G->G->DB->run_pg_query(#"
 				UPDATE audit_rects
 				SET transition_score = :score
-				WHERE id = :id", (["score": count/transitions, "id": r->id])));
-			werror("Template Id: %d Page no: %d Signatory Id: %d Transitions: %d, count: %d, transition score: %d\n", r->template_id, r->page_number, r->template_signatory_id || 0, transitions, count, count/transitions);
+				WHERE id = :id", (["score": transition_count, "id": r->id])));
+			werror("Template Id: %d Page no: %d Signatory Id: %d Transitions: %d, Pixel count: %d, Transition score: %d\n", r->template_id, r->page_number, r->template_signatory_id || 0, transition_count, pixel_count, pixel_count/transition_count);
 		}
 		// Do stuff with page_data and page_rects
 	}
