@@ -156,6 +156,28 @@ __async__ mapping|zero get_user_details(string email) {
 	return user;
 }
 
+int calculate_transition_score(mapping r, object grey) {
+	int last = -1, transition_count = 0;
+	int xsize = grey->xsize();
+	int ysize = grey->ysize();
+	for (int y = r->y1; y < r->y2; ++y) {
+		for (int x = r->x1; x < r->x2; ++x) {
+			int cur = grey->getpixel(x * xsize / 32767, y * ysize / 32767)[0] > 128;
+			transition_count += (cur != last);
+			last = cur;
+		}
+	}
+	last = -1;
+	for (int x = r->x1; x < r->x2; ++x) {
+		for (int y = r->y1; y < r->y2; ++y) {
+			int cur = grey->getpixel(x * xsize / 32767, y * ysize / 32767)[0] > 128;
+			transition_count += (cur != last);
+			last = cur;
+		}
+	}
+	return transition_count;
+}
+
 __async__ void recalculate_transition_scores(int template_id, int page_number) {
 	// If template_id is 0, all templates are considered
 	// If page_number is 0, all pages are considered
@@ -180,28 +202,14 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 			grey = img->image->grey();
 			last_page_data = r->page_data;
 		}
-		int last = -1, transition_count = 0, pixel_count = 0;
-		for (int y = r->y1; y < r->y2; ++y) {
-			for (int x = r->x1; x < r->x2; ++x) {
-				int cur = grey->getpixel(x * img->xsize / 32767, y * img->ysize / 32767)[0] > 128;
-				transition_count += (cur != last);
-				last = cur;
-				pixel_count++;
-			}
-		}
-		last = -1;
-		for (int x = r->x1; x < r->x2; ++x) {
-			for (int y = r->y1; y < r->y2; ++y) {
-				int cur = grey->getpixel(x * img->xsize / 32767, y * img->ysize / 32767)[0] > 128;
-				transition_count += (cur != last);
-				last = cur;
-			}
-		}
+
+		int transition_score = calculate_transition_score(r, grey);
+		int pixel_count = (r->x2 - r->x1) * (r->y2 - r->y1);
 		await(G->G->DB->run_pg_query(#"
 			UPDATE audit_rects
 			SET transition_score = :score
-			WHERE id = :id", (["score": transition_count, "id": r->id])));
-		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transitions: %7d, Pixel count: %9d, Transition score: %6d\n", r->template_id, r->page_number, r->template_signatory_id || 0, transition_count, pixel_count, pixel_count/transition_count);
+			WHERE id = :id", (["score": transition_score, "id": r->id])));
+		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Pixel count: %9d, Transition score: %6d\n", r->template_id, r->page_number, r->template_signatory_id || 0, pixel_count, transition_score);
 	}
 }
 
