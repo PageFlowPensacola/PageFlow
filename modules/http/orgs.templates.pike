@@ -73,8 +73,8 @@ __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string
 			"signatory_id": msg->signatory_id
 		]))
 	);
-	G->G->DB->recalculate_transition_scores(template, page);
 	send_updates_all(conn->group);
+	G->G->DB->recalculate_transition_scores(template, page);
 }
 
 __async__ void websocket_cmd_delete_rect(mapping(string:mixed) conn, mapping(string:mixed) msg) {
