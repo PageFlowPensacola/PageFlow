@@ -71,7 +71,9 @@ __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string
 			"page_number": page,
 			"audit_type": "rect",
 			"signatory_id": msg->signatory_id
-		])));
+		]))
+	);
+	G->G->DB->recalculate_transition_scores(template, page);
 	send_updates_all(conn->group);
 }
 
