@@ -213,6 +213,35 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 	}
 }
 
+__async__ void compare_transition_scores(int template_id, int page_number, int file_id ) {
+	// If template_id is 0, all templates are considered
+	// If page_number is 0, all pages are considered
+
+	array(mapping) rects = await(G->G->DB->run_pg_query(#"
+			SELECT x1, y1, x2, y2, template_signatory_id, transition_score
+			FROM audit_rects
+			WHERE template_id = :template_id
+			AND page_number = :page_number
+			ORDER BY id",
+		(["template_id": template_id, "page_number": page_number])));
+
+	array(mapping) page = await(G->G->DB->run_pg_query(#"
+			SELECT page_data
+			FROM template_pages
+			WHERE template_id = :template_id
+			AND page_number = :page_number",
+		(["template_id": file_id, "page_number": page_number])));
+
+	mapping img = Image.PNG._decode(page[0]->page_data);
+	object grey = img->image->grey();
+
+	foreach (rects, mapping r) {
+		int calculated_transition_score = calculate_transition_score(r, grey);
+		int pixel_count = (r->x2 - r->x1) * (r->y2 - r->y1);
+
+		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Pixel count: %9d, Transition score: %6d, Calculated transition score: %6d \n", template_id, page_number, r->template_signatory_id || 0, pixel_count, r->transition_score, calculated_transition_score);
+	}
+}
 
 protected void create(string name) {
 
