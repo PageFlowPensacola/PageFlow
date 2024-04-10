@@ -158,19 +158,27 @@ __async__ mapping|zero get_user_details(string email) {
 
 int calculate_transition_score(mapping r, object grey) {
 	int last = -1, transition_count = 0;
-	int xsize = grey->xsize();
-	int ysize = grey->ysize();
-	for (int y = r->y1; y < r->y2; ++y) {
-		for (int x = r->x1; x < r->x2; ++x) {
-			int cur = grey->getpixel(x * xsize / 32767, y * ysize / 32767)[0] > 128;
+	int x1 = r->x1 * grey->xsize() / 32767;
+	int x2 = r->x2 * grey->xsize() / 32767;
+	int y1 = r->y1 * grey->ysize() / 32767;
+	int y2 = r->y2 * grey->ysize() / 32767;
+	constant STRIP_COUNT = 16;
+	// regions and middle
+	int ymid = y1 + (y2 - y1) / STRIP_COUNT / 2;
+	for (int strip = 0; strip < STRIP_COUNT; strip++) {
+		int y = ymid + (y2 - y1) * strip / STRIP_COUNT;
+		for (int x = x1; x < x2; x++) {
+			int cur = grey->getpixel(x, y)[0] > 128;
 			transition_count += (cur != last);
 			last = cur;
 		}
 	}
 	last = -1;
-	for (int x = r->x1; x < r->x2; ++x) {
-		for (int y = r->y1; y < r->y2; ++y) {
-			int cur = grey->getpixel(x * xsize / 32767, y * ysize / 32767)[0] > 128;
+	int xmid = x1 + (x2 - x1) / STRIP_COUNT / 2;
+	for (int strip = 0; strip < STRIP_COUNT; strip++) {
+		int x = xmid + (x2 - x1) * strip / STRIP_COUNT;
+		for (int y = y1; y < y2; y++) {
+			int cur = grey->getpixel(x, y)[0] > 128;
 			transition_count += (cur != last);
 			last = cur;
 		}
@@ -234,6 +242,7 @@ __async__ void compare_transition_scores(int template_id, int page_number, int f
 
 	mapping img = Image.PNG._decode(page[0]->page_data);
 	object grey = img->image->grey();
+	werror("Grey: %O \n", grey);
 
 	foreach (rects, mapping r) {
 		int calculated_transition_score = calculate_transition_score(r, grey);
