@@ -15,6 +15,7 @@ const localState = {
 
 const canvas = CANVAS({width:300, height:450, style: "border: 1px solid black;"});
 const ctx = canvas.getContext('2d');
+let submittedFile = null;
 
 const pageImage = new Image();
 // repaint canvas when image is loaded
@@ -287,23 +288,21 @@ on("click", ".specified-template", async function (e) {
 	update_template_details(e.match.dataset.id);
 });
 
+/*
+	First send a request to upload the file, then send the file itself.
+*/
 on("submit", "#template_submit", async function (e) {
 	e.preventDefault();
-	const submittedFile = DOM("#newTemplateFile").files[0];
+	submittedFile = DOM("#newTemplateFile").files[0];
 	const fileName = DOM("#newTemplateName").value;
 	localState.uploading++;
 	render(stateSnapshot);
 	let org_id = auth.get_org_id();
-	let resp = await fetch("/orgs/" + org_id + "/templates", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: "Bearer " + auth.get_token()
-		},
-		body: JSON.stringify({name: fileName})
-	});
-	const template_info = await resp.json();
-	resp = await fetch(`/upload?template_id=${template_info.id}`, {
+	ws_sync.send({"cmd": "upload", "name": fileName, "org": org_id});
+});
+
+export async function sockmsg_upload(msg) {
+	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",
 		headers: {
 			Authorization: "Bearer " + auth.get_token()
@@ -312,7 +311,7 @@ on("submit", "#template_submit", async function (e) {
 	});
 	localState.uploading--;
 	render(stateSnapshot);
-});
+};
 
 on("click", "#template_thumbnails figure", function (e) {
 	localState.current_page = e.match.dataset.idx;

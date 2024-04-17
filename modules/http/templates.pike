@@ -98,8 +98,6 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	return (["templates":templates]);
 }
 
-
-
 __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int org, int template_id) {
 	if (! (int) org) return ([ "error": 403 ]);
 	if (!template_id) return 0;
@@ -155,7 +153,7 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 
 };
 
-__async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols.HTTP.Server.Request req, string org) {
+__async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 
 		string query = #"
 		INSERT INTO templates (
@@ -165,13 +163,13 @@ __async__ mapping(string:mixed)|string|Concurrent.Future handle_create(Protocols
 		RETURNING id
 	";
 
-	mapping bindings = (["name":req->misc->json->name, "org":org]);
+	mapping bindings = (["name":msg->name, "org":msg->org]);
 
 	array result = await(G->G->DB->run_pg_query(query, bindings));
 
-	//werror("body: %O\n", req->body_raw);
-	//string template_name = req->body_raw->name;
-	return jsonify(result[0]);
+	string upload_id = G->G->prepare_upload("template", (["template_id": result[0]->id]));
+
+	conn->sock->send_text(Standards.JSON.encode((["cmd": "upload", "upload_id": upload_id])));
 };
 
 mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string org, string template) { };

@@ -1,10 +1,23 @@
 inherit http_endpoint;
+inherit annotated;
+
+@retain:mapping pending_uploads = ([]);
 
 __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Request req) {
-	werror("req: %O\n", typeof(req->request_type));
+
 	if (req->request_type != "POST") {
 		return ([ "error": 405 ]);
 	}
+
+	mapping upload = m_delete(pending_uploads, req->variables->id);
+
+	if (!upload) return ([ "error": 400 ]);
+
+	return await(this[upload->type](req, upload));
+}
+
+__async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
+
 	// if user necessary:
 	// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
 	// string org_name = user->orgs[user->primary_org];
@@ -57,7 +70,7 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 		";
 
 		mapping bindings = (
-			["template_id":req->variables->template_id, "page_number":++count, "page_data":current_page]
+			["template_id":upload->template_id, "page_number":++count, "page_data":current_page]
 		);
 
 		mapping results = await(G->G->DB->run_pg_query(query, bindings));
@@ -69,8 +82,20 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 		WHERE id = :template_id
 		RETURNING primary_org_id
 	";
-	mapping bindings = (["template_id":req->variables->template_id, "page_count":count]);
+	mapping bindings = (["template_id":upload->template_id, "page_count":count]);
 	array(mapping) primary_org_ids = await(G->G->DB->run_pg_query(query, bindings));
-	G->G->websocket_types["orgs.templates"]->send_updates_all(primary_org_ids[0]->primary_org_id + ":");
+	G->G->websocket_types["templates"]->send_updates_all(primary_org_ids[0]->primary_org_id + ":");
 	return sprintf("%d pages uploaded\n", count);
 };
+
+string prepare_upload(string type, mapping info) {
+	string id = MIME.encode_base64url(random_string(9));
+	if (!this[type]) error("Invalid upload type.\n");
+	pending_uploads[id] = ([ "type":type ]) | info;
+	return id;
+}
+
+protected void create(string name) {
+	::create(name);
+	G->G->prepare_upload = prepare_upload;
+}
