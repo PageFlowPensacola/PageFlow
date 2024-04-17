@@ -1,8 +1,6 @@
 inherit http_websocket;
 
-constant unauthenticated_landing_page = 1;
-
-
+constant markdown = "# Templates\n\n";
 
 __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	sscanf((string)conn->group, "%d:%d", int org, int template);

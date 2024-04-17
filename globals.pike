@@ -315,7 +315,7 @@ class http_websocket
 		return render(req, (["vars": (["ws_group": ""])]));
 	};
 
-	constant markdown = "# Page Title";
+	constant markdown = "# Page Title\n\n";
 
 	string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 		if (string err = ::websocket_validate(conn, msg)) return err;
