@@ -226,6 +226,7 @@ class websocket_handler {
 		// Subsequently, we will have a group in the conn.
 		sscanf((string)msg->group, "%d:%s", int org, string subgroup);
 		if (!org) return "Bad group";
+		//TODO if user is not authorized for this org fail.
 		msg->group = sprintf("%d:%s", org, subgroup || "");
 	 }
 
@@ -239,7 +240,13 @@ class websocket_handler {
 	}
 
 	void websocket_cmd_chgrp(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-		if (websocket_validate(conn, msg)) return;
+
+		if (string err = websocket_validate(conn, msg)) {
+			conn->sock->send_text(Standards.JSON.encode((["error": err])));
+			conn->sock->close();
+			return;
+		}
+
 		websocket_groups[conn->group] -= ({conn->sock});
 		websocket_groups[conn->group = msg->group] += ({conn->sock});
 		send_update(conn);

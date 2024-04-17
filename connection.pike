@@ -78,7 +78,7 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 		}
 		if (string err = handler->websocket_validate(conn, data)) {
 			conn->sock->send_text(Standards.JSON.encode((["error": err])));
-			conn->sock->close(); destruct(conn->sock);
+			conn->sock->close();
 			return;
 		}
 		string group = (stringp(data->group) || intp(data->group)) ? data->group : "";
