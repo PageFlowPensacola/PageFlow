@@ -223,7 +223,7 @@ export function render(state) {
 async function update_template_details(id) {
 	localState.current_template = id;
 	let org_id = auth.get_org_id();
-	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${id}`});
+	auth.chggrp(id);
 	localState.pages = [];
 	const resp = await fetch(`/orgs/${org_id}/templates/${id}/pages`, {
 		headers: {
@@ -235,7 +235,6 @@ async function update_template_details(id) {
 }
 
 function handle_url_params() {
-	if (!auth.get_token()) return;
 	const params = new URLSearchParams(window.location.hash.slice(1));
 	const template_id = params.get("template") || '';
 	if (template_id) {
@@ -246,8 +245,7 @@ function handle_url_params() {
 		localState.current_page = null;
 		localState.pages = [];
 	}
-	let org_id = auth.get_org_id();
-	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${template_id}`});
+	auth.chggrp(template_id);
 }
 handle_url_params();
 

@@ -8,8 +8,9 @@ export function get_org_id() {
 }
 
 export function select_org(id) {
-	// TODO filter by access
-	org_id = id;
+	const grp = ws_group.split(":");
+	grp[0] = org_id = id;
+	ws_sync.send({cmd: "chgrp", group: ws_group = grp.join(":")});
 }
 
 export function get_token() {
@@ -18,6 +19,10 @@ export function get_token() {
 
 export function get_user() {
 	return user;
+}
+
+export function chggrp(grp) {
+	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${grp}`});
 }
 
 export async function get_user_details() {
