@@ -1,10 +1,8 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
 const {BUTTON, CANVAS, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
-import { simpleconfirm } from "./utils.js";
+import {simpleconfirm} from "./utils.js";
+import * as auth from "./auth.js";
 
-// TODO return user orgs on login. For now, hardcode the org ID.
-let org_id;
-let user = JSON.parse(localStorage.getItem("user") || "{}");
 let stateSnapshot = {};
 
 const localState = {
@@ -116,13 +114,10 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-export function socket_auth() {
-	return user?.token;
-}
+
 
 
 function signatory_fields(template) {
-	console.log("Rendering signatory fields", template);
 	return FIELDSET([
 		LEGEND("Potential Signatories"),
 		UL({class: 'signatory_fields'}, [
@@ -154,28 +149,9 @@ function template_thumbnails() {
 		)
 };
 
-function hellobutton() {
-	return BUTTON({class: 'hello', }, "Hello");
-}
-
 export function render(state) {
 	stateSnapshot = state;
 	console.log("Rendering with state", state);
-		if (!user?.token) {
-			return set_content("#pageheader",
-				FORM({id:"loginform"}, [
-					LABEL([
-						"Email: ", INPUT({name: "email"})
-					]),
-					LABEL([
-						"Password: ", INPUT({type: "password", name: "password"})
-					]),
-					BUTTON("Log in"),
-					hellobutton(),
-				])
-			);
-		} // no user token end
-		set_content("#pageheader", ["Welcome, ", user.email, " ", BUTTON({id: "logout"}, "Log out"), hellobutton()]);
 	if (typeof (state.page_count) === 'number') {
 		// If it got neither a non-zero page count or a template, it wasn't (re)rendering anything.
 		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page - 1]) {
@@ -213,7 +189,6 @@ export function render(state) {
 			]));
 	}
 	if (state.templates) {
-		console.log("Rendering template listing", localState, localState.uploading);
 			set_content("main", SECTION([
 				FORM({id: "template_submit"}, [
 					INPUT({value: "", id: "newTemplateName"}),
@@ -245,17 +220,18 @@ export function render(state) {
 
 }
 
-if (user.token) {
+if (auth.get_token()) {
 	get_user_details();
 }
 
 async function update_template_details(id) {
 	localState.current_template = id;
+	let org_id = auth.get_org_id();
 	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${id}`});
 	localState.pages = [];
 	const resp = await fetch(`/orgs/${org_id}/templates/${id}/pages`, {
 		headers: {
-			Authorization: "Bearer " + user.token
+			Authorization: "Bearer " + auth.get_token()
 		}
 	});
 	localState.pages = await resp.json();
@@ -263,7 +239,7 @@ async function update_template_details(id) {
 }
 
 function handle_url_params() {
-	if (!user.token) return;
+	if (!auth.get_token()) return;
 	const params = new URLSearchParams(window.location.hash.slice(1));
 	const template_id = params.get("template") || '';
 	if (template_id) {
@@ -274,25 +250,25 @@ function handle_url_params() {
 		localState.current_page = null;
 		localState.pages = [];
 	}
+	let org_id = auth.get_org_id();
 	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${template_id}`});
 }
 
 window.onpopstate = (event) => {
 	handle_url_params();
-	console.log({"popstate event": event, hash:location.hash});
 };
 
 async function get_user_details() {
-	if (!user.token) {
+	if (!auth.get_token()) {
 		return;
 	}
 	const userDetailsReq = await fetch("/user", {
 		headers: {
-			Authorization: "Bearer " + user.token
+			Authorization: "Bearer " + auth.get_token()
 		}
 	});
 	const userDetails = await userDetailsReq.json();
-	org_id = userDetails.primary_org;
+	auth.select_org(userDetails.primary_org);
 	handle_url_params();
 }
 
@@ -336,11 +312,12 @@ on("submit", "#template_submit", async function (e) {
 	const fileName = DOM("#newTemplateName").value;
 	localState.uploading++;
 	render(stateSnapshot);
+	let org_id = auth.get_org_id();
 	let resp = await fetch("/orgs/" + org_id + "/templates", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: "Bearer " + user.token
+			Authorization: "Bearer " + auth.get_token()
 		},
 		body: JSON.stringify({name: fileName})
 	});
@@ -348,7 +325,7 @@ on("submit", "#template_submit", async function (e) {
 	resp = await fetch(`/upload?template_id=${template_info.id}`, {
 		method: "POST",
 		headers: {
-			Authorization: "Bearer " + user.token
+			Authorization: "Bearer " + auth.get_token()
 		},
 		body: submittedFile
 	});
@@ -365,10 +342,11 @@ on("click", "#template_thumbnails figure", function (e) {
 
 on("click", ".delete-template", simpleconfirm("Delete this template", async function (e) {
 	const id = e.match.dataset.id;
+	let org_id = auth.get_org_id();
 	const resp = await fetch(`/orgs/${org_id}/templates/${id}`, {
 		method: "DELETE",
 		headers: {
-			Authorization: "Bearer " + user.token
+			Authorization: "Bearer " + auth.get_token()
 		}
 	});
 }));
@@ -385,7 +363,6 @@ on('change', '.signatory-field', (e) => {
 
 on('change', '.rectlabel', (e) => {
 	const id = e.match.closest("[data-rectid]").dataset.rectid;
-	console.log(id);
 	ws_sync.send({"cmd": "set_rect_signatory", "id": +id, "signatory_id": e.match.value});
 });
 
@@ -403,10 +380,6 @@ on('mouseover', '.rect-item', (e) => {
 on('mouseout', '.rect-item', () => {
   hovering = -1;
   repaint();
-});
-
-on('keydown', '#auditrects', (e) => {
-	console.log(e);
 });
 
 on("click", ".hello", function () {

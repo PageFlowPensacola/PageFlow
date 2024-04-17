@@ -238,7 +238,6 @@ class websocket_handler {
 	}
 
 	void websocket_cmd_chgrp(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-		werror("chgrp %O %O\n", conn, msg);
 		if (websocket_validate(conn, msg)) return;
 		websocket_groups[conn->group] -= ({conn->sock});
 		websocket_groups[conn->group = msg->group] += ({conn->sock});

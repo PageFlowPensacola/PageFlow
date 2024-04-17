@@ -4,6 +4,9 @@
 //information is global. So the progressive back-off will work a little oddly, and
 //more importantly, we assume that ALL sockets can be redirected safely to the same
 //destination.
+import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
+const {BUTTON, FORM, INPUT, LABEL} = choc; //autoimport
+import * as auth from "./auth.js";
 
 let default_handler = null;
 let send_socket, send_sockets = { }; //If populated, send() is functional.
@@ -21,6 +24,21 @@ export function get_userid() {
 	//Otherwise, see if the server provided a logged_in_as variable on startup.
 	try {return logged_in_as;}
 	catch (e) {return 0;}
+}
+if (!auth.get_token()) {
+	set_content("#pageheader",
+		FORM({id: "loginform"}, [
+			LABEL([
+				"Email: ", INPUT({name: "email"})
+			]),
+			LABEL([
+				"Password: ", INPUT({type: "password", name: "password"})
+			]),
+			BUTTON("Log in"),
+		])
+	);
+} else { // no user token end
+	set_content("#pageheader", ["Welcome, ", auth.get_user().email, " ", BUTTON({id: "logout"}, "Log out")]);
 }
 
 export function connect(group, handler)
@@ -42,7 +60,7 @@ export function connect(group, handler)
 		reconnect_delay = 250;
 		verbose("conn", "Socket connection established.");
 		const msg = {cmd: "init", type: handler.ws_type || ws_type, group};
-		if (handler.socket_auth) msg.auth = handler.socket_auth();
+		msg.auth = auth.get_token();
 		if (redirect_host && redirect_xfr) msg.xfr = redirect_xfr;
 		verbose("Sending init message:", msg);
 		socket.send(JSON.stringify(msg));

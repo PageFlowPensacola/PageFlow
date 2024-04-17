@@ -14,10 +14,6 @@ constant markdown = #"# Templates Listing
 
 ";
 
-void websocket_cmd_hello(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	werror("Got a hello! %O\n", conn->auth);
-}
-
 __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	sscanf((string)conn->group, "%d:%d", int org, int template);
 	// If we receive an id, make it an update
@@ -118,7 +114,7 @@ __async__ mapping(string:mixed)|string handle_list(Protocols.HTTP.Server.Request
 
 	return render(req,
 	([
-			"vars": (["ws_group": req->misc->auth ? org : ""]),
+			"vars": (["ws_group": ""]),
 	]));
 };
 
@@ -136,11 +132,14 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 		AND id = :template_id
 	", (["org_id":org, "template_id":template_id])));
 
+	werror("details: %O %O %O \n", details, org, template_id);
+
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
 			SELECT x1, y1, x2, y2, page_number, audit_type, template_signatory_id, id
 			FROM audit_rects
 			WHERE template_id = :template_id", (["template_id":template_id])));
 
+	//create empty array empty array for each of count of pages
 	array page_rects = allocate(details[0]->count, ({ }));
 
 	foreach(rects, mapping rect) {
