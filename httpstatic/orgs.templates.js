@@ -1,5 +1,5 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {BUTTON, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
+const {BUTTON, CANVAS, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
 import { simpleconfirm } from "./utils.js";
 
 // TODO return user orgs on login. For now, hardcode the org ID.
@@ -15,7 +15,7 @@ const localState = {
 	uploading: 0,
 };
 
-const canvas = choc.CANVAS({width:300, height:450});
+const canvas = CANVAS({width:300, height:450, style: "border: 1px solid black;"});
 const ctx = canvas.getContext('2d');
 
 const pageImage = new Image();
@@ -47,6 +47,7 @@ canvas.addEventListener('pointermove', (e) => {
 });
 
 canvas.addEventListener('pointerup', (e) => {
+	if (!currently_dragging) return;
   currently_dragging = false;
   e.target.releasePointerCapture(e.pointerId);
   let left = Math.min(rect_start_x, rect_end_x);
@@ -104,9 +105,16 @@ function repaint() {
       rect_start_y,
       rect_end_x - rect_start_x,
       rect_end_y - rect_start_y
-    );
+		);
   }
 }
+
+document.addEventListener("keydown", (e) => {
+	if (e.key === "Escape" && currently_dragging) {
+		currently_dragging = false;
+		repaint();
+	}
+});
 
 export function socket_auth() {
 	return user?.token;
@@ -395,6 +403,10 @@ on('mouseover', '.rect-item', (e) => {
 on('mouseout', '.rect-item', () => {
   hovering = -1;
   repaint();
+});
+
+on('keydown', '#auditrects', (e) => {
+	console.log(e);
 });
 
 on("click", ".hello", function () {

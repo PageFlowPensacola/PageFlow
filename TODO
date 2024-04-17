@@ -25,7 +25,6 @@ Enforce ip restrictions at both token generation and login
 add user_org joins to relevant queries to authorize user has access to this org
 Currently calls DB for each audit rect when updating transitions score.
 Add support for DB transactions and queue which will probably require making a connection pool.
-Escape key to undo in-progress rect.
 
 ## ENHANCEMENTS
 
