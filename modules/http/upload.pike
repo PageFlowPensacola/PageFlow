@@ -2,15 +2,12 @@ inherit http_endpoint;
 
 __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Request req) {
 	werror("req: %O\n", typeof(req->request_type));
-		if (req->request_type != "POST") {
-			return ([ "error": 405 ]);
-		}
-		//werror("req: %O\n", req);
-
-		// if user necessary:
-		// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
-		// string org_name = user->orgs[user->primary_org];
-
+	if (req->request_type != "POST") {
+		return ([ "error": 405 ]);
+	}
+	// if user necessary:
+	// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
+	// string org_name = user->orgs[user->primary_org];
 
 	/*
 		parse the body pdf and break into page pngs
