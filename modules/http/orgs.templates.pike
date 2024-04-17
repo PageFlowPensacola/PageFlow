@@ -1,18 +1,8 @@
-inherit restful_endpoint;
-inherit websocket_handler;
-
-string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	if (msg->group == "") return 0; // login not required.
-	if (string err = ::websocket_validate(conn, msg)) return err;
-	if (!conn->auth) return "Not logged in";
-	// TODO check for user org access
-}
+inherit http_websocket;
 
 constant unauthenticated_landing_page = 1;
 
-constant markdown = #"# Templates Listing
 
-";
 
 __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	sscanf((string)conn->group, "%d:%d", int org, int template);
@@ -110,13 +100,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	return (["templates":templates]);
 }
 
-__async__ mapping(string:mixed)|string handle_list(Protocols.HTTP.Server.Request req, string org) {
 
-	return render(req,
-	([
-			"vars": (["ws_group": ""]),
-	]));
-};
 
 __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int org, int template_id) {
 	if (! (int) org) return ([ "error": 403 ]);
@@ -208,8 +192,3 @@ __async__ mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols
 
 	return (["error": 204]);
 };
-
-
-// Due to a quirk in Pike, multiple inheritance
-// requires that the create() function be defined.
-protected void create(string name) {::create(name);}

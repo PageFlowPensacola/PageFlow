@@ -18,29 +18,6 @@ let reconnect_delay = 250;
 let redirect_host = null, redirect_xfr = null;
 const callbacks = {};
 
-let userid = 0;
-export function get_userid() {
-	if (userid) return userid;
-	//Otherwise, see if the server provided a logged_in_as variable on startup.
-	try {return logged_in_as;}
-	catch (e) {return 0;}
-}
-if (!auth.get_token()) {
-	set_content("#pageheader",
-		FORM({id: "loginform"}, [
-			LABEL([
-				"Email: ", INPUT({name: "email"})
-			]),
-			LABEL([
-				"Password: ", INPUT({type: "password", name: "password"})
-			]),
-			BUTTON("Log in"),
-		])
-	);
-} else { // no user token end
-	set_content("#pageheader", ["Welcome, ", auth.get_user().email, " ", BUTTON({id: "logout"}, "Log out")]);
-}
-
 export function connect(group, handler)
 {
 	if (!handler) handler = default_handler;
@@ -161,7 +138,27 @@ export function connect(group, handler)
 	};
 }
 //When ready, import the handler code. It'll be eg "/subpoints.js" but with automatic mtime handling.
-async function init() {default_handler = await import(ws_code); connect(ws_group);}
+async function init() {
+	if (!await auth.get_user_details()) {
+		set_content("#pageheader",
+			FORM({id: "loginform"}, [
+				LABEL([
+					"Email: ", INPUT({name: "email"})
+				]),
+				LABEL([
+					"Password: ", INPUT({type: "password", name: "password"})
+				]),
+				BUTTON("Log in"),
+			])
+		);
+	} else { // no user token end
+		set_content("#pageheader", ["Welcome, ", auth.get_user().email, " ", BUTTON({id: "logout"}, "Log out")]);
+		ws_group = auth.get_org_id() + ":" + ws_group;
+		default_handler = await import(ws_code);
+		connect(ws_group);
+	}
+}
+
 if (document.readyState !== "loading") init();
 else window.addEventListener("DOMContentLoaded", init);
 

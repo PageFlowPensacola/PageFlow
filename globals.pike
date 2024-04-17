@@ -57,6 +57,7 @@ class restful_endpoint
 }
 
 
+
 array(function|array) find_http_handler(string not_query) {
 	//Simple lookups are like http_endpoints["listrewards"], without the slash.
 	//Exclude eg http_endpoints["chan_vlc"] which are handled elsewhere.
@@ -302,6 +303,30 @@ class websocket_handler {
 		if (!ws_type) ws_type = name;
 		G->G->websocket_types[name] = this;
 	}
+}
+
+
+class http_websocket
+{
+	inherit http_endpoint;
+	inherit websocket_handler;
+
+	mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req) {
+		return render(req, (["vars": (["ws_group": ""])]));
+	};
+
+	constant markdown = "# Page Title";
+
+	string websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+		if (string err = ::websocket_validate(conn, msg)) return err;
+		if (!conn->auth) return "Not logged in";
+		// TODO check for user org access
+	}
+
+	// Due to a quirk in Pike, multiple inheritance
+	// requires that the create() function be defined.
+	protected void create(string name) {::create(name);}
+
 }
 
 // Markdown Parser

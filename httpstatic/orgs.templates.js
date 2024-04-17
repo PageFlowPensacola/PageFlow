@@ -220,10 +220,6 @@ export function render(state) {
 
 }
 
-if (auth.get_token()) {
-	get_user_details();
-}
-
 async function update_template_details(id) {
 	localState.current_template = id;
 	let org_id = auth.get_org_id();
@@ -253,24 +249,11 @@ function handle_url_params() {
 	let org_id = auth.get_org_id();
 	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${template_id}`});
 }
+handle_url_params();
 
 window.onpopstate = (event) => {
 	handle_url_params();
 };
-
-async function get_user_details() {
-	if (!auth.get_token()) {
-		return;
-	}
-	const userDetailsReq = await fetch("/user", {
-		headers: {
-			Authorization: "Bearer " + auth.get_token()
-		}
-	});
-	const userDetails = await userDetailsReq.json();
-	auth.select_org(userDetails.primary_org);
-	handle_url_params();
-}
 
 on("submit", "#loginform", async function (evt) {
 	evt.preventDefault();
