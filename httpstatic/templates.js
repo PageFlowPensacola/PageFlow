@@ -323,12 +323,7 @@ on("click", "#template_thumbnails figure", function (e) {
 on("click", ".delete-template", simpleconfirm("Delete this template", async function (e) {
 	const id = e.match.dataset.id;
 	let org_id = auth.get_org_id();
-	const resp = await fetch(`/orgs/${org_id}/templates/${id}`, {
-		method: "DELETE",
-		headers: {
-			Authorization: "Bearer " + auth.get_token()
-		}
-	});
+	ws_sync.send({"cmd": "delete_template", "id": +id, "org": org_id});
 }));
 
 on("click", ".delete-signatory", async function (e) {

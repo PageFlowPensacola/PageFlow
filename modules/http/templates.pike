@@ -174,17 +174,17 @@ __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:m
 
 mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string org, string template) { };
 
-__async__ mapping(string:mixed)|string|Concurrent.Future handle_delete(Protocols.HTTP.Server.Request req, string org, string template) {
+__async__ void websocket_cmd_delete_template(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+
 	string query = #"
 		DELETE FROM templates
 		WHERE id = :template
 		AND primary_org_id = :org";
-	mapping bindings = (["org":org, "template":template]);
+
+	mapping bindings = (["org":msg->org, "template":msg->id]);
 
 	await(G->G->DB->run_pg_query(query, bindings));
 
-	send_updates_all(org + ":");
-	send_updates_all(org + ":" + template);
-
-	return (["error": 204]);
+	send_updates_all(msg->org + ":");
+	send_updates_all(msg->org + ":" + msg->id);
 };
