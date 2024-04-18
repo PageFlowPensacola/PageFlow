@@ -10,6 +10,10 @@ CREATE TABLE template_pages (
 	template_id int NOT NULL REFERENCES templates ON DELETE CASCADE,
 	page_number smallint NOT NULL,
 	page_data BYTEA NOT NULL,
+	pxleft smallint,
+	pxtop smallint,
+	pxright smallint,
+	pxbottom smallint,
 	PRIMARY KEY (template_id, page_number)
 );
 
