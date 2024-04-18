@@ -25,10 +25,10 @@ int main (int argc, array(string) argv){
 		img->line(x2, y1, x2, y2);
 		img->line(x2, y2, x1, y2);
 		img->line(x1, y2, x1, y1);
-		left = min(left, x1, x2);
-		top = min(top, y1, y2);
-		right = max(right, x1, x2);
-		bottom = max(bottom, y1, y2);
+		left = min(left, (x1 + x2) / 2);
+		top = min(top, (y1 + y2) / 2);
+		right = max(right, (x1 + x2) / 2);
+		bottom = max(bottom, (y1 + y2) / 2);
 	}
 	img->setcolor(255, 0, 255);
 	img->line(left, top, right, top);
