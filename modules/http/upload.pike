@@ -88,9 +88,14 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	return sprintf("%d pages uploaded\n", count);
 };
 
-string prepare_upload(string type, mapping info) {
-	string id = MIME.encode_base64url(random_string(9));
+__async__ string contract(Protocols.HTTP.Server.Request req, mapping upload) {
+	werror("contract upload %O\n", upload);
+	return "contract";
+}
+
+string prepare_upload(string type, mapping info) {\
 	if (!this[type]) error("Invalid upload type.\n");
+	string id = MIME.encode_base64url(random_string(9));
 	pending_uploads[id] = ([ "type":type ]) | info;
 	return id;
 }
