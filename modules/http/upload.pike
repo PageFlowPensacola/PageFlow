@@ -65,7 +65,6 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
 	// string org_name = user->orgs[user->primary_org];
 
-	// GOES HERE
 	array pages = await(pdf2png(req->body_raw));
 
 	foreach(pages; int i; string current_page) {
@@ -101,6 +100,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 
 __async__ string contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("contract upload %O\n", upload);
+	array pages = await(pdf2png(req->body_raw));
 	return "contract";
 }
 
