@@ -156,7 +156,7 @@ __async__ mapping|zero get_user_details(string email) {
 	return user;
 }
 
-int calculate_transition_score(mapping r, object grey) {
+@export:int calculate_transition_score(mapping r, object grey) {
 	int last = -1, transition_count = 0;
 	int x1 = r->x1 * grey->xsize() / 32767;
 	int x2 = r->x2 * grey->xsize() / 32767;

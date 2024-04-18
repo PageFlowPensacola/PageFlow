@@ -100,7 +100,33 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 
 __async__ string contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("contract upload %O\n", upload);
+
+	array(mapping) rects = await(G->G->DB->run_pg_query(#"
+			SELECT x1, y1, x2, y2, template_signatory_id, transition_score, page_number
+			FROM audit_rects
+			WHERE template_id = :template_id
+			ORDER BY id",
+		(["template_id": upload->template_id])));
+
+	mapping template_rects = ([]);
+	foreach (rects, mapping r) template_rects[r->page_number] += ({r});
+
 	array pages = await(pdf2png(req->body_raw));
+
+	foreach(pages; int i; string current_page) {
+
+		mapping img = Image.PNG._decode(current_page);
+		object grey = img->image->grey();
+		werror("Grey: %O \n", grey);
+
+		foreach (template_rects[i+1] || ({}), mapping r) {
+			int calculated_transition_score = calculate_transition_score(r, grey);
+			int pixel_count = (r->x2 - r->x1) * (r->y2 - r->y1);
+
+			werror("Template Id: %3d Page no: %2d Signatory Id: %2d Pixel count: %9d, Transition score: %6d, Calculated transition score: %6d \n", upload->template_id, i+1, r->template_signatory_id || 0, pixel_count, r->transition_score, calculated_transition_score);
+		}
+
+	}
 	return "contract";
 }
 
