@@ -16,12 +16,7 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 	return await(this[upload->type](req, upload));
 }
 
-__async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
-
-	// if user necessary:
-	// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
-	// string org_name = user->orgs[user->primary_org];
-
+__async__ array pdf2png(string pdf) {
 	/*
 		parse the body pdf and break into page pngs
 		upload the pages to the storage
@@ -35,10 +30,11 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	// this is where we're probably going to need a shuffler.
 	// A shuffler is a Pike thing with is a very robust was of moving data around.
 	// results will contain the stdout, stderr, and exit code of the process
+	array pages = ({});
+
 	mapping results = await(run_promise(({"convert", "-density", "72", "-depth", "8", "-quality", "85", "-", "png:-"}),
-	(["stdin": req->body_raw])));
+	(["stdin": pdf])));
 	//werror("results: %O\n", indices(results));
-	werror("input file size: %O, %O\n", sizeof(results->stdout), sizeof(req->body_raw));
 	// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/_Stdio/Buffer.html#Buffer
 	Stdio.Buffer data = Stdio.Buffer(results->stdout);
 	// stdout will be a string containing the output of the process
@@ -56,11 +52,25 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			current_page+=sprintf("%4H%s", @chunk);
 			if (chunk[0] == "" && has_prefix(chunk[1], "IEND")) break; // break at the end marker
 		}
-		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
-		object page = Image.PNG.decode(current_page);
-
 		// could confirm template Id exists in templates table,
 		// but we just created it so it should be there
+		pages+=({ current_page });
+	} // end while data (pages)
+	return pages;
+}
+
+__async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
+
+	// if user necessary:
+	// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
+	// string org_name = user->orgs[user->primary_org];
+
+	// GOES HERE
+	array pages = await(pdf2png(req->body_raw));
+
+	foreach(pages; int i; string current_page) {
+		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
+		// object page = Image.PNG.decode(current_page);
 
 		string query = #"
 		INSERT INTO template_pages
@@ -70,11 +80,12 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		";
 
 		mapping bindings = (
-			["template_id":upload->template_id, "page_number":++count, "page_data":current_page]
+			["template_id":upload->template_id, "page_number":i+1, "page_data":current_page]
 		);
 
 		mapping results = await(G->G->DB->run_pg_query(query, bindings));
-	} // end while data (pages)
+	}
+
 	// Update the template record with the number of pages
 	string query = #"
 		UPDATE templates
@@ -82,10 +93,10 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		WHERE id = :template_id
 		RETURNING primary_org_id
 	";
-	mapping bindings = (["template_id":upload->template_id, "page_count":count]);
+	mapping bindings = (["template_id":upload->template_id, "page_count":sizeof(pages)]);
 	array(mapping) primary_org_ids = await(G->G->DB->run_pg_query(query, bindings));
 	G->G->websocket_types["templates"]->send_updates_all(primary_org_ids[0]->primary_org_id + ":");
-	return sprintf("%d pages uploaded\n", count);
+	return "done";
 };
 
 __async__ string contract(Protocols.HTTP.Server.Request req, mapping upload) {
@@ -102,5 +113,7 @@ string prepare_upload(string type, mapping info) {\
 
 protected void create(string name) {
 	::create(name);
+	//werror("%O\n", indices(this));
+	//werror("%O\n", indices(this_program));
 	G->G->prepare_upload = prepare_upload;
 }
