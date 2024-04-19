@@ -38,3 +38,17 @@ Update compare_transition_scores to consider page bounds
 on analysis submission generate page bounds and compare accordingly
 display feedback in interface
 integrate the ML endpoint
+
+## MONDAY
+Some scans are turning out too pale for useful transition detection. Others may end up too dark. Need to determine a threshold of darkness to recognize a transition (currently using 128).
+
+Possibilities: Take the average() of the entire image; take the min() and max() and split the difference; do all of the above based on the bounding box.
+
+Also may be worth using a percentile check. Find the pixel value such that 99% of the image is darker than it, and one such that 99% is lighter than it. Half way between those is our transition point (or other figures than 99%).
+
+Alternatively, define a transition not as "above" and "below" a fixed point, but as a sufficient delta from the previous pixel value.
+
+What constitutes sufficient? What if it transitions slowly over several pixels? So maybe we need to consider a "low" and "high" "water mark" for each strip.
+
+Getting threshold based on a single Tesseract makebox box
+might be useful.

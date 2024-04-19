@@ -123,6 +123,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
 		object grey = img->image->grey();
+		werror("Average %O Min %O Max %O\n", grey->average(), grey->min(), grey->max());
 
 		int left = bounds->left;
 		int top = bounds->top;

@@ -253,7 +253,7 @@ mapping calculate_transition_score(mapping r, mapping bounds, object grey) {
 	for (int strip = 0; strip < STRIP_COUNT; strip++) {
 		int y = ymid + (y2 - y1) * strip / STRIP_COUNT;
 		for (int x = x1; x < x2; x++) {
-			int cur = grey->getpixel(x, y)[0] > 128;
+			int cur = grey->getpixel(x, y)[0] > 224;
 			transition_count += (cur != last);
 			last = cur;
 		}
@@ -263,7 +263,7 @@ mapping calculate_transition_score(mapping r, mapping bounds, object grey) {
 	for (int strip = 0; strip < STRIP_COUNT; strip++) {
 		int x = xmid + (x2 - x1) * strip / STRIP_COUNT;
 		for (int y = y1; y < y2; y++) {
-			int cur = grey->getpixel(x, y)[0] > 128;
+			int cur = grey->getpixel(x, y)[0] > 224;
 			transition_count += (cur != last);
 			last = cur;
 		}
