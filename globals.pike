@@ -209,6 +209,7 @@ __async__ mapping calculate_image_bounds(string page_data, int imgwidth, int img
 	// and top is the number of px from the top edge of the image
 	// and right is the number of px from the _left_ edge of the image
 	// and bottom is the number of px from the _top_ edge of the image.
+	// Returned in px coordinates
 	mapping bounds = ([]);
 	bounds->left = imgwidth;
 	bounds->top = imgheight;
@@ -235,10 +236,17 @@ __async__ mapping calculate_image_bounds(string page_data, int imgwidth, int img
 
 int calculate_transition_score(mapping r, mapping bounds, object grey) {
 	int last = -1, transition_count = 0;
+	// Represent the box in px coords for the box we are now using,
+	// which may be based on a template or on a document.
 	int x1 = (int) (r->x1 * (bounds->right - bounds->left) + bounds->left);
 	int x2 = (int) (r->x2 * (bounds->right - bounds->left) + bounds->left);
 	int y1 = (int) (r->y1 * (bounds->bottom - bounds->top) + bounds->top);
 	int y2 = (int) (r->y2 * (bounds->bottom - bounds->top) + bounds->top);
+	// Now clamp to the image bounds
+	x1 = limit(0, x1, grey->xsize() - 1);
+	x2 = limit(0, x2, grey->xsize() - 1);
+	y1 = limit(0, y1, grey->ysize() - 1);
+	y2 = limit(0, y2, grey->ysize() - 1);
 	constant STRIP_COUNT = 16;
 	// regions and middle
 	int ymid = y1 + (y2 - y1) / STRIP_COUNT / 2;

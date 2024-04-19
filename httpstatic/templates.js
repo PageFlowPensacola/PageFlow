@@ -52,23 +52,42 @@ canvas.addEventListener('pointerup', (e) => {
 
 	const bounds = localState.pages[localState.current_page - 1];
 
+	// Calculate the width and height of the (text-based) bounding box
+	// returned based on Tesseract's output.
 	const width = bounds.pxright - bounds.pxleft;
 	const height = bounds.pxbottom - bounds.pxtop;
+
+	// Clamp rectangle to canvas/image bounds
+	rect_start_x = Math.min(Math.max(rect_start_x, 0), canvas.width);
+	// Here rect_start_x is the closest place _within_ the canvas to
+	// where the user started dragging.
+	rect_start_y = Math.min(Math.max(rect_start_y, 0), canvas.height);
+	rect_end_x = Math.min(Math.max(rect_end_x, 0), canvas.width);
+	rect_end_y = Math.min(Math.max(rect_end_y, 0), canvas.height);
 
 	// Normalize the rectangle since we don't know
 	// which direction the user dragged in.
 	// While we're at it remove margins as defined in bounding box.
-	let left = Math.min(rect_start_x, rect_end_x) - bounds.pxleft;
-	let top = Math.min(rect_start_y, rect_end_y) - bounds.pxtop;
-	let right = Math.max(rect_start_x, rect_end_x) - bounds.pxleft;
-	let bottom = Math.max(rect_start_y, rect_end_y) - bounds.pxtop;
+	let left = Math.min(rect_start_x, rect_end_x);
+	// Here left will be either rect_start_x or rect_end_x, whichever is least.
+	// Left will be the number of pixels from the left edge of the canvas to the
+	// left edge of the rectangle.
+	let top = Math.min(rect_start_y, rect_end_y);
+	let right = Math.max(rect_start_x, rect_end_x);
+	let bottom = Math.max(rect_start_y, rect_end_y);
 
-	// Now clamp to the bounding box (for now).
-
-	left = Math.max(Math.min(left, width), 0) / width;
-	top = Math.max(Math.min(top, height), 0) / height;
-	right = Math.max(Math.min(right, width), 0) / width;
-	bottom = Math.max(Math.min(bottom, height), 0) / height;
+	// Now we change the coordinate system from pixels to bounding box coordinates.
+	// The edges of the bounding box are defined as 0 and 1.
+	// Since most of these documents will be in portrait orientation,
+	// the Y scale will generally have a larger step size than the X scale,
+	// but this won't make a difference.
+	// First we cut off the margin, then in order to
+	// get the percentage of the bounding box, we divide by the width or height,
+	// which is the scale of our percentage.
+	left = (left - bounds.pxleft) / width;
+	top = (top - bounds.pxtop) / height;
+	right = (right - bounds.pxleft) / width;
+	bottom = (bottom - bounds.pxtop) / height;
 
 	if (right - left < .01 || bottom - top < .01) return;
 	ws_sync.send({
