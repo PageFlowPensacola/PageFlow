@@ -22,7 +22,8 @@ __async__ mapping(string:mixed)|Concurrent.Future handle_detail(Protocols.HTTP.S
 __async__ mapping(string:mixed)|Concurrent.Future handle_list(Protocols.HTTP.Server.Request req, string org, string template_id) {
 
 	string query = #"
-		SELECT p.page_data FROM template_pages p
+		SELECT page_data, pxleft, pxtop, pxright, pxbottom
+		FROM template_pages p
 		JOIN templates t ON p.template_id = t.id
 		WHERE t.id = :template_id
 		AND t.primary_org_id = :org_id
@@ -30,7 +31,10 @@ __async__ mapping(string:mixed)|Concurrent.Future handle_list(Protocols.HTTP.Ser
 	";
 	mapping bindings = (["org_id":org, "template_id":template_id]);
 	array(mapping(string:mixed)) pages = await(G->G->DB->run_pg_query(query, bindings));
+	foreach(pages, mapping page) {
+		page->page_data = "data:image/png;base64," + MIME.encode_base64(page->page_data);
+	}
 	// again Automap
-	return jsonify("data:image/png;base64," + MIME.encode_base64(pages->page_data[*])[*]);
+	return jsonify(pages);
 
 };

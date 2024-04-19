@@ -29,83 +29,95 @@ let currently_dragging = false;
 let hovering = -1;
 
 canvas.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  currently_dragging = true;
-  rect_start_x = rect_end_x = e.offsetX;
-  rect_start_y = rect_end_y = e.offsetY;
-  e.target.setPointerCapture(e.pointerId);
-  repaint();
+	e.preventDefault();
+	currently_dragging = true;
+	rect_start_x = rect_end_x = e.offsetX;
+	rect_start_y = rect_end_y = e.offsetY;
+	e.target.setPointerCapture(e.pointerId);
+	repaint();
 });
 
 canvas.addEventListener('pointermove', (e) => {
-  if (currently_dragging) {
-    rect_end_x = e.offsetX;
-    rect_end_y = e.offsetY;
-    repaint();
-  }
+	if (currently_dragging) {
+		rect_end_x = e.offsetX;
+		rect_end_y = e.offsetY;
+		repaint();
+	}
 });
 
 canvas.addEventListener('pointerup', (e) => {
 	if (!currently_dragging) return;
-  currently_dragging = false;
-  e.target.releasePointerCapture(e.pointerId);
-  let left = Math.min(rect_start_x, rect_end_x);
-  let top = Math.min(rect_start_y, rect_end_y);
-  let right = Math.max(rect_start_x, rect_end_x);
-  let bottom = Math.max(rect_start_y, rect_end_y);
-  // Now clamp to the canvas
+	currently_dragging = false;
+	e.target.releasePointerCapture(e.pointerId);
 
-  left = Math.max(Math.min(left, e.target.width), 0) / e.target.width;
-  top = Math.max(Math.min(top, e.target.height), 0) / e.target.height;
-  right = Math.max(Math.min(right, e.target.width), 0) / e.target.width;
-  bottom = Math.max(Math.min(bottom, e.target.height), 0) / e.target.height;
-  if (right - left < .01 || bottom - top < .01) return;
-  ws_sync.send({
-    "cmd": "add_rect",
-    "rect": {
-      left, top, right, bottom
-    },
-    "page": localState.current_page
-  });
+	const bounds = localState.pages[localState.current_page - 1];
+
+	const width = bounds.pxright - bounds.pxleft;
+	const height = bounds.pxbottom - bounds.pxtop;
+
+	// Normalize the rectangle since we don't know
+	// which direction the user dragged in.
+	// While we're at it remove margins as defined in bounding box.
+	let left = Math.min(rect_start_x, rect_end_x) - bounds.pxleft;
+	let top = Math.min(rect_start_y, rect_end_y) - bounds.pxtop;
+	let right = Math.max(rect_start_x, rect_end_x) - bounds.pxleft;
+	let bottom = Math.max(rect_start_y, rect_end_y) - bounds.pxtop;
+
+	// Now clamp to the bounding box (for now).
+
+	left = Math.max(Math.min(left, width), 0) / width;
+	top = Math.max(Math.min(top, height), 0) / height;
+	right = Math.max(Math.min(right, width), 0) / width;
+	bottom = Math.max(Math.min(bottom, height), 0) / height;
+
+	if (right - left < .01 || bottom - top < .01) return;
+	ws_sync.send({
+		"cmd": "add_rect",
+		"rect": {
+			left, top, right, bottom
+		},
+		"page": localState.current_page
+	});
 });
 
 function repaint() {
-  canvas.width = pageImage.width;
-  canvas.height = pageImage.height;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // Draw stuff here
+	canvas.width = pageImage.width;
+	canvas.height = pageImage.height;
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	// Draw stuff here
 	ctx.drawImage(pageImage, 0, 0);
-  for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
-    ctx.fillStyle = +hovering === rect.id ? "#ff88" : "#00f8";
-    const left = rect.x1 * pageImage.width;
-    const top = rect.y1 * pageImage.height;
-    const width = (rect.x2 - rect.x1) * pageImage.width;
-		const height = (rect.y2 - rect.y1) * pageImage.height;
-    ctx.fillRect(
-      left,
-      top,
-      width,
-      height
-    );
-    ctx.strokeStyle = "#00f";
-    ctx.strokeRect(
-      left,
-      top,
-      width,
-      height
-    );
-  }
-  if (currently_dragging) {
-    ctx.strokeStyle = "#f00";
-    ctx.lineWidth = 3;
-    ctx.fillStyle = "#0f08";
-    ctx.fillRect(
-      rect_start_x,
-      rect_start_y,
-      rect_end_x - rect_start_x,
-      rect_end_y - rect_start_y
+	const bounds = localState.pages[localState.current_page - 1];
+	for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
+		ctx.fillStyle = +hovering === rect.id ? "#ff88" : "#00f8";
+		const left = rect.x1 * (bounds.pxright - bounds.pxleft) + bounds.pxleft;
+		const top = rect.y1 * (bounds.pxbottom - bounds.pxtop) + bounds.pxtop;
+		const width = (rect.x2 - rect.x1) * (bounds.pxright - bounds.pxleft);
+		const height = (rect.y2 - rect.y1) * (bounds.pxbottom - bounds.pxtop);
+		ctx.fillRect(
+			left,
+			top,
+			width,
+			height
 		);
-  }
+		ctx.strokeStyle = "#00f";
+		ctx.strokeRect(
+			left,
+			top,
+			width,
+			height
+		);
+	}
+	if (currently_dragging) {
+		ctx.strokeStyle = "#f00";
+		ctx.lineWidth = 3;
+		ctx.fillStyle = "#0f08";
+		ctx.fillRect(
+			rect_start_x,
+			rect_start_y,
+			rect_end_x - rect_start_x,
+			rect_end_y - rect_start_y
+		);
+	}
 }
 
 document.addEventListener("keydown", (e) => {
@@ -141,9 +153,9 @@ function signatory_fields(template) {
 
 function template_thumbnails() {
 	return localState.pages.map(
-			(url, idx) => LI(
+			(page, idx) => LI(
 				FIGURE({"data-idx": idx + 1}, [
-					IMG({src: url, alt: "Page " + (idx + 1)}),
+					IMG({src: page.page_data, alt: "Page " + (idx + 1)}),
 					FIGCAPTION(["Page: ", (idx + 1)])
 				])
 			)
@@ -155,8 +167,8 @@ export function render(state) {
 	console.log("Rendering with state", state);
 	if (typeof (state.page_count) === 'number') {
 		// If it got neither a non-zero page count or a template, it wasn't (re)rendering anything.
-		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page - 1]) {
-			pageImage.src = localState.pages[localState.current_page - 1];
+		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page - 1].page_data) {
+			pageImage.src = localState.pages[localState.current_page - 1].page_data;
 		}
 			set_content("main", SECTION([
 				H2(state.name),
@@ -342,19 +354,19 @@ on('change', '.rectlabel', (e) => {
 });
 
 on('click', '.delete-rect', (e) => {
-  const id = e.match.closest("[data-rectid]").dataset.rectid;
-  ws_sync.send({"cmd": "delete_rect", "id": +id});
+	const id = e.match.closest("[data-rectid]").dataset.rectid;
+	ws_sync.send({"cmd": "delete_rect", "id": +id});
 });
 
 on('mouseover', '.rect-item', (e) => {
-  const id = e.match.closest("[data-rectid]").dataset.rectid;
-  hovering = id;
-  repaint();
+	const id = e.match.closest("[data-rectid]").dataset.rectid;
+	hovering = id;
+	repaint();
 });
 
 on('mouseout', '.rect-item', () => {
-  hovering = -1;
-  repaint();
+	hovering = -1;
+	repaint();
 });
 
 on("click", ".hello", function () {

@@ -204,6 +204,11 @@ Concurrent.Future run_promise(string|array(string) cmd, mapping modifiers = ([])
 }
 
 __async__ mapping calculate_image_bounds(string page_data, int imgwidth, int imgheight) {
+	//Bounds are in the form of left, top, right, bottom
+	// where left is the number of px from the left edge of the image
+	// and top is the number of px from the top edge of the image
+	// and right is the number of px from the _left_ edge of the image
+	// and bottom is the number of px from the _top_ edge of the image.
 	mapping bounds = ([]);
 	bounds->left = imgwidth;
 	bounds->top = imgheight;
