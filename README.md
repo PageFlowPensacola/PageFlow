@@ -7,6 +7,7 @@ Borrowing to the point of theft from https://github.com/Rosuav/StilleBot.
 - gtk2 (`brew install gtk+`)
 - Pike 9+
 - Image Magic (`brew install imagemagick`)
+– Tesseract
 
 ## Development
 
@@ -81,3 +82,9 @@ brew install --cask pdf-images
 brew install pdf2image
 `convert -density 300 "test_files/Residential Contract for Sale And Purchase One Initials Set.pdf" -background cyan -alpha Remove test_files/OneInitialsSet.png`
 https://imagemagick.org/script/command-line-options.php?#write
+
+### Tesseract
+
+We use Tesseract to generate a text bounding box on template and submitted files.
+Tesseract's `makebox` param generates `w 92 708 100 73 0` for each line where
+the five columns are the found letter, the four coordinates and the page number.

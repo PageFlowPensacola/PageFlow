@@ -31,3 +31,10 @@ Add support for DB transactions and queue which will probably require making a c
 Ability to load multiple template pages tabs.
 Return actual minified thumbnails.
 Manage broken/non PDF submissions
+
+## TOMORROW
+calc and store page bounding on template upload
+Update compare_transition_scores to consider page bounds
+on analysis submission generate page bounds and compare accordingly
+display feedback in interface
+integrate the ML endpoint

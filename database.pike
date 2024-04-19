@@ -191,7 +191,11 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 	// If page_number is 0, all pages are considered
 
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
-			SELECT template_id, x1, y1, x2, y2, page_number, audit_type, template_signatory_id, id, page_data
+			SELECT template_id, x1, y1, x2, y2,
+				page_number,
+				audit_type,
+				template_signatory_id,
+				id, page_data,
 			FROM audit_rects
 			NATURAL JOIN template_pages
 			WHERE transition_score = -1
