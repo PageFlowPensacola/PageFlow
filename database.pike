@@ -167,7 +167,7 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 				audit_type,
 				template_signatory_id,
 				id, page_data,
-				pxleft, pxright, pxtop, pxbottom,
+				pxleft, pxright, pxtop, pxbottom
 			FROM audit_rects
 			NATURAL JOIN template_pages
 			WHERE transition_score = -1
