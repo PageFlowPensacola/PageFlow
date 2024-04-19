@@ -190,12 +190,11 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 		}
 
 		int transition_score = calculate_transition_score(r, bounds, grey);
-		int pixel_count = (r->x2 - r->x1) * (r->y2 - r->y1);
 		await(G->G->DB->run_pg_query(#"
 			UPDATE audit_rects
 			SET transition_score = :score
 			WHERE id = :id", (["score": transition_score, "id": r->id])));
-		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Pixel count: %9d, Transition score: %6d\n", r->template_id, r->page_number, r->template_signatory_id || 0, pixel_count, transition_score);
+		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d\n", r->template_id, r->page_number, r->template_signatory_id || 0, transition_score);
 	}
 }
 
@@ -223,9 +222,8 @@ __async__ void compare_transition_scores(int template_id, int page_number, int f
 	mapping bounds = await(calculate_image_bounds(page[0]->page_data, img->xsize, img->ysize));
 	foreach (rects, mapping r) {
 		int calculated_transition_score = calculate_transition_score(r, bounds, grey);
-		int pixel_count = (r->x2 - r->x1) * (r->y2 - r->y1);
 
-		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Pixel count: %9d, Transition score: %6d, Calculated transition score: %6d \n", template_id, page_number, r->template_signatory_id || 0, pixel_count, r->transition_score, calculated_transition_score);
+		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", template_id, page_number, r->template_signatory_id || 0, r->transition_score, calculated_transition_score);
 	}
 }
 

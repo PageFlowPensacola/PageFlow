@@ -24,16 +24,16 @@ CREATE TABLE template_signatories (
 );
 
 CREATE TABLE audit_rects (
-  id BIGSERIAL PRIMARY KEY,
-  audit_type varchar NOT NULL, -- NOT IN USE initials, signature, date
+	id BIGSERIAL PRIMARY KEY,
+	audit_type varchar NOT NULL, -- NOT IN USE initials, signature, date
 	template_id int NOT NULL REFERENCES templates ON DELETE CASCADE,
 	page_number smallint NOT NULL,
-  x1 smallint NOT NULL,
-  y1 smallint NOT NULL,
-  x2 smallint NOT NULL,
-  y2 smallint NOT NULL,
-  name varchar DEFAULT NULL,
+	x1 double precision NOT NULL,
+	y1 double precision NOT NULL,
+	x2 double precision NOT NULL,
+	y2 double precision NOT NULL,
+	name varchar DEFAULT NULL,
 	-- ALTER table audit_rects add column transition_score int NOT NULL DEFAULT -1
 	transition_score int NOT NULL DEFAULT -1, -- to compare against signature
-  template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE
+	template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE
 );

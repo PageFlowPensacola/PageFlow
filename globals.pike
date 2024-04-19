@@ -235,10 +235,10 @@ __async__ mapping calculate_image_bounds(string page_data, int imgwidth, int img
 
 int calculate_transition_score(mapping r, mapping bounds, object grey) {
 	int last = -1, transition_count = 0;
-	int x1 = r->x1 * (bounds->right - bounds->left) / 32767 + bounds->left;
-	int x2 = r->x2 * (bounds->right - bounds->left) / 32767 + bounds->left;
-	int y1 = r->y1 * (bounds->bottom - bounds->top) / 32767 + bounds->top;
-	int y2 = r->y2 * (bounds->bottom - bounds->top) / 32767 + bounds->top;
+	int x1 = (int) (r->x1 * (bounds->right - bounds->left) + bounds->left);
+	int x2 = (int) (r->x2 * (bounds->right - bounds->left) + bounds->left);
+	int y1 = (int) (r->y1 * (bounds->bottom - bounds->top) + bounds->top);
+	int y2 = (int) (r->y2 * (bounds->bottom - bounds->top) + bounds->top);
 	constant STRIP_COUNT = 16;
 	// regions and middle
 	int ymid = y1 + (y2 - y1) / STRIP_COUNT / 2;

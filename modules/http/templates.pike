@@ -47,11 +47,10 @@ __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string
 		)
 		VALUES (:template_id, :x1, :y1, :x2, :y2, :page_number, :audit_type, :signatory_id)", ([
 			"template_id": template,
-			// multiply by 2 pow 15 (32767) to get to largest number that fits in a signed int
-			"x1": msg->rect->left * 32767,
-			"y1": msg->rect->top * 32767,
-			"x2": msg->rect->right * 32767,
-			"y2": msg->rect->bottom * 32767,
+			"x1": msg->rect->left,
+			"y1": msg->rect->top,
+			"x2": msg->rect->right,
+			"y2": msg->rect->bottom,
 			"page_number": page,
 			"audit_type": "rect",
 			"signatory_id": msg->signatory_id
@@ -121,10 +120,6 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 	array page_rects = allocate(details[0]->count, ({ }));
 
 	foreach(rects, mapping rect) {
-		rect-> x1 /= 32767.0;
-		rect-> y1 /= 32767.0;
-		rect-> x2 /= 32767.0;
-		rect-> y2 /= 32767.0;
 		page_rects[rect->page_number - 1] += ({ rect });
 	}
 
