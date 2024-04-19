@@ -98,7 +98,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	return "done";
 };
 
-__async__ string contract(Protocols.HTTP.Server.Request req, mapping upload) {
+__async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("contract upload %O\n", upload);
 
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
@@ -111,22 +111,44 @@ __async__ string contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	mapping template_rects = ([]);
 	foreach (rects, mapping r) template_rects[r->page_number] += ({r});
 
+	array annotated_pages = ({});
+
 	array pages = await(pdf2png(req->body_raw));
 
 	foreach(pages; int i; string current_page) {
 
 		mapping img = Image.PNG._decode(current_page);
+
 		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
 		object grey = img->image->grey();
 
+		int left = bounds->left;
+		int top = bounds->top;
+		int right = bounds->right;
+		int bottom = bounds->bottom;
+
+		img->image->setcolor(255, 0, 255);
+		img->image->line(left, top, right, top);
+		img->image->line(right, top, right, bottom);
+		img->image->line(right, bottom, left, bottom);
+		img->image->line(left, bottom, left, top);
+		img->image->line(left, top, right, bottom);
+		img->image->line(right, top, left, bottom);
+
+		img->image->setcolor(0, 192, 0);
+
 		foreach (template_rects[i+1] || ({}), mapping r) {
-			int calculated_transition_score = calculate_transition_score(r, bounds, grey);
+			mapping box = calculate_transition_score(r, bounds, grey);
+			img->image->line(box->x1, box->y1, box->x2, box->y1);
+			img->image->line(box->x2, box->y1, box->x2, box->y2);
+			img->image->line(box->x2, box->y2, box->x1, box->y2);
+			img->image->line(box->x1, box->y2, box->x1, box->y1);
 
-			werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", upload->template_id, i+1, r->template_signatory_id || 0, r->transition_score, calculated_transition_score);
+			werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", upload->template_id, i+1, r->template_signatory_id || 0, r->transition_score, box->score);
 		}
-
+		annotated_pages+=({ "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)) });
 	}
-	return "contract";
+	return jsonify((["pages": annotated_pages]));
 }
 
 string prepare_upload(string type, mapping info) {\

@@ -234,7 +234,7 @@ __async__ mapping calculate_image_bounds(string page_data, int imgwidth, int img
 	return bounds;
 }
 
-int calculate_transition_score(mapping r, mapping bounds, object grey) {
+mapping calculate_transition_score(mapping r, mapping bounds, object grey) {
 	int last = -1, transition_count = 0;
 	// Represent the box in px coords for the box we are now using,
 	// which may be based on a template or on a document.
@@ -268,7 +268,7 @@ int calculate_transition_score(mapping r, mapping bounds, object grey) {
 			last = cur;
 		}
 	}
-	return transition_count;
+	return (["score":transition_count, "x1":x1, "x2":x2, "y1":y1, "y2":y2]);
 }
 
 
