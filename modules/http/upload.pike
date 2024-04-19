@@ -115,6 +115,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	array pages = await(pdf2png(req->body_raw));
 
+	constant IS_A_SIGNATURE = 75;
+
 	foreach(pages; int i; string current_page) {
 
 		mapping img = Image.PNG._decode(current_page);
@@ -135,23 +137,28 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		img->image->line(left, top, right, bottom);
 		img->image->line(right, top, left, bottom);
 
-		img->image->setcolor(0, 192, 0);
-
 		foreach (template_rects[i+1] || ({}), mapping r) {
 			mapping box = calculate_transition_score(r, bounds, grey);
+
+			img->image->setcolor(0, 192, 0, 0);
 			img->image->line(box->x1, box->y1, box->x2, box->y1);
 			img->image->line(box->x2, box->y1, box->x2, box->y2);
 			img->image->line(box->x2, box->y2, box->x1, box->y2);
 			img->image->line(box->x1, box->y2, box->x1, box->y1);
 
+			int alpha = limit(16, (box->score - r->transition_score) * 255 / IS_A_SIGNATURE, 255);
+
+			img->image->box(box->x1, box->y1, box->x2, box->y2, 0, 192, 192, 255 - alpha);
+
 			werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", upload->template_id, i+1, r->template_signatory_id || 0, r->transition_score, box->score);
 		}
 		annotated_pages+=({ "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)) });
 	}
+	// r->transition_score, box->score
 	return jsonify((["pages": annotated_pages]));
 }
 
-string prepare_upload(string type, mapping info) {\
+string prepare_upload(string type, mapping info) {
 	if (!this[type]) error("Invalid upload type.\n");
 	string id = MIME.encode_base64url(random_string(9));
 	pending_uploads[id] = ([ "type":type ]) | info;
