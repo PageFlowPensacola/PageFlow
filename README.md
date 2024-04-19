@@ -88,3 +88,15 @@ https://imagemagick.org/script/command-line-options.php?#write
 We use Tesseract to generate a text bounding box on template and submitted files.
 Tesseract's `makebox` param generates `w 92 708 100 73 0` for each line where
 the five columns are the found letter, the four coordinates and the page number.
+
+### Audit Rectangles
+
+For each page template, a number of audit rectangles are stored.
+Each submitted file is compared to matching template and scored
+based on the dark/light transition count within the bounds of the
+rectangle area.
+To account for varying margins between template file and submitted file,
+the bounds of page text area are calculated and when comparing each
+rectangle is rescaled proportionally to the page bounds, with
+corresponding margins adjusted to match the saved page rect (which
+does not take into account page text bounds).

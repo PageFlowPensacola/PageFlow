@@ -116,11 +116,11 @@ __async__ string contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	foreach(pages; int i; string current_page) {
 
 		mapping img = Image.PNG._decode(current_page);
+		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
 		object grey = img->image->grey();
-		werror("Grey: %O \n", grey);
 
 		foreach (template_rects[i+1] || ({}), mapping r) {
-			int calculated_transition_score = calculate_transition_score(r, grey);
+			int calculated_transition_score = calculate_transition_score(r, bounds, grey);
 			int pixel_count = (r->x2 - r->x1) * (r->y2 - r->y1);
 
 			werror("Template Id: %3d Page no: %2d Signatory Id: %2d Pixel count: %9d, Transition score: %6d, Calculated transition score: %6d \n", upload->template_id, i+1, r->template_signatory_id || 0, pixel_count, r->transition_score, calculated_transition_score);

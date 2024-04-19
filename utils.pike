@@ -16,32 +16,6 @@ __async__ void compare_scores() {
 	await(G->G->DB->compare_transition_scores(@args));
 }
 
-__async__ mapping calculate_image_bounds(string page_data) {
-	mapping bounds = ([]);
-	mapping img = Image.PNG._decode(page_data);
-		bounds->left = img->xsize;
-		bounds->top = img->ysize;
-		mapping rc = await(run_promise(({"tesseract", "-", "-", "makebox"}), (["stdin": page_data])));
-		foreach(rc->stdout / "\n", string line){
-			array(string) parts = line / " ";
-			if (sizeof(parts) < 6){
-				continue;
-			}
-			if (parts[0] == "~"){
-				continue;
-			}
-			int x1 = (int)parts[1];
-			int y1 = img->ysize - (int)parts[2];
-			int x2 = (int)parts[3];
-			int y2 = img->ysize - (int)parts[4];
-			bounds->left = min(bounds->left, (x1 + x2) / 2);
-			bounds->top = min(bounds->top, (y1 + y2) / 2);
-			bounds->right = max(bounds->right, (x1 + x2) / 2);
-			bounds->bottom = max(bounds->bottom, (y1 + y2) / 2);
-		}
-	return bounds;
-}
-
 __async__ void update_page_bounds() {
 	array(mapping) pages = await(G->G->DB->run_pg_query(#"
 			SELECT template_id, page_number, page_data
@@ -49,7 +23,8 @@ __async__ void update_page_bounds() {
 			WHERE pxleft IS NULL"));
 
 	foreach(pages, mapping page) {
-		mapping bounds = await(calculate_image_bounds(page->page_data));
+		mapping img = Image.PNG._decode(page_data);
+		mapping bounds = await(calculate_image_bounds(page->page_data, img->xsize, img->ysize));
 		await(G->G->DB->run_pg_query(#"
 				UPDATE template_pages
 				SET pxleft = :left, pxright = :right, pxtop = :top, pxbottom = :bottom

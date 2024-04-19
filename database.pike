@@ -156,35 +156,6 @@ __async__ mapping|zero get_user_details(string email) {
 	return user;
 }
 
-@export:int calculate_transition_score(mapping r, object grey) {
-	int last = -1, transition_count = 0;
-	int x1 = r->x1 * grey->xsize() / 32767;
-	int x2 = r->x2 * grey->xsize() / 32767;
-	int y1 = r->y1 * grey->ysize() / 32767;
-	int y2 = r->y2 * grey->ysize() / 32767;
-	constant STRIP_COUNT = 16;
-	// regions and middle
-	int ymid = y1 + (y2 - y1) / STRIP_COUNT / 2;
-	for (int strip = 0; strip < STRIP_COUNT; strip++) {
-		int y = ymid + (y2 - y1) * strip / STRIP_COUNT;
-		for (int x = x1; x < x2; x++) {
-			int cur = grey->getpixel(x, y)[0] > 128;
-			transition_count += (cur != last);
-			last = cur;
-		}
-	}
-	last = -1;
-	int xmid = x1 + (x2 - x1) / STRIP_COUNT / 2;
-	for (int strip = 0; strip < STRIP_COUNT; strip++) {
-		int x = xmid + (x2 - x1) * strip / STRIP_COUNT;
-		for (int y = y1; y < y2; y++) {
-			int cur = grey->getpixel(x, y)[0] > 128;
-			transition_count += (cur != last);
-			last = cur;
-		}
-	}
-	return transition_count;
-}
 
 __async__ void recalculate_transition_scores(int template_id, int page_number) {
 	// If template_id is 0, all templates are considered
@@ -196,6 +167,7 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 				audit_type,
 				template_signatory_id,
 				id, page_data,
+				pxleft, pxright, pxtop, pxbottom,
 			FROM audit_rects
 			NATURAL JOIN template_pages
 			WHERE transition_score = -1
@@ -207,15 +179,17 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 	mapping img;
 	object grey;
 	string last_page_data;
+	mapping bounds;
 	foreach (rects, mapping r) {
 		// Pike uses string interning here, so this is an efficient comparison
 		if (r->page_data != last_page_data) {
+			bounds = (["left": r->pxleft, "right": r->pxright, "top": r->pxtop, "bottom": r->pxbottom ]);
 			img = Image.PNG._decode(r->page_data);
 			grey = img->image->grey();
 			last_page_data = r->page_data;
 		}
 
-		int transition_score = calculate_transition_score(r, grey);
+		int transition_score = calculate_transition_score(r, bounds, grey);
 		int pixel_count = (r->x2 - r->x1) * (r->y2 - r->y1);
 		await(G->G->DB->run_pg_query(#"
 			UPDATE audit_rects
@@ -246,10 +220,9 @@ __async__ void compare_transition_scores(int template_id, int page_number, int f
 
 	mapping img = Image.PNG._decode(page[0]->page_data);
 	object grey = img->image->grey();
-	werror("Grey: %O \n", grey);
-
+	mapping bounds = await(calculate_image_bounds(page[0]->page_data, img->xsize, img->ysize));
 	foreach (rects, mapping r) {
-		int calculated_transition_score = calculate_transition_score(r, grey);
+		int calculated_transition_score = calculate_transition_score(r, bounds, grey);
 		int pixel_count = (r->x2 - r->x1) * (r->y2 - r->y1);
 
 		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Pixel count: %9d, Transition score: %6d, Calculated transition score: %6d \n", template_id, page_number, r->template_signatory_id || 0, pixel_count, r->transition_score, calculated_transition_score);

@@ -203,6 +203,61 @@ Concurrent.Future run_promise(string|array(string) cmd, mapping modifiers = ([])
   return promise->future();
 }
 
+__async__ mapping calculate_image_bounds(string page_data, int imgwidth, int imgheight) {
+	mapping bounds = ([]);
+	bounds->left = imgwidth;
+	bounds->top = imgheight;
+	mapping rc = await(run_promise(({"tesseract", "-", "-", "makebox"}), (["stdin": page_data])));
+	foreach(rc->stdout / "\n", string line){
+		array(string) parts = line / " ";
+		if (sizeof(parts) < 6){
+			continue;
+		}
+		if (parts[0] == "~"){
+			continue;
+		}
+		int x1 = (int)parts[1];
+		int y1 = imgheight - (int)parts[2];
+		int x2 = (int)parts[3];
+		int y2 = imgheight - (int)parts[4];
+		bounds->left = min(bounds->left, (x1 + x2) / 2);
+		bounds->top = min(bounds->top, (y1 + y2) / 2);
+		bounds->right = max(bounds->right, (x1 + x2) / 2);
+		bounds->bottom = max(bounds->bottom, (y1 + y2) / 2);
+	}
+	return bounds;
+}
+
+int calculate_transition_score(mapping r, mapping bounds, object grey) {
+	int last = -1, transition_count = 0;
+	int x1 = r->x1 * (bounds->right - bounds->left) / 32767 + bounds->left;
+	int x2 = r->x2 * (bounds->right - bounds->left) / 32767 + bounds->left;
+	int y1 = r->y1 * (bounds->bottom - bounds->top) / 32767 + bounds->top;
+	int y2 = r->y2 * (bounds->bottom - bounds->top) / 32767 + bounds->top;
+	constant STRIP_COUNT = 16;
+	// regions and middle
+	int ymid = y1 + (y2 - y1) / STRIP_COUNT / 2;
+	for (int strip = 0; strip < STRIP_COUNT; strip++) {
+		int y = ymid + (y2 - y1) * strip / STRIP_COUNT;
+		for (int x = x1; x < x2; x++) {
+			int cur = grey->getpixel(x, y)[0] > 128;
+			transition_count += (cur != last);
+			last = cur;
+		}
+	}
+	last = -1;
+	int xmid = x1 + (x2 - x1) / STRIP_COUNT / 2;
+	for (int strip = 0; strip < STRIP_COUNT; strip++) {
+		int x = xmid + (x2 - x1) * strip / STRIP_COUNT;
+		for (int y = y1; y < y2; y++) {
+			int cur = grey->getpixel(x, y)[0] > 128;
+			transition_count += (cur != last);
+			last = cur;
+		}
+	}
+	return transition_count;
+}
+
 
 @"G->G->websocket_types"; @"G->G->websocket_groups";
 class websocket_handler {
