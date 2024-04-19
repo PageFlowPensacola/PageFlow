@@ -77,10 +77,10 @@ function repaint() {
 	ctx.drawImage(pageImage, 0, 0);
   for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
     ctx.fillStyle = +hovering === rect.id ? "#ff88" : "#00f8";
-    const left = rect.x1 * canvas.width;
-    const top = rect.y1 * canvas.height;
-    const width = (rect.x2 - rect.x1) * canvas.width;
-		const height = (rect.y2 - rect.y1) * canvas.height;
+    const left = rect.x1 * pageImage.width;
+    const top = rect.y1 * pageImage.height;
+    const width = (rect.x2 - rect.x1) * pageImage.width;
+		const height = (rect.y2 - rect.y1) * pageImage.height;
     ctx.fillRect(
       left,
       top,

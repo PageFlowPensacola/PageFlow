@@ -103,13 +103,11 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 	if (!template_id) return 0;
 
 	mapping details = await(G->G->DB->run_pg_query(#"
-		SELECT name,
-		(SELECT count(*)
-		FROM template_pages
-		WHERE template_id = :template_id)
+		SELECT name, page_count as count
 		FROM templates
 		WHERE primary_org_id = :org_id
 		AND id = :template_id
+		AND page_count IS NOT NULL
 	", (["org_id":org, "template_id":template_id])));
 
 	werror("details: %O %O %O \n", details, org, template_id);
