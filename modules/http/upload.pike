@@ -32,7 +32,7 @@ __async__ array pdf2png(string pdf) {
 	// results will contain the stdout, stderr, and exit code of the process
 	array pages = ({});
 
-	mapping results = await(run_promise(({"convert", "-density", "72", "-depth", "8", "-quality", "85", "-", "png:-"}),
+	mapping results = await(run_promise(({"convert", "-density", "300", "-depth", "8", "-quality", "85", "-", "png:-"}),
 	(["stdin": pdf])));
 	//werror("results: %O\n", indices(results));
 	// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/_Stdio/Buffer.html#Buffer
