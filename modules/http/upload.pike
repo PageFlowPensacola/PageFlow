@@ -117,6 +117,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	constant IS_A_SIGNATURE = 75;
 
+	bool confidence = 1;
+
 	foreach(pages; int i; string current_page) {
 
 		mapping img = Image.PNG._decode(current_page);
@@ -137,6 +139,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		img->image->line(left, bottom, left, top);
 		img->image->line(left, top, right, bottom);
 		img->image->line(right, top, left, bottom);
+		int page_transition_score = 0;
+		int page_calculated_transition_score = 0;
 
 		foreach (template_rects[i+1] || ({}), mapping r) {
 			mapping box = calculate_transition_score(r, bounds, grey);
@@ -151,12 +155,17 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 			img->image->box(box->x1, box->y1, box->x2, box->y2, 0, 192, 192, 255 - alpha);
 
+			page_transition_score += r->transition_score;
+			page_calculated_transition_score += box->score;
+
 			werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", upload->template_id, i+1, r->template_signatory_id || 0, r->transition_score, box->score);
+		}
+		if (page_calculated_transition_score < page_transition_score) {
+			confidence = 0;
 		}
 		annotated_pages+=({ "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)) });
 	}
-	// r->transition_score, box->score
-	return jsonify((["pages": annotated_pages]));
+	return jsonify((["pages": annotated_pages, "confidence": confidence]));
 }
 
 string prepare_upload(string type, mapping info) {

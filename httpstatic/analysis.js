@@ -1,11 +1,10 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {FIGURE, FORM, IMG, INPUT, P, SECTION} = choc; //autoimport
+const {FIGURE, FORM, H3, IMG, INPUT, P, SECTION} = choc; //autoimport
 import * as auth from "./auth.js";
 
 const localState = {};
 let submittedFile = null;
 let stateSnapshot = {};
-let templatePages = [];
 
 export function render(state) {
 	stateSnapshot = state;
@@ -14,7 +13,8 @@ export function render(state) {
 			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
 			localState.uploading && P({style: "display:inline"}, "Uploading... "),
 		]),
-		templatePages.map((page, idx) => {
+		(typeof(localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
+		localState.templatePages?.map((page, idx) => {
 			return FIGURE([
 				IMG({src: page}),
 			]);
@@ -39,8 +39,9 @@ export async function sockmsg_upload(msg) {
 		body: submittedFile
 	});
 	const json = await resp.json();
-	templatePages = json.pages;
 	console.log("Upload response", json);
+	localState.templatePages = json.pages;
+	localState.confidence = json.confidence;
 	localState.uploading--;
 	render(stateSnapshot);
 };
