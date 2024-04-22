@@ -71,16 +71,21 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
 		// object page = Image.PNG.decode(current_page);
 
+
+		mapping img = Image.PNG._decode(current_page);
+		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
+
 		string query = #"
 		INSERT INTO template_pages
-			(template_id, page_number, page_data)
+			(template_id, page_number, page_data,
+			pxleft, pxright, pxtop, pxbottom)
 		VALUES
-			(:template_id, :page_number, :page_data)
+			(:template_id, :page_number, :page_data, :left, :right, :top, :bottom)
 		";
 
-		mapping bindings = (
-			["template_id":upload->template_id, "page_number":i+1, "page_data":current_page]
-		);
+		mapping bindings = ([
+			"template_id":upload->template_id, "page_number":i+1, "page_data":current_page,
+			]) | bounds; // the pipe (bitwise or) operator is a way to merge two mappings
 
 		mapping results = await(G->G->DB->run_pg_query(query, bindings));
 	}
