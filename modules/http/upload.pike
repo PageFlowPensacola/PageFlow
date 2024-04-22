@@ -100,6 +100,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 
 __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("contract upload %O\n", upload);
+	object tm = System.Timer();
 
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
 			SELECT x1, y1, x2, y2, template_signatory_id, transition_score, page_number
@@ -121,14 +122,23 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	foreach(pages; int i; string current_page) {
 
+		if (!template_rects[i+1]) {
+			annotated_pages+=({ "data:image/png;base64," + MIME.encode_base64(current_page) });
+			continue;
+		}
+
 		mapping img = Image.PNG._decode(current_page);
 
-		// Make a blank image of the same size as the original image
-		object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
-		// Paste original into it, fading based on alpha channel
-		img->image = blank->paste_mask(img->image, img->alpha);
+		if (img->alpha) {
+			// Make a blank image of the same size as the original image
+			object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
+			// Paste original into it, fading based on alpha channel
+			img->image = blank->paste_mask(img->image, img->alpha);
+		}
 
 		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
+		werror("[%6.3f] Calculated (expensive) bounds\n", tm->peek());
+
 		object grey = img->image->grey();
 
 		int left = bounds->left;
@@ -167,8 +177,11 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		if (page_calculated_transition_score < page_transition_score) {
 			confidence = 0;
 		}
+
 		annotated_pages+=({ "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)) });
+
 	}
+	werror("[%6.3f] Done\n", tm->peek());
 	return jsonify((["pages": annotated_pages, "confidence": confidence]));
 }
 
