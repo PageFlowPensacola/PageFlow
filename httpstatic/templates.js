@@ -102,10 +102,22 @@ canvas.addEventListener('pointerup', (e) => {
 function repaint() {
 	canvas.width = pageImage.width;
 	canvas.height = pageImage.height;
+
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	// Draw stuff here
 	ctx.drawImage(pageImage, 0, 0);
 	const bounds = localState.pages[localState.current_page - 1];
+	ctx.strokeStyle = "magenta";
+	ctx.lineWidth = 1;
+	ctx.moveTo(bounds.pxleft, bounds.pxtop);
+	ctx.lineTo(bounds.pxright, bounds.pxtop);
+	ctx.lineTo(bounds.pxright, bounds.pxbottom);
+	ctx.lineTo(bounds.pxleft, bounds.pxbottom);
+	ctx.lineTo(bounds.pxleft, bounds.pxtop);
+	ctx.lineTo(bounds.pxright, bounds.pxbottom);
+	ctx.moveTo(bounds.pxright, bounds.pxtop);
+	ctx.lineTo(bounds.pxleft, bounds.pxbottom);
+	ctx.stroke();
 	for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
 		ctx.fillStyle = +hovering === rect.id ? "#ff88" : "#00f8";
 		const left = rect.x1 * (bounds.pxright - bounds.pxleft) + bounds.pxleft;

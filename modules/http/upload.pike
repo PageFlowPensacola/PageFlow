@@ -182,7 +182,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	}
 	werror("[%6.3f] Done\n", tm->peek());
-	return jsonify((["pages": annotated_pages, "confidence": confidence]));
+	return jsonify((["pages": annotated_pages, "confidence": confidence, "rects": sizeof(rects)]));
 }
 
 string prepare_upload(string type, mapping info) {
