@@ -235,7 +235,7 @@ __async__ mapping calculate_image_bounds(string page_data, int imgwidth, int img
 }
 
 mapping calculate_transition_score(mapping r, mapping bounds, object grey) {
-	int last = -1, transition_count = 0, last_value;
+	int last = -1, transition_count = 0;
 	// Represent the box in px coords for the box we are now using,
 	// which may be based on a template or on a document.
 	int x1 = (int) (r->x1 * (bounds->right - bounds->left) + bounds->left);
@@ -253,31 +253,9 @@ mapping calculate_transition_score(mapping r, mapping bounds, object grey) {
 	for (int strip = 0; strip < STRIP_COUNT; strip++) {
 		int y = ymid + (y2 - y1) * strip / STRIP_COUNT;
 		for (int x = x1; x < x2; x++) {
-			// Potential alternate algorithm to account for
-			// softer transitions
-			int cur = grey->getpixel(x, y)[0]; // 0 - 255
-			if (last == -1) {
-				last = cur > 128;
-				last_value = cur;
-				continue;
-			}
-
-			int delta = last_value - cur;
-			if (!last) {
-				// We are in a dark region
-				// Expecting last value to be low
-				delta = -delta;
-			}
-			if (delta > 32) {
-				transition_count++;
-				last = !last;
-				last_value = cur;
-			} else {
-				if (delta < 0) {
-					// take this as our new lightest point
-				last_value = cur;
-				}
-			}
+			int cur = grey->getpixel(x, y)[0] > 128;
+			transition_count += (cur != last);
+			last = cur;
 		}
 	}
 	last = -1;
@@ -285,7 +263,7 @@ mapping calculate_transition_score(mapping r, mapping bounds, object grey) {
 	for (int strip = 0; strip < STRIP_COUNT; strip++) {
 		int x = xmid + (x2 - x1) * strip / STRIP_COUNT;
 		for (int y = y1; y < y2; y++) {
-			int cur = grey->getpixel(x, y)[0];
+			int cur = grey->getpixel(x, y)[0] > 128;
 			transition_count += (cur != last);
 			last = cur;
 		}
