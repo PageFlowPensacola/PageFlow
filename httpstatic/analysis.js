@@ -1,5 +1,5 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {FIGURE, FORM, H3, IMG, INPUT, P, SECTION} = choc; //autoimport
+const {FIGURE, FORM, H3, IMG, INPUT, OPTION, P, SECTION, SELECT} = choc; //autoimport
 import * as auth from "./auth.js";
 
 const localState = {};
@@ -10,8 +10,12 @@ export function render(state) {
 	stateSnapshot = state;
 	set_content("main", SECTION([
 		FORM({id: "file_submit"}, [
-			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
-			localState.uploading && P({style: "display:inline"}, "Uploading... "),
+			SELECT({id: "templateselect", value: 0}, [
+				OPTION({value: 0}, "Select a template"),
+				state.templates.map((t) => OPTION({value: t.id}, t.name))
+			]),
+			INPUT({id: "newFile", type: "file", accept: "image/pdf", disabled: true}),
+			localState.uploading && P({style: "display:inline"}, "Uploading... ")
 		]),
 		(typeof(localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
 		localState.templatePages?.map((page, idx) => {
@@ -22,11 +26,20 @@ export function render(state) {
 	]));
 }
 
+on("change", "#templateselect", (e) => {
+	DOM("#newFile").disabled = e.match.value === "0";
+});
+
 on("change", "#newFile", async (e) => {
 	e.preventDefault();
 	submittedFile = DOM("#newFile").files[0];
 	let org_id = auth.get_org_id();
-	ws_sync.send({"cmd": "upload", "name": DOM("#newFile").value, "org": org_id});
+	ws_sync.send({
+		"cmd": "upload",
+		"name": DOM("#newFile").value,
+		"org": org_id,
+		"template": +DOM("#templateselect").value
+	});
 });
 
 export async function sockmsg_upload(msg) {

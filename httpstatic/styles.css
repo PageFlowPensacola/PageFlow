@@ -10,6 +10,10 @@ body {
 	min-height: 96vh;
 }
 
+figure img {
+	border: 2px solid cyan;
+}
+
 #pageheader,
 footer {
 	flex-grow: 0;
