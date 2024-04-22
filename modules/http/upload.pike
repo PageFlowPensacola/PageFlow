@@ -123,9 +123,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		mapping img = Image.PNG._decode(current_page);
 
+		// Make a blank image of the same size as the original image
+		object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
+		// Paste original into it, fading based on alpha channel
+		img->image = blank->paste_mask(img->image, img->alpha);
+
 		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
 		object grey = img->image->grey();
-		werror("Average %O Min %O Max %O\n", grey->average(), grey->min(), grey->max());
 
 		int left = bounds->left;
 		int top = bounds->top;
