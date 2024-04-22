@@ -83,6 +83,11 @@ brew install pdf2image
 `convert -density 300 "test_files/Residential Contract for Sale And Purchase One Initials Set.pdf" -background cyan -alpha Remove test_files/OneInitialsSet.png`
 https://imagemagick.org/script/command-line-options.php?#write
 
+### Utilities
+`pike app.pike --exec=update_page_bounds`
+`pike app.pike --exec=compare_scores`
+`pike app.pike --exec=audit_score`
+
 ### Tesseract
 
 We use Tesseract to generate a text bounding box on template and submitted files.

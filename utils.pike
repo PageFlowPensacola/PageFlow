@@ -17,13 +17,14 @@ __async__ void compare_scores() {
 }
 
 __async__ void update_page_bounds() {
+	werror("Updating page bounds\n");
 	array(mapping) pages = await(G->G->DB->run_pg_query(#"
 			SELECT template_id, page_number, page_data
 			FROM template_pages
 			WHERE pxleft IS NULL"));
 
 	foreach(pages, mapping page) {
-		mapping img = Image.PNG._decode(page_data);
+		mapping img = Image.PNG._decode(page->page_data);
 		mapping bounds = await(calculate_image_bounds(page->page_data, img->xsize, img->ysize));
 		await(G->G->DB->run_pg_query(#"
 				UPDATE template_pages

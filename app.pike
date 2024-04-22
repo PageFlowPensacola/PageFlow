@@ -64,10 +64,11 @@ int | Concurrent.Future main(int argc,array(string) argv)
 {
 	add_constant("G", this);
 	G->args = Arg.parse(argv);
-	if (string funcname = G->args->exec) {
-		// pike app.pike --exec=test
+	if (string|int funcname = G->args->exec) {
+		// pike app.pike --exec=somefunc
 		restricted_update = ({"globals.pike", "console.pike", "database.pike", "utils.pike"});
 		bootstrap_all();
+		if (intp(funcname)) [funcname, G->args[Arg.REST]] = Array.shift(G->args[Arg.REST]);
 		return G->utils[funcname]();
 	}
 	bootstrap_all();
