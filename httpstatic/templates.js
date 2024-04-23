@@ -51,7 +51,6 @@ canvas.addEventListener('pointerup', (e) => {
 	e.target.releasePointerCapture(e.pointerId);
 
 	const bounds = localState.pages[localState.current_page - 1];
-	console.log("Bounds", bounds);
 
 	// Calculate the width and height of the (text-based) bounding box
 	// returned based on Tesseract's output.
@@ -91,13 +90,13 @@ canvas.addEventListener('pointerup', (e) => {
 	bottom = (bottom - bounds.pxtop) / height;
 
 	if (right - left < .01 || bottom - top < .01) return;
-	/* ws_sync.send({
+	ws_sync.send({
 		"cmd": "add_rect",
 		"rect": {
 			left, top, right, bottom
 		},
 		"page": localState.current_page
-	}); */
+	});
 });
 
 function repaint() {
