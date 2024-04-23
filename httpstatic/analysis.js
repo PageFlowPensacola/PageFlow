@@ -1,5 +1,5 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {FIGURE, FORM, H3, H4, IMG, INPUT, OPTION, P, SECTION, SELECT} = choc; //autoimport
+const {FIGURE, FORM, H3, H4, IMG, INPUT, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
 import * as auth from "./auth.js";
 
 const localState = {};
@@ -8,6 +8,7 @@ let stateSnapshot = {};
 
 export function render(state) {
 	stateSnapshot = state;
+
 	set_content("main", SECTION([
 		FORM({id: "file_submit"}, [
 			SELECT({id: "templateselect", value: 0}, [
@@ -18,10 +19,22 @@ export function render(state) {
 			localState.uploading && P({style: "display:inline"}, "Uploading... ")
 		]),
 		(typeof (localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
-		(typeof (localState.rects) !== "undefined") && H4("Fields checked: " + localState.rects),
+		(typeof (localState.rects) !== "undefined") && H4("Fields checked: " + localState.rects.length),
+		UL({id: "pagesinfo"}, [
+			localState.templatePages?.map((page, idx) => {
+				return LI([
+					P("Page " + (idx+1)),
+					page.fields.map((field) => {
+						const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
+						const signatoryName = localState.rects.find((f) => f.template_signatory_id === field.signatory)?.name;
+						return SPAN(signatoryName + ": " + status + " ");
+					}),
+				]);
+			}),
+		]),
 		localState.templatePages?.map((page, idx) => {
 			return FIGURE([
-				IMG({src: page}),
+				IMG({src: page.annotated_img}),
 			]);
 		}),
 	]));

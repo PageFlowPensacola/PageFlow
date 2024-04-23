@@ -140,10 +140,11 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	object tm = System.Timer();
 
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
-			SELECT x1, y1, x2, y2, template_signatory_id, transition_score, page_number
-			FROM audit_rects
-			WHERE template_id = :template_id
-			ORDER BY id",
+			SELECT x1, y1, x2, y2, template_signatory_id, transition_score, page_number, ts.name
+			FROM audit_rects r
+			JOIN template_signatories ts ON ts.id = r.template_signatory_id
+			WHERE r.template_id = :template_id
+			ORDER BY r.id",
 		(["template_id": upload->template_id])));
 
 	mapping template_rects = ([]);
@@ -160,7 +161,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	foreach(pages; int i; string current_page) {
 
 		if (!template_rects[i+1]) {
-			annotated_pages+=({ "data:image/png;base64," + MIME.encode_base64(current_page) });
+			annotated_pages+=({([ "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
 			continue;
 		}
 
@@ -192,7 +193,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		img->image->line(right, top, left, bottom);
 		int page_transition_score = 0;
 		int page_calculated_transition_score = 0;
-
+		array field_results = ({});
 		foreach (template_rects[i+1] || ({}), mapping r) {
 			mapping box = calculate_transition_score(r, bounds, grey);
 
@@ -208,6 +209,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 			page_transition_score += r->transition_score;
 			page_calculated_transition_score += box->score;
+			int difference = abs(r->transition_score - box->score);
+			field_results += ({
+				([
+					"signatory": r->template_signatory_id,
+					"status": (difference >= 100) ? "Signed" : (difference >= 25) ? "Unclear" : "Unsigned",
+				])
+			});
 
 			werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", upload->template_id, i+1, r->template_signatory_id || 0, r->transition_score, box->score);
 		}
@@ -215,11 +223,17 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			confidence = 0;
 		}
 
-		annotated_pages+=({ "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)) });
+		annotated_pages+=({
+			([
+				"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
+				"page_no": i+1,
+				"fields": field_results,
+			])
+		});
 
 	}
 	werror("[%6.3f] Done\n", tm->peek());
-	return jsonify((["pages": annotated_pages, "confidence": confidence, "rects": sizeof(rects)]));
+	return jsonify((["pages": annotated_pages, "confidence": confidence, "rects": rects]));
 }
 
 string prepare_upload(string type, mapping info) {
