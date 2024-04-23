@@ -213,6 +213,9 @@ __async__ mapping calculate_image_bounds(string page_data, int imgwidth, int img
 	mapping bounds = ([]);
 	bounds->left = imgwidth;
 	bounds->top = imgheight;
+	// Maybe output tesseract as hocr instead of makebox, which
+	// gives a list of "words", per line, with bounding boxes
+	// as opposed to individual characters.
 	mapping rc = await(run_promise(({"tesseract", "-", "-", "makebox"}), (["stdin": page_data])));
 	foreach(rc->stdout / "\n", string line){
 		array(string) parts = line / " ";

@@ -35,8 +35,13 @@ __async__ array pdf2png(string pdf) {
 	// Time taken is quadratic based on density with
 	// depth, quality and format (looked at png, tiff, ppm and webp)
 	// not making much difference.
+	// On low quality scans/results we may be able to rescue with items like:
+		// increase density
+		// normalize
+		// deskew
+	// May be better to always run at 300 density.
 	mapping results = await(run_promise(
-		({"convert", "-density", "100", "-", "png:-"}),
+		({"convert", "-density", "150", "-", "png:-"}),
 		(["stdin": pdf]))
 	);
 	//werror("results: %O\n", indices(results));
@@ -76,6 +81,8 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
 		// object page = Image.PNG.decode(current_page);
 
+		// new timer
+		object tm = System.Timer();
 		mapping img = Image.PNG._decode(current_page);
 		if (img->alpha) {
 			// Make a blank image of the same size as the original image
@@ -83,7 +90,9 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			// Paste original into it, fading based on alpha channel
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
+		werror("\t[%6.3f] Calculating bounds\n", tm->peek());
 		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
+		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 		// Rescale current_page
 		object scaled = img->image;
 		while(scaled->xsize() > 1000) {
@@ -93,8 +102,10 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			bounds->top /= 2;
 			bounds->bottom /= 2;
 		}
+		werror("\t[%6.3f] Scaled\n", tm->peek());
 		// Encode the scaled image
 		string scaled_png = Image.PNG.encode(scaled);
+		werror("[%6.3f] Encoded\n", tm->peek());
 
 		string query = #"
 		INSERT INTO template_pages
