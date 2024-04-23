@@ -71,9 +71,25 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
 		// object page = Image.PNG.decode(current_page);
 
-
 		mapping img = Image.PNG._decode(current_page);
+		if (img->alpha) {
+			// Make a blank image of the same size as the original image
+			object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
+			// Paste original into it, fading based on alpha channel
+			img->image = blank->paste_mask(img->image, img->alpha);
+		}
 		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
+		// Rescale current_page
+		object scaled = img->image;
+		while(scaled->xsize() > 1000) {
+			scaled = scaled->scale(0.5);
+			bounds->left /= 2;
+			bounds->right /= 2;
+			bounds->top /= 2;
+			bounds->bottom /= 2;
+		}
+		// Encode the scaled image
+		string scaled_png = Image.PNG.encode(scaled);
 
 		string query = #"
 		INSERT INTO template_pages
@@ -84,7 +100,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		";
 
 		mapping bindings = ([
-			"template_id":upload->template_id, "page_number":i+1, "page_data":current_page,
+			"template_id":upload->template_id, "page_number":i+1, "page_data":scaled_png,
 			]) | bounds; // the pipe (bitwise or) operator is a way to merge two mappings
 
 		mapping results = await(G->G->DB->run_pg_query(query, bindings));
