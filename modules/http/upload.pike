@@ -31,9 +31,29 @@ __async__ array pdf2png(string pdf) {
 	// A shuffler is a Pike thing with is a very robust was of moving data around.
 	// results will contain the stdout, stderr, and exit code of the process
 	array pages = ({});
+	object tm = System.Timer();
+	werror("[%6.3f] Starting\n");
 
-	mapping results = await(run_promise(({"convert", "-density", "300", "-depth", "8", "-quality", "85", "-", "png:-"}),
-	(["stdin": pdf])));
+	foreach("png tiff ppm webp" / " ", string format ) {
+		werror("Checking format %s\n", format);
+		// Time taken is quadratic based on density with
+		// depth, quality and format (looked at png, tiff, ppm and webp)
+		// not making much difference.
+		mapping results = await(run_promise(
+			({"convert", "-density", "100", "-depth", "8", "-", format + ":-"}),
+			(["stdin": pdf]))
+		);
+		werror("%s took %O with size %O\n", format, tm->get(), sizeof(results->stdout));
+	}
+	werror("[%6.3f] Thats all.\n");
+
+	// Time taken is quadratic based on density with
+	// depth, quality and format (looked at png, tiff, ppm and webp)
+	// not making much difference.
+	mapping results = await(run_promise(
+		({"convert", "-density", "150", "-", "png:-"}),
+		(["stdin": pdf]))
+	);
 	//werror("results: %O\n", indices(results));
 	// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/_Stdio/Buffer.html#Buffer
 	Stdio.Buffer data = Stdio.Buffer(results->stdout);
