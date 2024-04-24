@@ -52,3 +52,7 @@ What constitutes sufficient? What if it transitions slowly over several pixels? 
 
 Getting threshold based on a single Tesseract makebox box
 might be useful.
+
+PDF Parsing.
+https://www.adobe.com/devnet-docs/acrobatetk/tools/DigSig/Acrobat_DigitalSignatures_in_PDF.pdf
+https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf

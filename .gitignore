@@ -5,3 +5,4 @@ __pycache__
 .ipynb_checkpoints
 output_files
 test_files
+pdf_parser
