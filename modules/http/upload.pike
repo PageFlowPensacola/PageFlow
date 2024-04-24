@@ -159,7 +159,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	bool confidence = 1;
 
 	foreach(pages; int i; string current_page) {
-
+		// send_text to websocket
+		upload->conn->sock->send_text(Standards.JSON.encode((["cmd": "upload_status", "page": i])));
 		if (!template_rects[i+1]) {
 			annotated_pages+=({([ "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
 			continue;

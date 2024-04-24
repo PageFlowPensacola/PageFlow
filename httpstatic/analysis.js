@@ -40,6 +40,10 @@ export function render(state) {
 	]));
 }
 
+export function sockmsg_upload_status(msg) {
+	console.log("Got upload status message", msg);
+}
+
 on("change", "#templateselect", (e) => {
 	DOM("#newFile").disabled = e.match.value === "0";
 });

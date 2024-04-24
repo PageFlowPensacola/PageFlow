@@ -344,6 +344,7 @@ on("submit", "#template_submit", async function (e) {
 	ws_sync.send({"cmd": "upload", "name": fileName, "org": org_id});
 });
 
+
 export async function sockmsg_upload(msg) {
 	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",

@@ -4,8 +4,8 @@ constant markdown = "# Analysis\n\n";
 
 
 __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:mixed) msg){
-
-	string upload_id = G->G->prepare_upload("contract", (["template_id": msg.template]));
+	// @TODO actually create a group for this once we're actually saving something
+	string upload_id = G->G->prepare_upload("contract", (["template_id": msg.template, "conn": conn]));
 	conn->sock->send_text(Standards.JSON.encode((["cmd": "upload", "upload_id": upload_id])));
 }
 
