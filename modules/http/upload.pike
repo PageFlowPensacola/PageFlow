@@ -147,6 +147,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			ORDER BY r.id",
 		(["template_id": upload->template_id])));
 
+
 	mapping template_rects = ([]);
 	foreach (rects, mapping r) template_rects[r->page_number] += ({r});
 
@@ -158,9 +159,15 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	bool confidence = 1;
 
+	upload->conn->sock->send_text(Standards.JSON.encode(
+		(["cmd": "upload_status",
+		"count": sizeof(pages),
+		"rects": rects,
+		"step": "uploading",
+		])));
+
 	foreach(pages; int i; string current_page) {
-		// send_text to websocket
-		upload->conn->sock->send_text(Standards.JSON.encode((["cmd": "upload_status", "page": i])));
+
 		if (!template_rects[i+1]) {
 			annotated_pages+=({([ "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
 			continue;
@@ -174,6 +181,14 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			// Paste original into it, fading based on alpha channel
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
+
+		upload->conn->sock->send_text(Standards.JSON.encode(
+			(["cmd": "upload_status",
+			"current_page": i+1,
+			"width:": img->xsize,
+			"height": img->ysize,
+			"step": "calculating_bounds",
+			])));
 
 		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
 		werror("[%6.3f] Calculated (expensive) bounds\n", tm->peek());

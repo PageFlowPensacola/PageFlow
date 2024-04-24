@@ -8,6 +8,7 @@ let stateSnapshot = {};
 
 export function render(state) {
 	stateSnapshot = state;
+	console.log("Rendering", state);
 
 	set_content("main", SECTION([
 		FORM({id: "file_submit"}, [
@@ -18,13 +19,14 @@ export function render(state) {
 			INPUT({id: "newFile", type: "file", accept: "image/pdf", disabled: true}),
 			localState.uploading && P({style: "display:inline"}, "Uploading... ")
 		]),
+		(typeof (localState.step) !== "undefined") && H3("Step " + localState.step + " " + localState.process + " " + localState.count + " files"),
 		(typeof (localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
 		(typeof (localState.rects) !== "undefined") && H4("Fields checked: " + localState.rects.length),
 		UL({id: "pagesinfo"}, [
 			localState.templatePages?.map((page, idx) => {
 				return LI([
 					P("Page " + (idx+1)),
-					page.fields.map((field) => {
+					page.fields?.map((field) => {
 						const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
 						const signatoryName = localState.rects.find((f) => f.template_signatory_id === field.signatory)?.name;
 						return SPAN(signatoryName + ": " + status + " ");
@@ -33,16 +35,13 @@ export function render(state) {
 			}),
 		]),
 		localState.templatePages?.map((page, idx) => {
-			return FIGURE([
+			return page.annotated_img && FIGURE([
 				IMG({src: page.annotated_img}),
 			]);
 		}),
 	]));
 }
 
-export function sockmsg_upload_status(msg) {
-	console.log("Got upload status message", msg);
-}
 
 on("change", "#templateselect", (e) => {
 	DOM("#newFile").disabled = e.match.value === "0";
@@ -61,7 +60,6 @@ on("change", "#newFile", async (e) => {
 });
 
 export async function sockmsg_upload(msg) {
-	console.log("Got upload message", msg);
 	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",
 		headers: {
@@ -77,3 +75,11 @@ export async function sockmsg_upload(msg) {
 	localState.uploading--;
 	render(stateSnapshot);
 };
+
+export function sockmsg_upload_status(msg) {
+	localState.count = msg.count;
+	localState.step = msg.step;
+	localState.process = msg.process;
+	//localState.rects = msg.rects;
+	render(stateSnapshot);
+}
