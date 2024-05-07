@@ -20,7 +20,7 @@ export function render(state) {
 
 	set_content("main", SECTION([
 		FORM({id: "file_submit"}, [
-			SELECT({id: "templateselect", value: 0}, [
+			SELECT({id: "templateselect", value: DOM("#templateselect")?.value || 0}, [
 				OPTION({value: 0}, "Select a template"),
 				state.templates.map((t) => OPTION({value: t.id}, t.name))
 			]),
@@ -30,7 +30,7 @@ export function render(state) {
 		(typeof (localState.step) !== "undefined") && render_upload_status(localState),
 		(typeof (localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
 		(typeof (localState.rects) !== "undefined") && H4("Fields checked: " + localState.rects.length),
-		UL({id: "pagesinfo"}, [
+		localState.templatePages && UL({id: "pagesinfo"}, [
 			localState.templatePages?.map((page, idx) => {
 				return LI([
 					P("Page " + (idx+1)),
@@ -50,6 +50,14 @@ export function render(state) {
 	]));
 }
 
+function clear_local_state() {
+	localState.step = undefined;
+	localState.confidence = undefined;
+	localState.rects = undefined;
+	localState.templatePages = undefined;
+	console.log("Clearing local state", stateSnapshot);
+	render(stateSnapshot);
+}
 
 on("change", "#templateselect", (e) => {
 	DOM("#newFile").disabled = e.match.value === "0";
@@ -65,6 +73,7 @@ on("change", "#newFile", async (e) => {
 		"org": org_id,
 		"template": +DOM("#templateselect").value
 	});
+	clear_local_state();
 });
 
 export async function sockmsg_upload(msg) {
