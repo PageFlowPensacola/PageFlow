@@ -297,27 +297,6 @@ window.onpopstate = (event) => {
 	handle_url_params();
 };
 
-on("submit", "#loginform", async function (evt) {
-	evt.preventDefault();
-	let form = evt.match.elements;
-	const credentials = {email: form.email.value, password: form.password.value};
-	const resp = await fetch("/login", {method: "POST", body: JSON.stringify(credentials)});
-	const token = await resp.json();
-	if (token) {
-		user = {email: form.email.value, token: token.token};
-		localStorage.setItem("user", JSON.stringify(user));
-		await get_user_details();
-		window.location.reload();
-	} else {
-		alert("Invalid username or password");
-	}
-});
-
-on("click", "#logout", function () {
-	localStorage.removeItem("user");
-	window.location.reload();
-});
-
 on("change", "#newTemplateFile", async function (e) {
 	const file = e.match.files[0];
 	if (file && DOM("#newTemplateName").value === "") {

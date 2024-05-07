@@ -162,7 +162,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	upload->conn->sock->send_text(Standards.JSON.encode(
 		(["cmd": "upload_status",
 		"count": sizeof(pages),
-		"rects": rects,
+		"rects": (mapping(string:mixed)) template_rects,
 		"step": "uploading",
 		])));
 

@@ -3,6 +3,7 @@
 
 import {choc, on, fix_dialogs} from "https://rosuav.github.io/choc/factory.js";
 const {BUTTON, DIALOG, DIV, H3, HEADER, P, SECTION} = choc; //autoimport
+
 fix_dialogs({close_selector: ".dialog_cancel,.dialog_close", click_outside: "formless"});
 
 function ensure_simpleconfirm_dlg() {
