@@ -1,8 +1,6 @@
 let user = JSON.parse(localStorage.getItem("user") || "{}");
-console.log("Auth user", user);
 
 on("submit", "#loginform", async function (evt) {
-	console.log("Logging in");
 	evt.preventDefault();
 	let form = evt.match.elements;
 	const credentials = {email: form.email.value, password: form.password.value};
