@@ -38,6 +38,7 @@ Update compare_transition_scores to consider page bounds
 on analysis submission generate page bounds and compare accordingly
 display feedback in interface
 integrate the ML endpoint
+LOGIN RESULT from Pike is not working, at least on invalid credentials.
 
 ## MONDAY
 Some scans are turning out too pale for useful transition detection. Others may end up too dark. Need to determine a threshold of darkness to recognize a transition (currently using 128).
