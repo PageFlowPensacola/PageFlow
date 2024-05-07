@@ -1,4 +1,5 @@
-inherit http_websocket;
+inherit http_endpoint;
+
 
 constant markdown = #"# Signatory Check
 
@@ -6,8 +7,12 @@ constant markdown = #"# Signatory Check
 
 ";
 
-// Called on connection and update.
-__async__ mapping get_state(string|int group, string|void id, string|void type){
-	werror("get_state: %O %O %O\n", group, id, type);
-	return ([]);
+
+mapping(string:mixed) http_request(Protocols.HTTP.Server.Request req) {
+	return render_template(markdown, ([]));
+}
+
+void create(string name) {
+	::create(name);
+	G->G->http_endpoints[""] = http_request;
 }
