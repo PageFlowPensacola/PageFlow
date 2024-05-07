@@ -34,11 +34,11 @@ export function render(state) {
 			localState.templatePages?.map((page, idx) => {
 				return LI([
 					P("Page " + (idx+1)),
-					page.fields?.map((field) => {
+					DIV([page.fields?.map((field) => {
 						const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
 						const signatoryName = localState.rects.find((f) => f.template_signatory_id === field.signatory)?.name;
 						return SPAN(signatoryName + ": " + status + " ");
-					}),
+					})]),
 				]);
 			}),
 		]),
