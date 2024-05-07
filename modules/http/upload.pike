@@ -159,12 +159,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	bool confidence = 1;
 
+	int page_count = sizeof(pages);
+
 	upload->conn->sock->send_text(Standards.JSON.encode(
 		(["cmd": "upload_status",
-		"count": sizeof(pages),
-		"rects": (mapping(string:mixed)) template_rects,
-		"step": "uploading",
-		])));
+		"count": page_count,
+		"step": "Received PDF",
+	])));
 
 	foreach(pages; int i; string current_page) {
 
@@ -181,13 +182,12 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			// Paste original into it, fading based on alpha channel
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
-
 		upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
+			"count": page_count,
+			"pages": ({(["number": i+1, "fields": ({})])}),
 			"current_page": i+1,
-			"width:": img->xsize,
-			"height": img->ysize,
-			"step": "calculating_bounds",
+			"step": "Analyzing page " + (i+1) + " of " + page_count + " pages.",
 			])));
 
 		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));

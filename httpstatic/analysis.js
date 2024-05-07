@@ -1,10 +1,18 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {FIGURE, FORM, H3, H4, IMG, INPUT, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
+const {DIV, FIGURE, FORM, H2, H3, H4, IMG, INPUT, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
 import * as auth from "./auth.js";
 
 const localState = {};
 let submittedFile = null;
 let stateSnapshot = {};
+
+const render_upload_status = (state) => {
+	console.log({"render_upload_status": state});
+	return DIV([
+		H2("Analysis"),
+		P(state.step),
+	]);
+};
 
 export function render(state) {
 	stateSnapshot = state;
@@ -19,7 +27,7 @@ export function render(state) {
 			INPUT({id: "newFile", type: "file", accept: "image/pdf", disabled: true}),
 			localState.uploading && P({style: "display:inline"}, "Uploading... ")
 		]),
-		(typeof (localState.step) !== "undefined") && H3("Step " + localState.step + " " + localState.process + " " + localState.count + " files"),
+		(typeof (localState.step) !== "undefined") && render_upload_status(localState),
 		(typeof (localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
 		(typeof (localState.rects) !== "undefined") && H4("Fields checked: " + localState.rects.length),
 		UL({id: "pagesinfo"}, [
