@@ -50,15 +50,6 @@ export function render(state) {
 	]));
 }
 
-function clear_local_state() {
-	localState.step = undefined;
-	localState.confidence = undefined;
-	localState.rects = undefined;
-	localState.templatePages = undefined;
-	console.log("Clearing local state", stateSnapshot);
-	render(stateSnapshot);
-}
-
 on("change", "#templateselect", (e) => {
 	DOM("#newFile").disabled = e.match.value === "0";
 });
@@ -73,7 +64,12 @@ on("change", "#newFile", async (e) => {
 		"org": org_id,
 		"template": +DOM("#templateselect").value
 	});
-	clear_local_state();
+	localState.step = "Uploading...";
+	localState.confidence = undefined;
+	localState.rects = undefined;
+	localState.templatePages = undefined;
+	console.log("Clearing local state", stateSnapshot);
+	render(stateSnapshot);
 });
 
 export async function sockmsg_upload(msg) {
