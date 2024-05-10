@@ -471,7 +471,7 @@ class Renderer
 			if (sscanf(text, "<h3%*[^>]>%s</h3>%s", string title, string main)) switch (tag) {
 				//For dialogs, the title is outside the scroll context, and also gets a close button added.
 				case "dialogform": case "formdialog": //(allow this to be spelled both ways)
-				case "dialog": return sprintf("<dialog%s><section>"
+				case "dialog": options->dialogs[sizeof(options->dialogs)] = sprintf("<dialog%s><section>"
 						"<header><h3>%s</h3><div><button type=button class=dialog_cancel>x</button></div></header>"
 						"<div>%s%s%s</div>"
 						"</section></dialog>",
@@ -480,6 +480,7 @@ class Renderer
 					main,
 					tag == "dialog" ? "" : "</form>",
 				);
+				return ""; // dialog will be rendered in its own section
 				case "details": return sprintf("<details%s><summary>%s</summary>%s</details>",
 					attrs(token), title || "Details", main);
 				default: break; //No special title handling
@@ -629,10 +630,12 @@ mapping(string:mixed) render_template(string template, mapping replacements)
 	if (has_suffix(template, ".md"))
 	{
 		mapping headings = ([]);
+		mapping dialogs = ([]);
 		string content = Tools.Markdown.parse(content, ([
 			"renderer": Renderer, "lexer": Lexer,
 			"headings": headings,
 			"attributes": 1, //Ignored if using older Pike (or, as of 2020-04-13, vanilla Pike - it's only on branch rosuav/markdown-attribute-syntax)
+			"dialogs": dialogs, //Allow dialogs to be created with {:dialog}...{:/dialog}
 		]));
 		return render_template("markdown.html", ([
 			//Dynamic defaults - can be overridden, same as static defaults can
@@ -640,6 +643,7 @@ mapping(string:mixed) render_template(string template, mapping replacements)
 		]) | replacements | ([
 			//Forced attributes
 			"content": content,
+			"dialogs": values(dialogs) * "",
 		]));
 	}
 	return ([
