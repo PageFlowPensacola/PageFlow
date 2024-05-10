@@ -50,14 +50,26 @@ canvas.addEventListener('pointermove', (e) => {
 
 canvas.addEventListener('pointerup', (e) => {
 	if (!currently_dragging) return;
+	const bounds = localState.pages[localState.current_page - 1];
 	currently_dragging = false;
 	e.target.releasePointerCapture(e.pointerId);
-	if (clicking) {
-		DOM("#editauditrect").showModal();
+	if (clicking) {// as opposed to dragging
+		// did you click in a rect?
+		// iterate over all rects, find the one that contains the click
+		for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
+			const left = rect.x1 * (bounds.pxright - bounds.pxleft) + bounds.pxleft;
+			const top = rect.y1 * (bounds.pxbottom - bounds.pxtop) + bounds.pxtop;
+			const right = rect.x2 * (bounds.pxright - bounds.pxleft) + bounds.pxleft;
+			const bottom = rect.y2 * (bounds.pxbottom - bounds.pxtop) + bounds.pxtop;
+			if (rect_end_x >= left && rect_end_x <= right && rect_end_y >= top && rect_end_y <= bottom) {
+				// found it
+				DOM("#editauditrect").showModal();
+				return;
+			}
+		}
 		return;
 	}
 
-	const bounds = localState.pages[localState.current_page - 1];
 
 	// Calculate the width and height of the (text-based) bounding box
 	// returned based on Tesseract's output.
