@@ -1,6 +1,17 @@
 inherit http_websocket;
 
-constant markdown = "# Templates\n\n";
+constant markdown = #"# Templates
+
+> ### Edit audit rect
+>
+> <form method=dialog>
+> <div></div>
+>
+> [Save](: type=submit value=save) [Cancel](: type=submit value=cancel)
+> </form>
+{: tag=dialog #editauditrect}
+
+";
 
 __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	sscanf((string)conn->group, "%d:%d", int org, int template);

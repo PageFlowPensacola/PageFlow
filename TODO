@@ -74,6 +74,8 @@ Click title to reach top level template page.
 
 Add new signatory in Rect Dlg
 Exclusion Index Constraint on Audit Rects via Postgres
+[PostGIS](https://en.wikipedia.org/wiki/PostGIS)
+Style Dialog
 
 ## MONDAY
 Some scans are turning out too pale for useful transition detection. Others may end up too dark. Need to determine a threshold of darkness to recognize a transition (currently using 128).

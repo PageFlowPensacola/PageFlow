@@ -26,11 +26,12 @@ let rect_start_y = 0;
 let rect_end_x = 0;
 let rect_end_y = 0;
 let currently_dragging = false;
+let clicking = false;
 let hovering = -1;
 
 canvas.addEventListener('pointerdown', (e) => {
 	e.preventDefault();
-	currently_dragging = true;
+	currently_dragging = clicking = true;
 	rect_start_x = rect_end_x = e.offsetX;
 	rect_start_y = rect_end_y = e.offsetY;
 	e.target.setPointerCapture(e.pointerId);
@@ -38,6 +39,8 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 
 canvas.addEventListener('pointermove', (e) => {
+	// TODO more nuance desired
+	clicking = false;
 	if (currently_dragging) {
 		rect_end_x = e.offsetX;
 		rect_end_y = e.offsetY;
@@ -49,6 +52,10 @@ canvas.addEventListener('pointerup', (e) => {
 	if (!currently_dragging) return;
 	currently_dragging = false;
 	e.target.releasePointerCapture(e.pointerId);
+	if (clicking) {
+		DOM("#editauditrect").showModal();
+		return;
+	}
 
 	const bounds = localState.pages[localState.current_page - 1];
 
