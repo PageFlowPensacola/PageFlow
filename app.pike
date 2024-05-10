@@ -64,14 +64,17 @@ int | Concurrent.Future main(int argc,array(string) argv)
 {
 	add_constant("G", this);
 	G->args = Arg.parse(argv);
-	if (string|int funcname = G->args->exec) {
-		// pike app.pike --exec=somefunc
-		restricted_update = ({"globals.pike", "console.pike", "database.pike", "utils.pike"});
-		bootstrap_all();
-		if (intp(funcname)) [funcname, G->args[Arg.REST]] = Array.shift(G->args[Arg.REST]);
-		return G->utils[funcname]();
+	foreach ("test audit_score compare_scores update_page_bounds help" / " ", string cmd) if (G->args[cmd]) G->args->exec = cmd;
+		if (string fn = G->args->exec) {
+			// pike app.pike --exec=somefunc
+			restricted_update = ({"globals.pike", "console.pike", "database.pike", "utils.pike"});
+			bootstrap_all();
+			if (fn == 1)
+				if (sizeof(G->args[Arg.REST])) [fn, G->args[Arg.REST]] = Array.shift(G->args[Arg.REST]);
+				else fn = "help";
+			return (G->utils[replace(fn, "-", "_")] || G->utils->help)();
 	}
 	bootstrap_all();
-
+	signal(1, bootstrap_all);
 	return -1;
 }
