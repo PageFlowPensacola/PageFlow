@@ -1,5 +1,5 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {BUTTON, CANVAS, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
+const {A, BUTTON, CANVAS, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
 import {simpleconfirm} from "./utils.js";
 import * as auth from "./auth.js";
 
@@ -199,10 +199,11 @@ export function render(state) {
 	if (typeof (state.page_count) === 'number') {
 		// If it got neither a non-zero page count or a template, it wasn't (re)rendering anything.
 		if (localState.current_page && pageImage.src !== localState.pages[localState.current_page - 1].page_data) {
+			// if we have a current page and has changed, reload the image
 			pageImage.src = localState.pages[localState.current_page - 1].page_data;
 		}
 			set_content("main", SECTION([
-				H2(state.name),
+				H2(A({href: "#template=" + localState.current_template}, state.name)),
 				localState.current_page ?
 					[
 						P("Current page: " + localState.current_page),
@@ -380,6 +381,7 @@ on('mouseout', '.rect-item', () => {
 	repaint();
 });
 
-on("click", ".hello", function () {
-	ws_sync.send({cmd: "hello"});
+on("click", 'a[href^="#"]', function () {
+	setTimeout(handle_url_params, 0);
+	repaint();
 });
