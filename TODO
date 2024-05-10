@@ -40,6 +40,40 @@ display feedback in interface
 integrate the ML endpoint
 LOGIN RESULT from Pike is not working, at least on invalid credentials.
 
+## Interface
+
+Pagination of template pages
+Page size display in analysis
+	smaller with flexbox click dlg cursor zoom-in
+(enhancement) Ability to hide audit rect result display
+Image border colors
+(maybe) display page details in line with page
+Indicate the page number inset
+#### TEMPLATES
+
+##### Layout
+1. Click on an audit rect to open a dialog (select signatory, delete). Replace the right-hand column with this.
+2. Color code audit rects based on signatory
+3. Have a predefined color sequence for signatories
+	#faf #ffa #aff, #faa, #afa, #aaf
+	alternatively #f0fa, #ff0a, #0ffa, #0f0a, #00fa, #f00a
+	to extend #808a, #880a, #088a
+4. Allow user to edit color for any signatory (enhancement)
+5. NULL is permanently striped diagonal rebecca purple
+
+##### Navigation
+
+Look at the current page
+See if we need to cycle through
+Display navigation accordingly
+|< < Current page: 2 > >|
+Disable first and last on first page
+Click title to reach top level template page.
+
+##### Misc
+
+Add new signatory in Rect Dlg
+
 ## MONDAY
 Some scans are turning out too pale for useful transition detection. Others may end up too dark. Need to determine a threshold of darkness to recognize a transition (currently using 128).
 
@@ -53,6 +87,7 @@ What constitutes sufficient? What if it transitions slowly over several pixels? 
 
 Getting threshold based on a single Tesseract makebox box
 might be useful.
+
 
 PDF Parsing.
 https://www.adobe.com/devnet-docs/acrobatetk/tools/DigSig/Acrobat_DigitalSignatures_in_PDF.pdf
