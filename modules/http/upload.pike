@@ -91,7 +91,21 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
 		werror("\t[%6.3f] Calculating bounds\n", tm->peek());
-		mapping bounds = await(analyze_page(current_page, img->xsize, img->ysize))->bounds;
+		mapping page = await(analyze_page(current_page, img->xsize, img->ysize));
+		mapping bounds = page->bounds;
+		mapping json = ([
+			"template_id": upload->template_id,
+			"page": i+1,
+			"data": page->data,
+		]);
+		await(Protocols.HTTP.Promise.post_url("http://localhost:8002/analyze_page",
+		 Protocols.HTTP.Promise.Arguments(
+			(["headers":
+				(["Authorization": req->request_headers["Authorization"],
+				"Content Type": "application/json"]),
+				"data": Standards.JSON.encode(json, 1) // 1 is for ascii only
+			])
+		)));
 		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 		// Rescale current_page
 		object scaled = img->image;
@@ -190,8 +204,20 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"step": "Analyzing page " + (i+1) + " of " + page_count + " pages.",
 			])));
 
-		mapping bounds = await(analyze_page(current_page, img->xsize, img->ysize))->bounds;
-		werror("[%6.3f] Calculated (expensive) bounds\n", tm->peek());
+
+		mapping page = await(analyze_page(current_page, img->xsize, img->ysize));
+		mapping bounds = page->bounds;
+		mapping json = ([
+			"data": page->data,
+		]);
+		await(Protocols.HTTP.Promise.post_url("http://localhost:8002/analyze_page",
+		 Protocols.HTTP.Promise.Arguments(
+			(["headers":
+				(["Authorization": req->request_headers["Authorization"],
+				"Content Type": "application/json"]),
+				"data": Standards.JSON.encode(json, 1),
+			])
+		)));
 
 		object grey = img->image->grey();
 
