@@ -39,6 +39,56 @@ __async__ void update_page_bounds() {
 	}
 }
 
+@"Tesseract and parse HOCR on a PNG file":
+__async__ void tesseract(){
+	[string fn] = G->G->args[Arg.REST];
+	mapping|object img = Image.PNG._decode(Stdio.read_file(fn));
+	if (img->alpha) {
+		// Make a blank image of the same size as the original image
+		object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
+		// Paste original into it, fading based on alpha channel
+		img->image = blank->paste_mask(img->image, img->alpha);
+	}
+	img = img->image;
+	img->setcolor(255, 0, 255);
+	mapping hocr = await(run_promise(({"tesseract", fn, "-", "hocr"})));
+	array data = Parser.XML.Simple()->parse(hocr->stdout){
+		// implicit lambda
+		[string type, string name, mapping attr, mixed data, mixed loc] = __ARGS__;
+		switch (type) {
+			case "<?xml": return 0;
+			case "<": return 0;
+			case "":
+				data = String.trim(data);
+				return data != "" && data;
+			case ">":
+			// Ensure we always get back an array of arrays, but flatten to single array.
+			if (name == "body") return Array.arrayify(data[*]) * ({ });
+			if (name == "html") return data * ({ });
+				switch (attr->class) {
+					case "ocr_page": return data; // check this bounding box
+					case "ocr_carea": {
+						werror("Parsing page %O\n", attr->title);
+						sscanf(attr->title, "%*sbbox %d %d %d %d", int left, int top, int right, int bottom);
+						img->line(left, top, right, top);
+						img->line(right, top, right, bottom);
+						img->line(right, bottom, left, bottom);
+						img->line(left, bottom, left, top);
+						img->line(left, top, right, bottom);
+						img->line(right, top, left, bottom);
+						return data * "\n\n"; // check this bounding box
+					}
+					case "ocr_par": return data * "\n";
+					case "ocr_line": return data * " ";
+					case "ocrx_word": return data * " ";
+					default: return 0;
+				}
+		}
+	} * ({ }); // then flatten at the end
+	Stdio.write_file("annotated.png", Image.PNG.encode(img));
+	//werror("Parsed %O\n", data);
+}
+
 @"This help information":
 void help() {
 	write("\nUSAGE: pike app --exec=ACTION\nwhere ACTION is one of the following:\n");
