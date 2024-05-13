@@ -200,7 +200,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		int right = bounds->right;
 		int bottom = bounds->bottom;
 
-		img->image->setcolor(255, 0, 255);
+		img->image->setcolor(@bbox_color);
 		img->image->line(left, top, right, top);
 		img->image->line(right, top, right, bottom);
 		img->image->line(right, bottom, left, bottom);
@@ -213,7 +213,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		foreach (template_rects[i+1] || ({}), mapping r) {
 			mapping box = calculate_transition_score(r, bounds, grey);
 
-			img->image->setcolor(0, 192, 0, 0);
+			img->image->setcolor(@audit_rect_color, 0);
 			img->image->line(box->x1, box->y1, box->x2, box->y1);
 			img->image->line(box->x2, box->y1, box->x2, box->y2);
 			img->image->line(box->x2, box->y2, box->x1, box->y2);

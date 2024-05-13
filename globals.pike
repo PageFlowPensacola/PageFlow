@@ -9,6 +9,9 @@ protected void create(string n)
   catch {G->G->instance_config = Standards.JSON.decode_utf8(Stdio.read_file("instance-config.json"));};
 }
 
+array(int) bbox_color = ({180, 180, 0});
+array(int) audit_rect_color = ({0, 192, 0});
+
 __async__ mixed asyncify(mixed gen) {
 	return objectp(gen) && gen->on_await ? await(gen) : gen;
 }

@@ -51,7 +51,7 @@ __async__ void tesseract(){
 	}
 	int left = img->xsize, top = img->ysize, right = 0, bottom = 0;
 	img = img->image;
-	img->setcolor(255, 0, 255);
+	img->setcolor(@bbox_color);
 	mapping hocr = await(run_promise(({"tesseract", fn, "-", "hocr"})));
 	array data = Parser.XML.Simple()->parse(hocr->stdout){
 		// implicit lambda

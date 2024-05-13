@@ -30,7 +30,7 @@ int main (int argc, array(string) argv){
 		right = max(right, (x1 + x2) / 2);
 		bottom = max(bottom, (y1 + y2) / 2);
 	}
-	img->setcolor(255, 0, 255);
+	img->setcolor(@bbox_color);
 	img->line(left, top, right, top);
 	img->line(right, top, right, bottom);
 	img->line(right, bottom, left, bottom);
