@@ -219,7 +219,7 @@ __async__ void compare_transition_scores(int template_id, int page_number, int f
 
 	mapping img = Image.PNG._decode(page[0]->page_data);
 	object grey = img->image->grey();
-	mapping bounds = await(calculate_image_bounds(page[0]->page_data, img->xsize, img->ysize));
+	mapping bounds = await(analyze_page(page[0]->page_data, img->xsize, img->ysize))->bounds;
 	foreach (rects, mapping r) {
 		int calculated_transition_score = calculate_transition_score(r, bounds, grey)->score;
 

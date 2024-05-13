@@ -206,7 +206,7 @@ Concurrent.Future run_promise(string|array(string) cmd, mapping modifiers = ([])
   return promise->future();
 }
 
-__async__ mapping calculate_image_bounds(string page_data, int imgwidth, int imgheight) {
+__async__ mapping analyze_page(string page_data, int imgwidth, int imgheight) {
 	//Bounds are in the form of left, top, right, bottom
 	// where left is the number of px from the left edge of the image
 	// and top is the number of px from the top edge of the image
@@ -219,25 +219,36 @@ __async__ mapping calculate_image_bounds(string page_data, int imgwidth, int img
 	// Maybe output tesseract as hocr instead of makebox, which
 	// gives a list of "words", per line, with bounding boxes
 	// as opposed to individual characters.
-	mapping rc = await(run_promise(({"tesseract", "-", "-", "makebox"}), (["stdin": page_data])));
-	foreach(rc->stdout / "\n", string line){
-		array(string) parts = line / " ";
-		if (sizeof(parts) < 6){
-			continue;
+	mapping hocr = await(run_promise(({"tesseract", "-", "-", "hocr"}), (["stdin": page_data])));
+	array data = Parser.XML.Simple()->parse(hocr->stdout){
+		// implicit lambda
+		[string type, string name, mapping attr, mixed data, mixed loc] = __ARGS__;
+		switch (type) {
+			case "<?xml": return 0;
+			case "<": return 0;
+			case "":
+				data = String.trim(data);
+				return data != "" && data;
+			case ">":
+			// Ensure we always get back an array of arrays, but flatten to single array.
+			if (name == "body") return Array.arrayify(data[*]) * ({ });
+			if (name == "html") return data * ({ });
+				switch (attr->class) {
+					case "ocr_page": return data;
+					case "ocr_carea": {
+						sscanf(attr->title, "%*sbbox %d %d %d %d", int l, int t, int r, int b);
+						bounds->left = min(bounds->left, l); bounds->top = min(bounds->top, t);
+						bounds->right = max(bounds->right, r); bounds->bottom = max(bounds->bottom, b);
+						return data * "\n\n";
+					}
+					case "ocr_par": return data * "\n";
+					case "ocr_line": return data * " ";
+					case "ocrx_word": return data * " ";
+					default: return 0;
+				}
 		}
-		if (parts[0] == "~"){
-			continue;
-		}
-		int x1 = (int)parts[1];
-		int y1 = imgheight - (int)parts[2];
-		int x2 = (int)parts[3];
-		int y2 = imgheight - (int)parts[4];
-		bounds->left = min(bounds->left, (x1 + x2) / 2);
-		bounds->top = min(bounds->top, (y1 + y2) / 2);
-		bounds->right = max(bounds->right, (x1 + x2) / 2);
-		bounds->bottom = max(bounds->bottom, (y1 + y2) / 2);
-	}
-	return bounds;
+	} * ({ }); // then flatten at the end
+	return (["bounds": bounds, "data": data]);
 }
 
 mapping calculate_transition_score(mapping r, mapping bounds, object grey) {

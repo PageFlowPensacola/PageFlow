@@ -91,7 +91,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
 		werror("\t[%6.3f] Calculating bounds\n", tm->peek());
-		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
+		mapping bounds = await(analyze_page(current_page, img->xsize, img->ysize))->bounds;
 		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 		// Rescale current_page
 		object scaled = img->image;
@@ -190,7 +190,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"step": "Analyzing page " + (i+1) + " of " + page_count + " pages.",
 			])));
 
-		mapping bounds = await(calculate_image_bounds(current_page, img->xsize, img->ysize));
+		mapping bounds = await(analyze_page(current_page, img->xsize, img->ysize))->bounds;
 		werror("[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 
 		object grey = img->image->grey();

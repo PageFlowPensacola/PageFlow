@@ -29,7 +29,7 @@ __async__ void update_page_bounds() {
 
 	foreach(pages, mapping page) {
 		mapping img = Image.PNG._decode(page->page_data);
-		mapping bounds = await(calculate_image_bounds(page->page_data, img->xsize, img->ysize));
+		mapping bounds = await(analyze_page(page->page_data, img->xsize, img->ysize))->bounds;
 		await(G->G->DB->run_pg_query(#"
 				UPDATE template_pages
 				SET pxleft = :left, pxright = :right, pxtop = :top, pxbottom = :bottom
