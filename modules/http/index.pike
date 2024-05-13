@@ -12,7 +12,7 @@ mapping(string:mixed) http_request(Protocols.HTTP.Server.Request req) {
 	return render_template(markdown, ([]));
 }
 
-void create(string name) {
+protected void create(string name) {
 	::create(name);
 	G->G->http_endpoints[""] = http_request;
 }
