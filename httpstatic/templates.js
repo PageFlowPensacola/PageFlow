@@ -63,22 +63,15 @@ canvas.addEventListener('pointerup', (e) => {
 			const bottom = rect.y2 * (bounds.pxbottom - bounds.pxtop) + bounds.pxtop;
 			if (rect_end_x >= left && rect_end_x <= right && rect_end_y >= top && rect_end_y <= bottom) {
 				// found it
-				console.log("Clicked on rect", rect);
+				console.log("Clicked on rect", rect, stateSnapshot);
 				let dlg = DOM("#editauditrect");
-				set_content(dlg, [
-					H2("Edit Audit Rectangle"),
-					LABEL("Signatory:"),
-					FORM({method: "dialog"}, [
-					SELECT({id: "signatory_id", value: rect.template_signatory_id}, [
-						OPTION({value: 0}, "Select a signatory"),
+				let select = DOM("#signatories");
+				select.value = rect.template_signatory_id;
+				set_content(select, [OPTION({value: 0}, "Select a signatory"),
 						stateSnapshot.signatories.map(
 							(signatory) => OPTION({value: signatory.signatory_id},
 								signatory.signatory_field)
-						)]),
-					BUTTON({id: "delete_rect", value: "submit", 'data-id': rect.id}, "Delete"),
-						BUTTON({id: "close_rect", value: "cancel"}, "Close"),
-					]),
-				]);
+						)]);
 				dlg.showModal();
 				return;
 			}

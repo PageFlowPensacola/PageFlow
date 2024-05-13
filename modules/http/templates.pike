@@ -5,9 +5,12 @@ constant markdown = #"# Templates
 > ### Edit audit rect
 >
 > <form method=dialog>
-> <div></div>
+> <label>Signatory
+>  <select class=rectlabel name=signatory_id id=signatories></select>
+> </label>
 >
-> [Save](: type=submit value=save) [Cancel](: type=submit value=cancel)
+>
+> [Delete](: type=submit value=delete) [Cancel](: type=submit value=cancel)
 > </form>
 {: tag=dialog #editauditrect}
 

@@ -23,6 +23,35 @@ figure img {
 	border: 2px solid cyan;
 }
 
+dialog::backdrop {
+	background-color: #666D;
+}
+
+dialog {
+	padding: 0;
+}
+
+dialog section {
+	padding: 1em;
+}
+
+dialog header {
+	background-color: #aaa;
+	color: white;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0 0.4em;
+	margin: -1em -1em 0;
+}
+
+dialog header div {
+	display: flex;
+	align-items: center;
+	border: 1px solid #A44;
+	border-radius: 50%;
+}
+
 #pageheader,
 footer {
 	flex-grow: 0;
