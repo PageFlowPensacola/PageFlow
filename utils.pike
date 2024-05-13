@@ -67,14 +67,12 @@ __async__ void tesseract(){
 			if (name == "body") return Array.arrayify(data[*]) * ({ });
 			if (name == "html") return data * ({ });
 				switch (attr->class) {
-					case "ocr_page": return data; // check this bounding box
+					case "ocr_page": return data;
 					case "ocr_carea": {
-						werror("Parsing page %O\n", attr->title);
-
 						sscanf(attr->title, "%*sbbox %d %d %d %d", int l, int t, int r, int b);
 						left = min(left, l); top = min(top, t);
 						right = max(right, r); bottom = max(bottom, b);
-						return data * "\n\n"; // check this bounding box
+						return data * "\n\n";
 					}
 					case "ocr_par": return data * "\n";
 					case "ocr_line": return data * " ";
