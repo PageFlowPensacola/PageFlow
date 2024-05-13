@@ -39,7 +39,7 @@ __async__ void update_page_bounds() {
 	}
 }
 
-@"Tesseract and parse HOCR on a PNG file":
+@"Tesseract and parse HOCR on a PNG file named annoteted.png":
 __async__ void tesseract(){
 	[string fn] = G->G->args[Arg.REST];
 	mapping|object img = Image.PNG._decode(Stdio.read_file(fn));
@@ -49,6 +49,7 @@ __async__ void tesseract(){
 		// Paste original into it, fading based on alpha channel
 		img->image = blank->paste_mask(img->image, img->alpha);
 	}
+	int left = img->xsize, top = img->ysize, right = 0, bottom = 0;
 	img = img->image;
 	img->setcolor(255, 0, 255);
 	mapping hocr = await(run_promise(({"tesseract", fn, "-", "hocr"})));
@@ -69,13 +70,10 @@ __async__ void tesseract(){
 					case "ocr_page": return data; // check this bounding box
 					case "ocr_carea": {
 						werror("Parsing page %O\n", attr->title);
-						sscanf(attr->title, "%*sbbox %d %d %d %d", int left, int top, int right, int bottom);
-						img->line(left, top, right, top);
-						img->line(right, top, right, bottom);
-						img->line(right, bottom, left, bottom);
-						img->line(left, bottom, left, top);
-						img->line(left, top, right, bottom);
-						img->line(right, top, left, bottom);
+
+						sscanf(attr->title, "%*sbbox %d %d %d %d", int l, int t, int r, int b);
+						left = min(left, l); top = min(top, t);
+						right = max(right, r); bottom = max(bottom, b);
 						return data * "\n\n"; // check this bounding box
 					}
 					case "ocr_par": return data * "\n";
@@ -85,8 +83,13 @@ __async__ void tesseract(){
 				}
 		}
 	} * ({ }); // then flatten at the end
+	img->line(left, top, right, top);
+	img->line(right, top, right, bottom);
+	img->line(right, bottom, left, bottom);
+	img->line(left, bottom, left, top);
+	img->line(left, top, right, bottom);
+	img->line(right, top, left, bottom);
 	Stdio.write_file("annotated.png", Image.PNG.encode(img));
-	//werror("Parsed %O\n", data);
 }
 
 @"This help information":
