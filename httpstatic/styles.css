@@ -46,9 +46,6 @@ dialog header {
 }
 
 .dialog_cancel {
-	display: flex;
-	align-items: center;
-	justify-content: center;
 	border: 1px solid #A44;
 	color: #A44;
 	cursor: pointer;
