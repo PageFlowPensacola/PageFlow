@@ -63,15 +63,14 @@ canvas.addEventListener('pointerup', (e) => {
 			const bottom = rect.y2 * (bounds.pxbottom - bounds.pxtop) + bounds.pxtop;
 			if (rect_end_x >= left && rect_end_x <= right && rect_end_y >= top && rect_end_y <= bottom) {
 				// found it
-				console.log("Clicked on rect", rect, stateSnapshot);
 				let dlg = DOM("#editauditrect");
-				let select = DOM("#signatories");
-				select.value = rect.template_signatory_id;
-				set_content(select, [OPTION({value: 0}, "Select a signatory"),
+				let selectElem = DOM("#signatories");
+				set_content(selectElem, [OPTION({value: 0}, "Select a signatory"),
 						stateSnapshot.signatories.map(
 							(signatory) => OPTION({value: signatory.signatory_id},
 								signatory.signatory_field)
 						)]);
+				selectElem.value = rect.template_signatory_id;
 				dlg.showModal();
 				return;
 			}
