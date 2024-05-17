@@ -23,6 +23,30 @@ figure img {
 	border: 2px solid cyan;
 }
 
+@keyframes loadingellipses {
+	0% {
+		content: "";
+	}
+
+	25% {
+		content: ".";
+	}
+
+	50% {
+		content: "..";
+	}
+
+	75% {
+		content: "...";
+	}
+
+}
+
+.loading::after {
+	animation: loadingellipses 4s linear infinite;
+	content: "...";
+}
+
 dialog::backdrop {
 	background-color: #666D;
 }
@@ -188,4 +212,15 @@ main ul {
 	align-items: center;
 	gap: 0.5em;
 	font-style: italic;
+}
+
+.thumbnails {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1em;
+}
+
+.thumbnails figure img {
+	cursor: pointer;
+	max-width: 200px;
 }

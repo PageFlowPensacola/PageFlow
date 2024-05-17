@@ -10,7 +10,7 @@ const render_upload_status = (state) => {
 	console.log({"render_upload_status": state});
 	return DIV([
 		H2("Analysis"),
-		P(state.step),
+		P({class: "loading"}, state.step),
 	]);
 };
 
@@ -25,7 +25,7 @@ export function render(state) {
 				state.templates.map((t) => OPTION({value: t.id}, t.name))
 			]),
 			INPUT({id: "newFile", type: "file", accept: "image/pdf", disabled: true}),
-			localState.uploading && P({style: "display:inline"}, "Uploading... ")
+			localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
 		]),
 		(typeof (localState.step) !== "undefined") && render_upload_status(localState),
 		(typeof (localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
@@ -42,11 +42,11 @@ export function render(state) {
 				]);
 			}),
 		]),
-		localState.templatePages?.map((page, idx) => {
-			return page.annotated_img && FIGURE([
+		DIV({class: "thumbnails"}, [localState.templatePages?.map((page, idx) => {
+			return page.annotated_img && FIGURE({class: "thumbnail"}, [
 				IMG({src: page.annotated_img}),
 			]);
-		}),
+		})]),
 	]));
 }
 
@@ -64,7 +64,7 @@ on("change", "#newFile", async (e) => {
 		"org": org_id,
 		"template": +DOM("#templateselect").value
 	});
-	localState.step = "Uploading...";
+	localState.step = "Uploading";
 	localState.confidence = undefined;
 	localState.rects = undefined;
 	localState.templatePages = undefined;
