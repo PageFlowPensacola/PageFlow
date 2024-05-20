@@ -90,6 +90,14 @@ __async__ void tesseract(){
 	Stdio.write_file("annotated.png", Image.PNG.encode(img));
 }
 
+int ml() {
+	object model = G->bootstrap("modules/model.pike");
+	model.send_msg(([
+		"text": "Pirates",
+	]));
+	return -1;
+}
+
 @"This help information":
 void help() {
 	write("\nUSAGE: pike app --exec=ACTION\nwhere ACTION is one of the following:\n");
