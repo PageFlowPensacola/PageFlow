@@ -91,7 +91,7 @@ __async__ void tesseract(){
 }
 
 int ml() {
-	object model = G->bootstrap("modules/model.pike");
+	object model = G->bootstrap("modules/classifier.pike");
 	model.send_msg(([
 		"text": "Pirates",
 	]));

@@ -1,4 +1,1 @@
-scikit-image
-opencv-python
-matplotlib
-imutils
+river
