@@ -90,12 +90,19 @@ __async__ void tesseract(){
 	Stdio.write_file("annotated.png", Image.PNG.encode(img));
 }
 
+@"Test the classifier":
 int ml() {
 	object model = G->bootstrap("modules/classifier.pike");
-	model.send_msg(([
+	model->send_msg(([
 		"text": "Pirates",
 	]));
 	return -1;
+}
+
+@"Update database schema":
+__async__ void tables() {
+	werror("Creating tables\n");
+	await(G->G->DB->create_tables(G->G->args["confirm"]));
 }
 
 @"This help information":

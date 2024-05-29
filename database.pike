@@ -3,10 +3,32 @@ inherit annotated;
 Sql.Sql mysqlconn, pgsqlconn;
 Concurrent.Promise query_pending;
 
-Concurrent.Future run_my_query(string query, mapping|void bindings) {return run_query(mysqlconn, query, bindings);}
-Concurrent.Future run_pg_query(string query, mapping|void bindings) {return run_query(pgsqlconn, query, bindings);}
+Concurrent.Future run_my_query(string|array query, mapping|void bindings) {return run_query(mysqlconn, query, bindings);}
+Concurrent.Future run_pg_query(string|array query, mapping|void bindings) {return run_query(pgsqlconn, query, bindings);}
 
-__async__ array(mapping) run_query(Sql.Sql conn, string query, mapping bindings) {
+array(mapping) parse_mysql_result(array(mapping) result) {
+	if (result) {
+		foreach(result, mapping row) {
+			// clean out the keys with dots (the table-name qualified keys)
+			foreach(indices(row), string key) {
+				if (has_value(key, ".")) m_delete(row, key);
+			}
+		}
+	}
+	return result;
+}
+
+/**
+	@param sql may be an array which includes queries and callbacks.
+	eg:
+
+	({"select id, seq where blah blah",
+	callback_to_figure_out_changes,
+	"update set seq = :cur where id=:other"
+	"update set seq = :new where id = :this"
+	})
+*/
+__async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void bindings) {
 
 	// TODO: figure out why promise queries are failing with broken promise error
 	//write("Query result: %O\n", await(mysqlconn->promise_query(query))->get());
@@ -15,28 +37,39 @@ __async__ array(mapping) run_query(Sql.Sql conn, string query, mapping bindings)
 	//write("%O\n", mysqlconn->promise_query);
 	//write("Waiting for query: %O\n", query[..64]);
 
+	// If sql is an array will perform them in a transaction
+	// eg: a process sequence change: 1,2,3,4: 1,2,4,3
+	// Currently only support in/decremental updates
+
+
 	object pending = query_pending;
 	object completion = query_pending = Concurrent.Promise();
 
 	if (pending) await(pending->future()); //If there's a queue, put us at the end of it.
-	array|zero result;
-	mixed ex = catch {
-		result = await(conn->promise_query(query, bindings))->get();
-		//write ("---the query: %O\n", promise);
-		//mixed result = await(promise)->get();
-
-		//write ("---result: %O\n", result);
-
-		if (result) {
-			foreach(result, mapping row) {
-				// clean out the keys with dots (the table-name qualified keys)
-				foreach(indices(row), string key) {
-					if (has_value(key, ".")) m_delete(row, key);
-				}
-			}
+	mixed ret, ex;
+	if (arrayp(sql)) {
+		ret = ({ });
+		ex = catch {await(conn->promise_query("begin"))->get();};
+		if (!ex) foreach (sql, string|function q) {
+			//A null entry in the array of queries is ignored, and will not have a null return value to correspond.
+			if (ex = q && catch {
+				if (functionp(q)) q(ret, bindings); //q is allowed to mutate its bindings.
+				else ret += ({parse_mysql_result(await(conn->promise_query(q, bindings))->get())});
+			}) break;
 		}
-		//write("-----processed result\n" );
-	};
+		//Ignore errors from rolling back - the exception that gets raised will have come from
+		//the actual query (or possibly the BEGIN), not from rolling back.
+		if (ex) catch {await(conn->promise_query("rollback"))->get();};
+		//But for committing, things get trickier. Technically an exception here leaves the
+		//transaction in an uncertain state, but I'm going to just raise the error. It is
+		//possible that the transaction DID complete, but we can't be sure.
+		else ex = catch {await(conn->promise_query("commit"))->get();};
+	}
+	else {
+		//Implicit transaction is fine here; this is also suitable for transactionless
+		//queries (of which there are VERY few).
+		ex = catch {ret = parse_mysql_result(await(conn->promise_query(sql, bindings))->get());};
+	}
 
 	//write("------passed catch block\n");
 	completion->success(1);
@@ -44,12 +77,47 @@ __async__ array(mapping) run_query(Sql.Sql conn, string query, mapping bindings)
 
 	if (ex) throw(ex);
 
-
-	return result;
+	return ret;
 
 }
 
-
+mapping tables = ([
+	"templates": ({
+		"id SERIAL PRIMARY KEY",
+		"name varchar NOT NULL",
+		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
+		"primary_org_id bigint NOT NULL",
+		"page_count smallint",
+	}),
+	"template_pages": ({
+		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
+		"page_number smallint NOT NULL",
+		"page_data BYTEA NOT NULL",
+		"pxleft smallint",
+		"pxtop smallint",
+		"pxright smallint",
+		"pxbottom smallint",
+		" PRIMARY KEY (template_id, page_number)",
+	}),
+	"template_signatories": ({
+		"id BIGSERIAL PRIMARY KEY",
+		"name varchar NOT NULL",
+		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
+	}),
+	"audit_rects": ({
+		"id BIGSERIAL PRIMARY KEY",
+		"audit_type varchar NOT NULL", //NOT IN USE initials, signature, date
+		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
+		"page_number smallint NOT NULL",
+		"x1 double precision NOT NULL",
+		"y1 double precision NOT NULL",
+		"x2 double precision NOT NULL",
+		"y2 double precision NOT NULL",
+		"name varchar DEFAULT NULL",
+		"transition_score int NOT NULL DEFAULT -1", // to compare against signature
+		"template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE"
+	}),
+]);
 
 __async__ array(mapping) get_templates_for_org(int org_id) {
 
@@ -64,8 +132,6 @@ __async__ array(mapping) get_templates_for_org(int org_id) {
 	return await(run_pg_query(query, bindings));
 
 }
-
-
 
 __async__ mapping|zero insert_template_page(int page_type_id, string name, string url, int org_id) {
 
@@ -225,6 +291,48 @@ __async__ void compare_transition_scores(int template_id, int page_number, int f
 
 		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", template_id, page_number, r->template_signatory_id || 0, r->transition_score, calculated_transition_score);
 	}
+}
+
+//Attempt to create all tables and alter them as needed to have all columns
+__async__ void create_tables(int confirm) {
+
+	array cols = await(run_pg_query("select table_name, column_name from information_schema.columns where table_schema = 'public' order by table_name, ordinal_position"));
+	array stmts = ({ });
+	mapping(string:array(string)) havecols = ([]);
+	foreach (cols, mapping col) havecols[col->table_name] += ({col->column_name});
+	foreach (tables; string tbname; array cols) {
+		if (!havecols[tbname]) {
+			//The table doesn't exist. Create it from scratch.
+			array extras = filter(cols, has_suffix, ";");
+			stmts += ({
+				sprintf("create table %s (%s)", tbname, (cols - extras) * ", "),
+			}) + extras;
+			continue;
+		}
+		//If we have columns that aren't in the table's definition,
+		//drop them. If the converse, add them. There is no provision
+		//here for altering columns.
+		string alter = "";
+		multiset sparecols = (multiset)havecols[tbname];
+		foreach (cols, string col) {
+			if (has_suffix(col, ";") || has_prefix(col, " ")) continue;
+			sscanf(col, "%s ", string colname);
+			if (sparecols[colname]) sparecols[colname] = 0;
+			else alter += ", add " + col;
+		}
+		//If anything hasn't been removed from havecols, it should be dropped.
+		foreach (sparecols; string colname;) alter += ", drop " + colname;
+		if (alter != "") stmts += ({"alter table " + tbname + alter[1..]}); //There'll be a leading comma
+		else write("Table %s unchanged\n", tbname);
+	}
+	if (sizeof(stmts)) {
+		werror("Updating db %O\n", stmts);
+		if (confirm) await(run_pg_query(stmts));
+		else {
+			werror("Run with --confirm to apply changes.\n");
+		}
+	}
+
 }
 
 protected void create(string name) {
