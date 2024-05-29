@@ -101,9 +101,9 @@ https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf
 - ssl
 
 1. User
-   - Roles ( org-level admin, org-level user, suborg-level user ) 
+   - Roles ( org-level admin, org-level user, suborg-level user )
    - 2fa - oauth with google or other account (Check with Frank on option to create google account)
-   - audit trail - appendning toward append-only 
+   - audit trail - appendning toward append-only
    - impersonation
    - remember me
    - state preservation between logins (restore ui position on login)
@@ -112,10 +112,10 @@ https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf
    - Tree - root is pageflow
    - offer subdomains in org tree
    - remember as part of state preservation
-   - domain-level module availability 
+   - domain-level module availability
    - Shipping labels
    - manifests
-   
+
 3. Document (dealjacket, template, mtr, etc)
    - upload
    - search
@@ -134,4 +134,6 @@ https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf
    - model management/training
    - data model?
 
- 
+ ## Dynamic DB updatescript.
+	replace the .sql file with an array of arrays
+	which we can use to make updates to the Db
