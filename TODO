@@ -97,3 +97,41 @@ https://www.adobe.com/devnet-docs/acrobatetk/tools/DigSig/Acrobat_DigitalSignatu
 https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf
 
 ##### Archive Migration
+
+- ssl
+
+1. User
+   - Roles ( org-level admin, org-level user, suborg-level user ) 
+   - 2fa - oauth with google or other account (Check with Frank on option to create google account)
+   - audit trail - appendning toward append-only 
+   - impersonation
+   - remember me
+   - state preservation between logins (restore ui position on login)
+
+2. Domain (formerly org)
+   - Tree - root is pageflow
+   - offer subdomains in org tree
+   - remember as part of state preservation
+   - domain-level module availability 
+   - Shipping labels
+   - manifests
+   
+3. Document (dealjacket, template, mtr, etc)
+   - upload
+   - search
+   - transactionality w/ aws
+   - revisit aws structure
+   - doctypes (dealjacket, financial, hr)
+
+4. Search
+   - full-text serch in postgres
+   - future: advanced search
+
+5. Pipeline - river
+   - pdf processing
+   - image processing
+   - data munging
+   - model management/training
+   - data model?
+
+ 
