@@ -7,11 +7,15 @@ Concurrent.Future run_my_query(string|array query, mapping|void bindings) {retur
 Concurrent.Future run_pg_query(string|array query, mapping|void bindings) {return run_query(pgsqlconn, query, bindings);}
 
 mapping tables = ([
+	"domains": ({
+		"name text PRIMARY KEY", // eg com.pageflow.cars.sansing.
+		"ml_model BYTEA",
+	}),
 	"templates": ({
 		"id SERIAL PRIMARY KEY",
 		"name varchar NOT NULL",
 		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
-		"primary_org_id bigint NOT NULL",
+		"domain REFERENCES domains ON DELETE RESTRICT",
 		"page_count smallint",
 	}),
 	"template_pages": ({
