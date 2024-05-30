@@ -15,7 +15,7 @@ mapping tables = ([
 		"id SERIAL PRIMARY KEY",
 		"name varchar NOT NULL",
 		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
-		"domain REFERENCES domains ON DELETE RESTRICT",
+		"domain text NOT NULL REFERENCES domains ON DELETE RESTRICT",
 		"page_count smallint",
 	}),
 	"template_pages": ({
