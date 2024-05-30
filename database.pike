@@ -6,6 +6,44 @@ Concurrent.Promise query_pending;
 Concurrent.Future run_my_query(string|array query, mapping|void bindings) {return run_query(mysqlconn, query, bindings);}
 Concurrent.Future run_pg_query(string|array query, mapping|void bindings) {return run_query(pgsqlconn, query, bindings);}
 
+mapping tables = ([
+	"templates": ({
+		"id SERIAL PRIMARY KEY",
+		"name varchar NOT NULL",
+		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
+		"primary_org_id bigint NOT NULL",
+		"page_count smallint",
+	}),
+	"template_pages": ({
+		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
+		"page_number smallint NOT NULL",
+		"page_data BYTEA NOT NULL",
+		"pxleft smallint",
+		"pxtop smallint",
+		"pxright smallint",
+		"pxbottom smallint",
+		" PRIMARY KEY (template_id, page_number)",
+	}),
+	"template_signatories": ({
+		"id BIGSERIAL PRIMARY KEY",
+		"name varchar NOT NULL",
+		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
+	}),
+	"audit_rects": ({
+		"id BIGSERIAL PRIMARY KEY",
+		"audit_type varchar NOT NULL", //NOT IN USE initials, signature, date
+		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
+		"page_number smallint NOT NULL",
+		"x1 double precision NOT NULL",
+		"y1 double precision NOT NULL",
+		"x2 double precision NOT NULL",
+		"y2 double precision NOT NULL",
+		"name varchar DEFAULT NULL",
+		"transition_score int NOT NULL DEFAULT -1", // to compare against signature
+		"template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE"
+	}),
+]);
+
 array(mapping) parse_mysql_result(array(mapping) result) {
 	if (result) {
 		foreach(result, mapping row) {
@@ -80,44 +118,6 @@ __async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void 
 	return ret;
 
 }
-
-mapping tables = ([
-	"templates": ({
-		"id SERIAL PRIMARY KEY",
-		"name varchar NOT NULL",
-		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
-		"primary_org_id bigint NOT NULL",
-		"page_count smallint",
-	}),
-	"template_pages": ({
-		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
-		"page_number smallint NOT NULL",
-		"page_data BYTEA NOT NULL",
-		"pxleft smallint",
-		"pxtop smallint",
-		"pxright smallint",
-		"pxbottom smallint",
-		" PRIMARY KEY (template_id, page_number)",
-	}),
-	"template_signatories": ({
-		"id BIGSERIAL PRIMARY KEY",
-		"name varchar NOT NULL",
-		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
-	}),
-	"audit_rects": ({
-		"id BIGSERIAL PRIMARY KEY",
-		"audit_type varchar NOT NULL", //NOT IN USE initials, signature, date
-		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
-		"page_number smallint NOT NULL",
-		"x1 double precision NOT NULL",
-		"y1 double precision NOT NULL",
-		"x2 double precision NOT NULL",
-		"y2 double precision NOT NULL",
-		"name varchar DEFAULT NULL",
-		"transition_score int NOT NULL DEFAULT -1", // to compare against signature
-		"template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE"
-	}),
-]);
 
 __async__ array(mapping) get_templates_for_org(int org_id) {
 
