@@ -134,6 +134,7 @@ https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf
    - model management/training
    - data model?
 
- ## Dynamic DB updatescript.
-	replace the .sql file with an array of arrays
-	which we can use to make updates to the Db
+ ## May 30
+ On login, assume for now tagtech userbase, get user details from MySql database and synchronize with psql db.
+ Eventually we would like TagTech to be one possibility in the user credentials, but that probably won't be sufficient.
+ Set everything else up accordingly.

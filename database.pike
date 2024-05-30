@@ -11,6 +11,13 @@ mapping tables = ([
 		"name text PRIMARY KEY", // eg com.pageflow.cars.sansing.
 		"ml_model BYTEA",
 	}),
+	"users": ({
+		"user_id SERIAL PRIMARY KEY",
+		"email varchar NOT NULL",
+		"domain text NOT NULL REFERENCES domains ON DELETE RESTRICT",
+		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
+	}),
+	// "user_credentials": ({TODO: Implement this}),
 	"templates": ({
 		"id SERIAL PRIMARY KEY",
 		"name varchar NOT NULL",

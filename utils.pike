@@ -7,6 +7,50 @@ void test() {
 	werror("Hello World\n");
 }
 
+
+
+@"Create a user with email and password":
+__async__ void usercreate() {
+	[string email, string pwd] = G->G->args[Arg.REST];
+	werror("Creating user\n");
+	await(G->G->DB->run_query(#"
+		INSERT INTO users (email)
+		VALUES (:email)",
+		(["email": email]))); //bcrypt
+}
+
+
+@"Delete a user":
+__async__ void userdelete() {
+	[string email] = G->G->args[Arg.REST];
+	werror("Deleting user\n");
+	await(G->G->DB->run_query(#"
+		DELETE FROM users
+		WHERE email = :email",
+		(["email": email])));
+}
+
+@"List all users":
+__async__ void userlist() {
+	werror("Listing users\n");
+	mixed result = await(G->G->DB->run_query(#"
+		SELECT email
+		FROM users"));
+	werror("Result: %O\n", result);
+}
+
+@"Find user by email":
+__async__ void userfind() {
+	[string email] = G->G->args[Arg.REST];
+	werror("Finding user\n");
+	mixed result = await(G->G->DB->run_query(#"
+		SELECT email
+		FROM users
+		WHERE email = :email",
+		(["email": email])));
+	werror("Result: %O\n", result);
+}
+
 @"Audit score":
 __async__ void audit_score() {
 	await(G->G->DB->recalculate_transition_scores(0, 0));
