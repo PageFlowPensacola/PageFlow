@@ -21,7 +21,7 @@ Concurrent.Future send_msg(mapping json){
 		pythonstdout->set_read_callback(pythonoutput);
 		// TODO use a Buffer
 		python = Process.create_process(
-			({"python", "app.py"}),
+			({"python", "classify.py"}),
 			([
 				"stdin": pythonstdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE),
 				"stdout": pythonstdout->pipe(Stdio.PROP_IPC)
