@@ -10,14 +10,14 @@ import time
 import json
 
 start = time.monotonic()
-
-try:
-    with open("model.dat", "rb") as m: model = pickle.load(m)
-except FileNotFoundError:
-    model = compose.Pipeline(
+model = compose.Pipeline(
         ("tokenize", feature_extraction.BagOfWords(lowercase=False, ngram_range=(1, 2))),
         ("nb", naive_bayes.ComplementNB(alpha=1))
     )
+try:
+    with open("model.dat", "rb") as m: model = pickle.load(m)
+except FileNotFoundError:
+    pass
 
 """ input = {
     "pageref": "42:3",
