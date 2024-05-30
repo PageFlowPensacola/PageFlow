@@ -26,16 +26,21 @@ except FileNotFoundError:
 } """
 
 try:
-    print("Ready", file=sys.stderr, flush=True)
-    while 1:
-        print("Waiting", file=sys.stderr, flush=True)
-        msg = json.loads(input()) # input looks for one line of txt followed by newline
-        if ("pageref" in msg):
-            model.learn_one(msg["text"], msg["pageref"])
-            with open("model.dat", "wb") as m:
-                pickle.dump(model, m)
-            print(json.dumps({"status": "ok", "msgid": msg["msgid"]}))
-        else:
-            res = model.predict_proba_one(msg["text"])
-            print(json.dumps({"result": res, "msgid": msg["msgid"]}))
+	print("Ready", file=sys.stderr, flush=True)
+	while 1:
+		print("Waiting", file=sys.stderr, flush=True)
+		msg = json.loads(input()) # input looks for one line of txt followed by newline
+		if ("cmd" not in msg):
+			print(json.dumps({"status": "error", "msgid": msg["msgid"], "error": "No command"}))
+			continue
+		if msg["cmd"] == "train":
+			model.learn_one(msg["text"], msg["pageref"])
+			with open("model.dat", "wb") as m:
+				pickle.dump(model, m)
+			print(json.dumps({"status": "ok", "msgid": msg["msgid"]}))
+		elif msg["cmd"] == "classify":
+			res = model.predict_proba_one(msg["text"])
+			print(json.dumps({"result": res, "msgid": msg["msgid"]}))
+		else:
+			print(json.dumps({"status": "error", "msgid": msg["msgid"], "error": "Unknown command"}))
 except EOFError: pass

@@ -14,6 +14,7 @@ void pythonoutput(mixed _, string data){
 
 @export:
 Concurrent.Future send_msg(mapping json){
+	// json will always include a cmd (train, classify, etc)
 	json->msgid = G->G->next_model_msgid++;
 	if (!python){
 		pythonstdin = Stdio.File();
