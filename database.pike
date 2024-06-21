@@ -6,10 +6,37 @@ Concurrent.Promise query_pending;
 Concurrent.Future run_my_query(string|array query, mapping|void bindings) {return run_query(mysqlconn, query, bindings);}
 Concurrent.Future run_pg_query(string|array query, mapping|void bindings) {return run_query(pgsqlconn, query, bindings);}
 
+// Every domain and its children are visible to its owner
+// * Objects belong to a domain and all of its subdomains
+	// - documents, templates, ML model
+	// - when a user creates and object they can choose to put it at any level
+	//	 between the session domain and the user domain
+	// – when you create a template at a particular level, if a model does
+	//		not exist at that level, it will be created by copying the nearest parent.
+	//		so users don't need to think about the models. They will self manage.
+// * Users belong to a domain
+  // - users have control of all objects in their domain and its subdomains
+	// - however that means that there could be multiple subtrees of
+	//	 documents that are not visible to each other
+// * Sessions belong in a domain
+	// - meaning that if you are the owner of com.pageflow.dealership.automobile
+	//  your current session might be com.pageflow.dealership.automobile.sansing.toyota.
+	// - at any given time you are always able to see anything in the
+	//	 linear parentage of your current session's domain
+	//	 so we only need to worry about the current session's domain at a time.
+	// - Session implementation may not be specifically as browser sessions
+	// - You could switch manually to a different (sub) domain eg .sansing.honda.
+	// - If your current session is .sansing. you can't see anything in .sansing.toyota
+	//   except for in some operations (like search) that don't use the standard visibility rules.
+	//   eg you wouldn't see templates from .sansing.toyota in the template list
+// * Visibility is usually defined by one thing:
+//  - the domain of the object has to be a prefix of the domain of the session.
+//  - however some operations such as document searches may span subdomains of the session domain.
 mapping tables = ([
 	"domains": ({
-		"name text PRIMARY KEY", // eg com.pageflow.cars.sansing.
+		"name text PRIMARY KEY", // eg com.pageflow.dealership.automotive.sansing.toyota.
 		"ml_model BYTEA",
+		"legacy_org_id int",
 	}),
 	"users": ({
 		"user_id SERIAL PRIMARY KEY",
