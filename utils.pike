@@ -51,6 +51,31 @@ __async__ void userfind() {
 	write("Result: %O\n", result);
 }
 
+@"Domain import":
+__async__ void domain_import() {
+	werror("Fetching user orgs\n");
+	array orgs = await(G->G->DB->run_my_query(#"
+		SELECT org_id, display_name, org_type, parent_org_id
+		FROM org"));
+	write("Orgs: %O\n", orgs);
+	werror("Importing domains\n");
+
+	array dom = await(G->G->DB->run_pg_query(#"
+		SELECT * from domains where legacy_org_id is not null"));
+	mapping domains = mkmapping(dom->legacy_org_id, dom);
+	write("Domains: %O\n", domains);
+	foreach (orgs, mapping org) {
+		if (mapping par = !domains[org->org_id] && domains[org->parent_org_id]) {
+			write("Parent name %O display name %O\n", par->name, par->display_name);
+			write("Org display name %O Org type %O\n", org->display_name, org->org_type);
+		}
+	}
+	/* await(G->G->DB->run_pg_query(#"
+		INSERT INTO domains (domain)
+		VALUES (:domain)",
+		(["domain": domain]))); */
+}
+
 @"Audit score":
 __async__ void audit_score() {
 	await(G->G->DB->recalculate_transition_scores(0, 0));

@@ -37,6 +37,7 @@ mapping tables = ([
 		"name text PRIMARY KEY", // eg com.pageflow.dealership.automotive.sansing.toyota.
 		"ml_model BYTEA",
 		"legacy_org_id int",
+		"display_name text",
 	}),
 	"users": ({
 		"user_id SERIAL PRIMARY KEY",
