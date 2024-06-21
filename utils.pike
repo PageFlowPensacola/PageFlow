@@ -25,7 +25,7 @@ __async__ void userdelete() {
 	[string email] = G->G->args[Arg.REST];
 	werror("Deleting user\n");
 	await(G->G->DB->run_query(#"
-		DELETE FROM users
+		DELETE FROM user
 		WHERE email = :email",
 		(["email": email])));
 }
@@ -33,22 +33,22 @@ __async__ void userdelete() {
 @"List all users":
 __async__ void userlist() {
 	werror("Listing users\n");
-	mixed result = await(G->G->DB->run_query(#"
+	mixed result = await(G->G->DB->run_my_query(#"
 		SELECT email
-		FROM users"));
-	werror("Result: %O\n", result);
+		FROM user"));
+	write("Result: %O\n", result);
 }
 
 @"Find user by email":
 __async__ void userfind() {
 	[string email] = G->G->args[Arg.REST];
 	werror("Finding user\n");
-	mixed result = await(G->G->DB->run_query(#"
+	mixed result = await(G->G->DB->run_my_query(#"
 		SELECT email
-		FROM users
+		FROM user
 		WHERE email = :email",
 		(["email": email])));
-	werror("Result: %O\n", result);
+	write("Result: %O\n", result);
 }
 
 @"Audit score":
