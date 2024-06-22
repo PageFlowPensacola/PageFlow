@@ -105,3 +105,8 @@ the bounds of page text area are calculated and when comparing each
 rectangle is rescaled proportionally to the page bounds, with
 corresponding margins adjusted to match the saved page rect (which
 does not take into account page text bounds).
+
+### Some Python ML/NLP Resources that may be useful
+
+* Lankchain - chat-focused
+* Giskrd - library for evaluating bias of models
