@@ -60,7 +60,7 @@ __async__ void domain_import() {
 	write("Orgs: %O\n", orgs);
 	werror("Importing domains\n");
 
-	array dom = await(G->G->DB->run_pg_query(#"
+	array(mapping) dom = await(G->G->DB->run_pg_query(#"
 		SELECT * from domains where legacy_org_id is not null"));
 	mapping domains = mkmapping(dom->legacy_org_id, dom);
 	write("Domains: %O\n", domains);
@@ -68,12 +68,20 @@ __async__ void domain_import() {
 		if (mapping par = !domains[org->org_id] && domains[org->parent_org_id]) {
 			write("Parent name %O display name %O\n", par->name, par->display_name);
 			write("Org display name %O Org type %O\n", org->display_name, org->org_type);
+			write("Enter desired domain string: ");
+			string domain = String.trim(Stdio.stdin.gets());
+			if (domain == "") {
+				continue;
+			}
+			if (!has_suffix(domain, ".")) {
+				domain += ".";
+			}
+			await(G->G->DB->run_pg_query(#"
+			INSERT INTO domains (name, legacy_org_id, display_name)
+			VALUES (:domain, :org_id, :display_name)",
+			(["domain": par->name + domain, "org_id": org->org_id, "display_name": org->display_name])));
 		}
 	}
-	/* await(G->G->DB->run_pg_query(#"
-		INSERT INTO domains (domain)
-		VALUES (:domain)",
-		(["domain": domain]))); */
 }
 
 @"Audit score":
