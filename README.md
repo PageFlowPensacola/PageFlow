@@ -110,3 +110,22 @@ does not take into account page text bounds).
 
 * Lankchain - chat-focused
 * Giskrd - library for evaluating bias of models
+
+### Alternative Rosuav Signature Recognition Algorithm July 2024
+
+* Maintain a previous row and a previous cell (in current row). Initially all zeroes.
+* For each pixel in current row:
+  - If pixel is white(ish), select Whites, else select Blacks.
+  - If pixel above is of the same set, use that (after redirect).
+  - If pixel to the left is of same set, use that (after redirect).
+  - If both are of same set and different, merge them.
+    - Record a redirect from the higher numbered to the lower.
+    - Combine their scores
+- If both are of other set (or zero), assign the next available number. Never reuse numbers.
+  - Increment the score for this pixel's number
+* When done, you will have a list of areas and their sizes.
+* Discard any areas deemed too small (eg <5 pixels)
+* A signed document should have a few (1-3) large black areas and a good number of white areas
+* One large black area and one large white area implies a splodge, probably not a signature
+* One large white and no black implies blank
+* One large black and no white implies a scanning problem
