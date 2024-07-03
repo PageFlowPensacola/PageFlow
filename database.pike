@@ -36,7 +36,7 @@ mapping tables = ([
 	"domains": ({
 		"name text PRIMARY KEY", // eg com.pageflow.dealership.automotive.sansing.toyota.
 		"ml_model BYTEA",
-		"legacy_org_id int",
+		"legacy_org_id int", // TODO make unique, maybe.
 		"display_name text",
 	}),
 	"users": ({
