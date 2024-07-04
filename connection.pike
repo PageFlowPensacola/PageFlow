@@ -5,6 +5,8 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 
 	write("incoming http request: %O\n", req->not_query);
 
+	req->misc->session = G->G->http_sessions[req->cookies->session] || ([]);
+
 	catch {req->misc->json = Standards.JSON.decode_utf8(req->body_raw);};
 
 	//TODO maybe: Refresh the login token. Currently the tokens don't seem to expire,
@@ -39,6 +41,13 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 	resp->extra_heads->Connection = "close";
 	resp->extra_heads["Access-Control-Allow-Origin"] = "*";
 	resp->extra_heads["Access-Control-Allow-Private-Network"] = "true";
+
+	mapping sess = req->misc->session;
+	if (sizeof(sess)) {
+		//TODO: Persist these things somewhere
+		if (!sess->cookie) G->G->http_sessions[sess->cookie = random(1<<64)->digits(36)] = sess;
+		resp->extra_heads["Set-Cookie"] = "session=" + sess->cookie + "; Path=/; Max-Age=604800; SameSite=Lax; HttpOnly";
+	}
 	req->response_and_finish(resp);
 }
 
