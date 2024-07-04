@@ -162,7 +162,7 @@ __async__ array(mapping) get_templates_for_domain(string domain) {
 
 	string query = #"
 		SELECT id, name, page_count FROM templates
-		WHERE domain = :domain
+		WHERE :domain LIKE domain || '%'
 		AND page_count IS NOT NULL
 	";
 

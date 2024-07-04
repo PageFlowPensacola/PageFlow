@@ -73,7 +73,7 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 		}
 		if (string err = handler->websocket_validate(conn, data)) {
 			if (err == "") {conn->pending = ({frm}); return;}
-			conn->sock->send_text(Standards.JSON.encode((["error": err])));
+			conn->sock->send_text(Standards.JSON.encode((["cmd": "*DC*", "error": err])));
 			conn->sock->close();
 			return;
 		}

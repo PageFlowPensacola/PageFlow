@@ -141,3 +141,5 @@ Set everything else up accordingly.
 
  ## July 4
 Session Expiration
+Replace com.pageflow.tagtech.dunder-mifflin. in templates.js
+Reenstate login form in header

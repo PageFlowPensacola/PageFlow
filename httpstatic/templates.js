@@ -315,7 +315,8 @@ function handle_url_params() {
 		localState.current_page = null;
 		localState.pages = [];
 	}
-	auth.chggrp(template_id);
+	// TODO don't hack this!!!!!!!!
+	auth.chggrp(template_id || "com.pageflow.tagtech.dunder-mifflin.");
 }
 handle_url_params();
 

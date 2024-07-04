@@ -124,6 +124,7 @@ export function connect(group, handler)
 		}
 		else if (data.cmd === "*DC*") {
 			verbose("conn", "Kicked by server", data);
+			reconnect_delay = 2500;
 			//The server's kicking us. If we're VERY fortunate, we'll be told of an alternative
 			//place to connect. Otherwise, well, I guess it's back to the retry loop.
 			socket.close();

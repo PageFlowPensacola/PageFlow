@@ -45,7 +45,14 @@ string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed)
 	if (!conn->session->domain) {
 		return "Not authorized";
 	}
-	if (msg->group == "") return 0;
+	if (stringp(msg->group)) {
+		if (has_prefix(msg->group, conn->session->domain)) {
+			return 0;
+		} else {
+			return "Not authorized";
+		}
+	} // else group must be a template id
+
 	if (!conn->template_domains) conn->template_domains = ([]);
 	string domain = conn->template_domains[msg->group];
 	if (domain) {
@@ -59,7 +66,7 @@ string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed)
 	return "";
 }
 
-__async__ void 	fetch_template_domain(mapping conn, string group) {
+__async__ void 	fetch_template_domain(mapping conn, int group) {
 	array(mapping) domains = await(G->G->DB->run_pg_query(#"
 		SELECT domain
 		FROM templates
@@ -83,6 +90,11 @@ __async__ void websocket_cmd_delete_signatory(mapping(string:mixed) conn, mappin
 		])));
 	send_updates_all(conn->group);
 }
+
+mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req) {
+	werror("templates: %O\n", req->misc->session);
+	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));// TODO ability to switch domains & select template.
+};
 
 __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	int page = msg->page;
@@ -133,10 +145,11 @@ __async__ void websocket_cmd_set_rect_signatory(mapping(string:mixed) conn, mapp
 // Called on connection and update.
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	werror("get_state: %O %O %O\n", group, id, type);
-	if ((int) group){
-		return await(template_details((int) group));
+	if (intp(group)){
+		return await(template_details(group));
 	}
 	array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
+	werror("templates: %O\n", templates);
 	return (["templates":templates]);
 }
 
