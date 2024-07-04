@@ -45,6 +45,7 @@ string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed)
 	if (!conn->session->domain) {
 		return "Not authorized";
 	}
+	if (msg->group == "") return 0;
 	if (!conn->template_domains) conn->template_domains = ([]);
 	string domain = conn->template_domains[msg->group];
 	if (domain) {
