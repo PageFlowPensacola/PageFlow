@@ -166,7 +166,7 @@ __async__ array(mapping) get_templates_for_domain(string domain) {
 		AND page_count IS NOT NULL
 	";
 
-	mapping bindings = (["org_id":domain]);
+	mapping bindings = (["domain":domain]);
 
 	return await(run_pg_query(query, bindings));
 

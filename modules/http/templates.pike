@@ -17,7 +17,6 @@ constant markdown = #"# Templates
 ";
 
 __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	sscanf((string)conn->group, "%d:%d", int org, int template);
 	// If we receive an id, make it an update
 	if (msg->id) {
 		await(G->G->DB->run_pg_query(#"
@@ -34,15 +33,48 @@ __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(s
 				template_id, name
 			)
 			VALUES (:template_id, :name)", ([
-				"template_id": template,
+				"template_id": conn->group,
 				"name": msg->name
 			])));
 	}
 	send_updates_all(conn->group);
 }
 
+
+string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	if (!conn->session->domain) {
+		return "Not authorized";
+	}
+	if (!conn->template_domains) conn->template_domains = ([]);
+	string domain = conn->template_domains[msg->group];
+	if (domain) {
+		if (has_prefix(conn->session->domain, domain)) {
+			return 0;
+		} else {
+			return "Not authorized";
+		}
+	}
+	fetch_template_domain(conn, msg->group);
+	return "";
+}
+
+__async__ void 	fetch_template_domain(mapping conn, string group) {
+	array(mapping) domains = await(G->G->DB->run_pg_query(#"
+		SELECT domain
+		FROM templates
+		WHERE id = :id", (["id":group])));
+
+	conn->template_domains[group] = sizeof(domains) ? domains[0]->domain : "---";
+	array pending = conn->pending;
+	conn->pending = 0;
+	foreach(pending, mapping(string:mixed) msg) {
+		G->G->bouncers["connection.pike()->ws_msg"](conn, msg);
+	}
+
+}
+
 __async__ void websocket_cmd_delete_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	sscanf((string)conn->group, "%d:%d", int org, int template);
+	// TODO check who owns this document.
 	await(G->G->DB->run_pg_query(#"
 		DELETE FROM template_signatories
 		WHERE id = :id", ([
@@ -52,7 +84,6 @@ __async__ void websocket_cmd_delete_signatory(mapping(string:mixed) conn, mappin
 }
 
 __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	sscanf((string)conn->group, "%d:%d", int org, int template);
 	int page = msg->page;
 	werror("add_rect: %O %O %O\n", conn->group, msg, page);
 	await(G->G->DB->run_pg_query(#"
@@ -60,7 +91,7 @@ __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string
 			template_id, x1, y1, x2, y2, page_number, audit_type, template_signatory_id
 		)
 		VALUES (:template_id, :x1, :y1, :x2, :y2, :page_number, :audit_type, :signatory_id)", ([
-			"template_id": template,
+			"template_id": conn->group,
 			"x1": msg->rect->left,
 			"y1": msg->rect->top,
 			"x2": msg->rect->right,
@@ -71,23 +102,21 @@ __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string
 		]))
 	);
 	send_updates_all(conn->group);
-	G->G->DB->recalculate_transition_scores(template, page);
+	G->G->DB->recalculate_transition_scores((int) conn->group, page);
 }
 
 __async__ void websocket_cmd_delete_rect(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	sscanf((string)conn->group, "%d:%d", int org, int template);
 	await(G->G->DB->run_pg_query(#"
 		DELETE FROM audit_rects
 		WHERE id = :id
 		AND template_id = :template", ([
 			"id": msg->id,
-			"template": template
+			"template": conn->group
 		])));
 	send_updates_all(conn->group);
 }
 
 __async__ void websocket_cmd_set_rect_signatory(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	sscanf((string)conn->group, "%d:%d", int org, int template);
 	await(G->G->DB->run_pg_query(#"
 		UPDATE audit_rects
 		SET template_signatory_id = :signatory_id
@@ -95,7 +124,7 @@ __async__ void websocket_cmd_set_rect_signatory(mapping(string:mixed) conn, mapp
 		AND template_id = :template", ([
 			"id": msg->id,
 			"signatory_id": (int) msg->signatory_id || Val.null,
-			"template": template
+			"template": conn->group
 		])));
 	send_updates_all(conn->group);
 }
@@ -103,27 +132,22 @@ __async__ void websocket_cmd_set_rect_signatory(mapping(string:mixed) conn, mapp
 // Called on connection and update.
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	werror("get_state: %O %O %O\n", group, id, type);
-	sscanf(group, "%d:%d", int org, int template);
-	if (template){
-		return await(template_details(org, template));
+	if ((int) group){
+		return await(template_details((int) group));
 	}
 	array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
 	return (["templates":templates]);
 }
 
-__async__ mapping(string:mixed)|string|Concurrent.Future template_details(int org, int template_id) {
-	if (! (int) org) return ([ "error": 403 ]);
+__async__ mapping(string:mixed)|string|Concurrent.Future template_details(int template_id) {
 	if (!template_id) return 0;
 
 	mapping details = await(G->G->DB->run_pg_query(#"
 		SELECT name, page_count as count
 		FROM templates
-		WHERE primary_org_id = :org_id
-		AND id = :template_id
+		WHERE id = :template_id
 		AND page_count IS NOT NULL
-	", (["org_id":org, "template_id":template_id])));
-
-	werror("details: %O %O %O \n", details, org, template_id);
+	", (["template_id":template_id])));
 
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
 			SELECT x1, y1, x2, y2, page_number, audit_type, template_signatory_id, id
@@ -148,8 +172,7 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int or
 			FROM template_signatories s
 			JOIN templates t ON s.template_id = t.id
 			WHERE t.id = :template_id
-			AND t.primary_org_id = :org_id
-	", (["org_id":org, "template_id":template_id]))),
+	", (["template_id":template_id]))),
 
 			"page_rects": page_rects,
 		]);

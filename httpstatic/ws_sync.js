@@ -153,7 +153,6 @@ async function init() {
 		);
 	} else { // no user token end
 		set_content("#user", ["Welcome, ", auth.get_user().email, " ", BUTTON({id: "logout"}, "Log out")]);
-		ws_group = auth.get_org_id() + ":" + ws_group;
 		default_handler = await import(ws_code);
 		connect(ws_group);
 	}

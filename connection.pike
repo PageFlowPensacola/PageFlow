@@ -54,7 +54,7 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 {
 	if (function f = bounce(this_function)) {f(frm, conn); return;}
-
+	if (arrayp(conn->pending)) {conn->pending += ({frm}); return;}
 	mixed data;
 	if (catch {data = Standards.JSON.decode(frm->text);}) return; //Ignore frames that aren't text or aren't valid JSON
 	if (!stringp(data->cmd)) return;
@@ -72,6 +72,7 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 			conn->auth = (["email": conn->session->email, "id": conn->session->user_id]);
 		}
 		if (string err = handler->websocket_validate(conn, data)) {
+			if (err == "") {conn->pending = ({frm}); return;}
 			conn->sock->send_text(Standards.JSON.encode((["error": err])));
 			conn->sock->close();
 			return;
