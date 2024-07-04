@@ -5,28 +5,12 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 
 	write("incoming http request: %O\n", req->not_query);
 
-  // sscanf can do similar job to regex, but more simply. Doesn't do backtracking.
-	sscanf(req->request_headers->authorization || "nope", "Bearer %s", string bearer);
-	if(bearer) {
-		req->misc->auth = Web.decode_jwt(jwt_hmac, bearer); // will be null if invalid
-	}
-
-
 	catch {req->misc->json = Standards.JSON.decode_utf8(req->body_raw);};
 
 	//TODO maybe: Refresh the login token. Currently the tokens don't seem to expire,
 	//but if they do, we can get the refresh token via authcookie (if present).
 	[function handler, array args] = find_http_handler(req->not_query);
 
-	//If we receive URL-encoded form data, assume it's UTF-8.
-	// Deprecated leftover Stolebot code.
-	if (req->request_headers["content-type"] == "application/x-www-form-urlencoded" && mappingp(req->variables))
-	{
-		//NOTE: We currently don't UTF-8-decode the keys; they should usually all be ASCII anyway.
-		foreach (req->variables; string key; mixed value) catch {
-			if (stringp(value)) req->variables[key] = utf8_to_string(value);
-		};
-	}
 	mapping|string resp;
 	if (mixed ex = handler && catch {
 		mixed h = handler(req, @args); //Either a promise or a result (mapping/string).

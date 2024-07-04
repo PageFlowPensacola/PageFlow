@@ -1,5 +1,5 @@
 inherit http_endpoint;
-
+Crypto.SHA256.HMAC jwt_hmac = Crypto.SHA256.HMAC(G->G->instance_config->jwt_signing_key);
 
 mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req, string tail) {
 
@@ -35,6 +35,11 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 		return 0;
 	}
 
+// sscanf can do similar job to regex, but more simply. Doesn't do backtracking.
+	sscanf(req->request_headers->authorization || "nope", "Bearer %s", string bearer);
+	if(bearer) {
+		req->misc->auth = Web.decode_jwt(jwt_hmac, bearer); // will be null if invalid
+	}
 	if(!req->misc->auth) return (["error": 403]);
 	// If there is no residual key, there's no val for final key
 	if (!sizeof(residual_key)) {

@@ -107,7 +107,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	if (template){
 		return await(template_details(org, template));
 	}
-	array(mapping) templates = await(G->G->DB->get_templates_for_org(group));
+	array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
 	return (["templates":templates]);
 }
 

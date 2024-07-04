@@ -12,6 +12,6 @@ __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:m
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	werror("get_state: %O %O %O\n", group, id, type);
 
-	array(mapping) templates = await(G->G->DB->get_templates_for_org(group));
+	array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
 	return (["templates":templates]);
 }

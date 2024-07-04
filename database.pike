@@ -158,15 +158,15 @@ __async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void 
 
 }
 
-__async__ array(mapping) get_templates_for_org(int org_id) {
+__async__ array(mapping) get_templates_for_domain(string domain) {
 
 	string query = #"
 		SELECT id, name, page_count FROM templates
-		WHERE primary_org_id = :org_id
+		WHERE domain = :domain
 		AND page_count IS NOT NULL
 	";
 
-	mapping bindings = (["org_id":org_id]);
+	mapping bindings = (["org_id":domain]);
 
 	return await(run_pg_query(query, bindings));
 
