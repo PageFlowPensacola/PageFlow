@@ -17,7 +17,7 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 
 	if (req->request_type == "POST") {
 		array results = await(G->G->DB->run_my_query(#"
-			select password, user_id
+			select password, user_id, org_id
 			from user
 			where email = :email
 			and active = 1
@@ -32,8 +32,17 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 			return jsonify((["data":"Password validation failed."])) | (["error": 400]);
 		}
 		if (form->grant_type == "session") {
+			results = await(G->G->DB->run_pg_query(#"
+				select name, display_name
+				from domains
+				where legacy_org_id = :org_id", ([ "org_id": user->org_id ])));
+			if (!sizeof(results)) {
+				return jsonify((["data":"No domains found for this user."])) | (["error": 400]);
+			}
 			req->misc->session->user_id = user->user_id;
 			req->misc->session->email = form->email;
+			req->misc->session->domain = results[0]->name;
+			req->misc->session->domain_display_name = results[0]->display_name;
 			return "Okay";
 		}
 		// TODO if grant_type is token or jwt or something.

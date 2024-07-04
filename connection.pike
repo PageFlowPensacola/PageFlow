@@ -68,6 +68,8 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 		if (!handler) return; //Ignore any unknown types.
 		if (data->auth) {
 			conn->auth = Web.decode_jwt(jwt_hmac, data->auth); // will be null if invalid
+		} else {
+			conn->auth = (["email": conn->session->email, "id": conn->session->user_id]);
 		}
 		if (string err = handler->websocket_validate(conn, data)) {
 			conn->sock->send_text(Standards.JSON.encode((["error": err])));
@@ -78,8 +80,7 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 		conn->type = data->type; conn->group = group;
 		handler->websocket_groups[group] += ({conn->sock});
 	}
-	string type = has_prefix(data->cmd||"", "prefs_") ? "prefs" : conn->type;
-	if (object handler = G->G->websocket_types[type]) handler->websocket_msg(conn, data);
+	if (object handler = G->G->websocket_types[conn->type]) handler->websocket_msg(conn, data);
 	else write("Message: %O\n", data);
 }
 
@@ -109,7 +110,7 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 		return;
 	}
 	//Lifted from Protocols.HTTP.Server.Request since, for some reason,
-	//this isn't done for WebSocket requests. (not using this.)
+	//this isn't done for WebSocket requests.
 	if (req->request_headers->cookie)
 		foreach (MIME.decode_headerfield_params(req->request_headers->cookie); ; ADT.OrderedMapping m)
 			foreach (m; string key; string value)
@@ -118,7 +119,7 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 	string remote_ip = req->get_ip(); //Not available after accepting the socket for some reason
 	Protocols.WebSocket.Connection sock = req->websocket_accept(0);
 	mapping conn = (["sock": sock, //Minstrel Hall style floop (reference loop to the socket)
-		"remote_ip": remote_ip,
+		"remote_ip": remote_ip, "session": G->G->http_sessions[req->cookies->session] || ([])
 	]);
 	sock->set_id(conn);
 	sock->onmessage = ws_msg;
