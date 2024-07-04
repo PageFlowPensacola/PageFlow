@@ -28,9 +28,7 @@ export function get_org_id() {
 }
 
 export function select_org(id) {
-	const grp = ws_group.split(":");
-	grp[0] = org_id = id;
-	ws_sync.send({cmd: "chgrp", group: ws_group = grp.join(":")});
+	console.error({"select_org unsupported": id});
 }
 
 export function get_token() {
@@ -42,7 +40,7 @@ export function get_user() {
 }
 
 export function chggrp(grp) {
-	ws_sync.send({cmd: "chgrp", group: ws_group = `${org_id}:${grp}`});
+	ws_sync.send({cmd: "chgrp", group: ws_group = grp});
 }
 
 export async function get_user_details() {

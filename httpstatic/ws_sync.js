@@ -139,7 +139,7 @@ export function connect(group, handler)
 }
 //When ready, import the handler code. It'll be eg "/subpoints.js" but with automatic mtime handling.
 async function init() {
-	if (!await auth.get_user_details()) {
+	/* if (!await auth.get_user_details()) {
 		set_content("#pageheader #user",
 			FORM({id: "loginform"}, [
 				LABEL([
@@ -152,10 +152,10 @@ async function init() {
 			])
 		);
 	} else { // no user token end
-		set_content("#user", ["Welcome, ", auth.get_user().email, " ", BUTTON({id: "logout"}, "Log out")]);
+		set_content("#user", ["Welcome, ", auth.get_user().email, " ", BUTTON({id: "logout"}, "Log out")]); */
 		default_handler = await import(ws_code);
 		connect(ws_group);
-	}
+	//}
 }
 
 if (document.readyState !== "loading") init();
