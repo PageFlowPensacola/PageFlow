@@ -128,10 +128,10 @@ void ws_handler(array(string) proto, Protocols.WebSocket.Request req)
 protected void create(string name)
 {
 	register_bouncer(ws_handler); register_bouncer(ws_msg); register_bouncer(ws_close);
-
-		if (G->G->httpserver) G->G->httpserver->callback = http_handler;
-			else {
-				G->G->httpserver = Protocols.WebSocket.Port(http_handler, ws_handler, 8002, "");
-				write("WebSocket server started on port 8002\n");
-			}
+	if (!G->G->http_sessions) G->G->http_sessions = ([]);
+	if (G->G->httpserver) G->G->httpserver->callback = http_handler;
+		else {
+			G->G->httpserver = Protocols.WebSocket.Port(http_handler, ws_handler, 8002, "");
+			write("WebSocket server started on port 8002\n");
+		}
 }
