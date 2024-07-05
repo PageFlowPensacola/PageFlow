@@ -161,7 +161,7 @@ __async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void 
 __async__ array(mapping) get_templates_for_domain(string domain) {
 
 	string query = #"
-		SELECT id, name, page_count FROM templates
+		SELECT id, name, page_count, domain FROM templates
 		WHERE :domain LIKE domain || '%'
 		AND page_count IS NOT NULL
 	";

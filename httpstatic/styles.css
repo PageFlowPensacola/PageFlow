@@ -81,6 +81,10 @@ dialog header {
 	color: white;
 }
 
+.gray {
+	color: #666;
+}
+
 dialog footer {
 	display: flex;
 	justify-content: space-around;

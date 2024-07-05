@@ -183,9 +183,6 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-
-
-
 function signatory_fields(template) {
 	return FIELDSET([
 		LEGEND("Potential Signatories"),
@@ -276,7 +273,9 @@ export function render(state) {
 								title: "Click to view template " + template.id
 							},
 								[
-									template.name + " (id: " + template.id + ")",
+									template.name,
+									" (id: " + template.id + ")",
+									SPAN({class: "gray"}, " (" + template.domain + ")"),
 									" (", template.page_count, ")"
 								]),
 							BUTTON({class: 'delete-template', 'data-id': template.id}, "❌"),

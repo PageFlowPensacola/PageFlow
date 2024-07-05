@@ -42,6 +42,7 @@ __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(s
 
 
 string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	werror("validate: Conn: %O \n Message: %O\n", conn, msg);
 	if (!conn->session->domain) {
 		return "Not authorized";
 	}
@@ -54,6 +55,7 @@ string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed)
 	} // else group must be a template id
 
 	if (!conn->template_domains) conn->template_domains = ([]);
+	werror("##########################template_domains: %O\n", conn->template_domains);
 	string domain = conn->template_domains[msg->group];
 	if (domain) {
 		if (has_prefix(conn->session->domain, domain)) {
@@ -71,7 +73,7 @@ __async__ void 	fetch_template_domain(mapping conn, int group) {
 		SELECT domain
 		FROM templates
 		WHERE id = :id", (["id":group])));
-
+	werror("#####domains: %O\n", domains);
 	conn->template_domains[group] = sizeof(domains) ? domains[0]->domain : "---";
 	array pending = conn->pending;
 	conn->pending = 0;
