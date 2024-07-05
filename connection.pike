@@ -10,15 +10,18 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 	catch {req->misc->json = Standards.JSON.decode_utf8(req->body_raw);};
 	req->misc->userinfo = (["domains": ""]);
 	if (string domain_name = req->misc->session->domain) {
-		array(mapping) domains_below = await(G->G->DB->run_pg_query(#"
-			SELECT name, display_name
-			FROM domains
-			WHERE name LIKE :id ORDER BY LENGTH(name)", (["id":domain_name + "%"])));
+
 		array(mapping) domains_above = await(G->G->DB->run_pg_query(#"
 			SELECT name, display_name
 			FROM domains
 			WHERE :id LIKE name || '%'
-			AND name != :id", (["id":domain_name])));
+			AND name != :id
+			ORDER BY LENGTH(name)", (["id":domain_name])));
+
+		array(mapping) domains_below = await(G->G->DB->run_pg_query(#"
+			SELECT name, display_name
+			FROM domains
+			WHERE name LIKE :id", (["id":domain_name + "%"])));
 			string above = "", below = "";
 
 			foreach(domains_above, mapping dom){
@@ -29,6 +32,7 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 
 			// Below sort by number of levels as opposed to length of string.
 			sort(sizeof((domains_below->name[*] / ".")[*]), domains_below);
+
 			foreach(domains_below, mapping dom){
 				above += sprintf("<OPTION value='%s' %s>%s</OPTION>",
 				dom->name, domain_name == dom->name ? "SELECTED" : "", dom->display_name);
