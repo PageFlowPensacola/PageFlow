@@ -15,8 +15,9 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 			SELECT name, display_name
 			FROM domains
 			WHERE :id LIKE name || '%'
+			AND name LIKE :auth
 			AND name != :id
-			ORDER BY LENGTH(name)", (["id":domain_name])));
+			ORDER BY LENGTH(name)", (["id":domain_name, "auth": req->misc->session->auth_domain])));
 
 		array(mapping) domains_below = await(G->G->DB->run_pg_query(#"
 			SELECT name, display_name
@@ -27,18 +28,18 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 			foreach(domains_above, mapping dom){
 				// TODO indent based on depth
 				// %q gives a quoted string
-				above += sprintf("<OPTION value=%q>%s</OPTION>", dom->name, dom->display_name);
+				above += sprintf("<OPTION value=%q>%s %s</OPTION>", dom->name, dom->name, dom->display_name);
 			}
 
 			// Below sort by number of levels as opposed to length of string.
 			sort(sizeof((domains_below->name[*] / ".")[*]), domains_below);
 
 			foreach(domains_below, mapping dom){
-				above += sprintf("<OPTION value='%s' %s>%s</OPTION>",
-				dom->name, domain_name == dom->name ? "SELECTED" : "", dom->display_name);
+				above += sprintf("<OPTION value='%s' %s>%s %s</OPTION>",
+				dom->name, domain_name == dom->name ? "SELECTED" : "", dom->name, dom->display_name);
 			}
 		req->misc->userinfo->domains = sprintf(#"
-			<SELECT>%s %s</SELECT>
+			<SELECT id=switchdomain>%s %s</SELECT>
 		", above, below);
 	}
 

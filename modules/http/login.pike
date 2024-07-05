@@ -42,7 +42,7 @@ __async__ mapping(string:mixed)|string http_request(Protocols.HTTP.Server.Reques
 			req->misc->session->user_id = user->user_id;
 			req->misc->session->email = form->email;
 			req->misc->session->domain = results[0]->name;
-			req->misc->session->domain_display_name = results[0]->display_name;
+			req->misc->session->auth_domain = results[0]->name;
 			return "Okay";
 		}
 		// TODO if grant_type is token or jwt or something.

@@ -37,4 +37,12 @@ on("click", "#simpleconfirmyes", e => {
 	simpleconfirm_match = simpleconfirm_arg = simpleconfirm_callback = undefined;
 	if (cb) cb(arg);
 	DOM("#simpleconfirmdlg").close();
-})
+});
+
+on("change", "#switchdomain", e => {
+	const domain = e.match.value;
+
+	fetch(`/switchdomain?domain=${domain}`).then((resp) => {
+		if (resp.ok) window.location.reload();
+	});
+});
