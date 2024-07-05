@@ -33,3 +33,10 @@ Concurrent.Future classipy(mapping json){
 	werror("Classipy result %O", json);
 	pythonstdin->write(Standards.JSON.encode(json, 1) + "\n");
 }
+/* TODO
+* Return future from classipy
+* Retain table of msgid -> promise
+* Parse incoming messages for their IDs
+* If message has "domain" and "model", automatically update the model
+* Fulfil the promise with the result
+*/

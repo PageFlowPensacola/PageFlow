@@ -169,10 +169,23 @@ __async__ void tesseract(){
 
 @"Test the classifier":
 int ml() {
-	object model = G->bootstrap("modules/classifier.pike");
-	model->classipy(([
+	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
+	array model = await(G->G->DB->run_pg_query(#"
+			SELECT ml_model, name
+			FROM domains
+			WHERE :domain LIKE name || '%'
+			AND ml_model IS NOT NULL
+			ORDER BY LENGTH(name) DESC LIMIT 1",
+			(["domain": "com.pageflow."])));
+	werror("Model: %O\n", model);
+	classipy(([
+		"cmd": "load",
+		"model": model[0]->ml_model,
+	]));
+
+	classipy(([
 		"cmd": "classify",
-		"text": "Pirates",
+		"text": "This agreement does not create any agency or partnership relationship. This agreementis not assignable or transferable",
 	]));
 	return -1;
 }

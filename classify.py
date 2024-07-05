@@ -15,7 +15,7 @@ model = compose.Pipeline(
         ("tokenize", feature_extraction.BagOfWords(lowercase=False, ngram_range=(1, 2))),
         ("nb", naive_bayes.ComplementNB(alpha=1))
     )
-
+# seed with this: print(base64.b64encode(pickle.dumps(model)).decode("utf-8"))
 """ input = {
 		"cmd": "train",
     "pageref": "42:3",
@@ -33,7 +33,9 @@ try:
 			continue
 		if msg["cmd"] == "train":
 			model.learn_one(msg["text"], msg["pageref"])
-			print(json.dumps({"status": "ok", "msgid": msg["msgid"], "model": base64.b64encode(pickle.dumps(model)).decode("utf-8")}))
+			print(json.dumps({"status": "ok", "msgid": msg["msgid"],
+				"domain": msg["domain"],
+				"model": base64.b64encode(pickle.dumps(model)).decode("utf-8")}))
 		elif msg["cmd"] == "classify":
 			res = model.predict_proba_one(msg["text"])
 			print(json.dumps({"result": res, "msgid": msg["msgid"]}))

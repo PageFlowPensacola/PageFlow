@@ -203,11 +203,11 @@ __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:m
 		INSERT INTO templates (
 			name, domain
 		)
-		VALUES (:name, :org)
+		VALUES (:name, :domain)
 		RETURNING id
 	";
 
-	mapping bindings = (["name":msg->name, "org": conn->session->domain]);
+	mapping bindings = (["name":msg->name, "domain": conn->session->domain]);
 
 	array result = await(G->G->DB->run_pg_query(query, bindings));
 
@@ -220,15 +220,11 @@ mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Serv
 
 __async__ void websocket_cmd_delete_template(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 
-	string query = #"
+	await(G->G->DB->run_pg_query(#"
 		DELETE FROM templates
 		WHERE id = :template
-		AND primary_org_id = :org";
+		AND domain = :domain", (["domain": conn->session->domain, "template":msg->id])));
 
-	mapping bindings = (["org":msg->org, "template":msg->id]);
-
-	await(G->G->DB->run_pg_query(query, bindings));
-
-	send_updates_all(msg->org + ":");
-	send_updates_all(msg->org + ":" + msg->id);
+	send_updates_all(conn->group);
+	send_updates_all(msg->id);
 };

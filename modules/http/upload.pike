@@ -100,24 +100,40 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		]);
 		// hand page->data off to model
 		// get the model for current domain from the db
-		string model = await(G->G->DB->run_pg_query(#"
-			SELECT ml_model
+		array model = await(G->G->DB->run_pg_query(#"
+			SELECT ml_model, name
 			FROM domains
-			WHERE name = :domain",
+			WHERE :domain LIKE name || '%'
+			AND ml_model IS NOT NULL
+			ORDER BY LENGTH(name) DESC LIMIT 1",
 			(["domain": req->misc->session->domain])));
+
+		if (model[0]->name != req->misc->session->domain) {
+			// copy into current domain
+			werror("Doing the update\n%O\n", model[0]->ml_model);
+			await(G->G->DB->run_pg_query(#"
+				UPDATE domains
+				SET ml_model = :model
+				WHERE name = :domain",
+				(["model": model[0]->ml_model, "domain": req->misc->session->domain])));
+		}
+		// TODO train on every matching model.
 		classipy(([
 			"cmd": "load",
 			"model": model[0]->ml_model,
 		]));
 		classipy(([
 			"cmd": "train",
-			"text": page->data,
-			"pageref": upload->template_id + ":" + i+1,
+			"text": page->data * "\n\n",
+			"pageref": upload->template_id + ":" + (i+1),
+			"domain": req->misc->session->domain,
 		]));
+		/*
+		werror("Classify now:");
 		classipy(([
 			"cmd": "classify",
-			"text": "will be binding on Seller or Broker unless included in this Agreement. Electronic signatures are acceptable and",
-		]));
+			"text": "This agreement does not create any agency or partnership relationship. This agreementis not assignable or transferable",
+		])); */
 
 		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 		// Rescale current_page
