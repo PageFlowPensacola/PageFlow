@@ -143,3 +143,5 @@ Set everything else up accordingly.
 Session Expiration
 Replace com.pageflow.tagtech.dunder-mifflin. in templates.js
 Reenstate login form in header
+Update Favicon
+We are currently missing "field" from domains com.pageflow.{dealership.automotive}.etc...

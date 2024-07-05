@@ -380,12 +380,13 @@ class websocket_handler {
 	}
 
 	mapping(string:mixed) render(Protocols.HTTP.Server.Request req, mapping replacements) {
+		werror("render: %O\n", replacements | req->misc->userinfo);
 		if (replacements->vars->?ws_group) {
 			if (!replacements->vars->ws_type) replacements->vars->ws_type = ws_type;
 			if (req->misc->channel) replacements->vars->ws_group += "#" + req->misc->channel->userid;
 		}
-		if (markdown != "") return render_template(markdown, replacements);
-		return render_template(ws_type + ".md", replacements);
+		if (markdown != "") return render_template(markdown, replacements | req->misc->userinfo);
+		return render_template(ws_type + ".md", replacements | req->misc->userinfo);
 	}
 
 	protected void create(string name) {
