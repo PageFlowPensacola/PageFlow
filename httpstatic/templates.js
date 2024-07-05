@@ -343,6 +343,7 @@ on("click", ".specified-template", async function (e) {
 on("submit", "#template_submit", async function (e) {
 	e.preventDefault();
 	submittedFile = DOM("#newTemplateFile").files[0];
+	if (!submittedFile) return;
 	const fileName = DOM("#newTemplateName").value;
 	localState.uploading++;
 	render(stateSnapshot);
@@ -359,6 +360,7 @@ export async function sockmsg_upload(msg) {
 		},
 		body: submittedFile
 	});
+	console.log("Upload response", resp);
 	localState.uploading--;
 	render(stateSnapshot);
 };

@@ -20,7 +20,7 @@ Concurrent.Future run_pg_query(string|array query, mapping|void bindings) {retur
 	//	 documents that are not visible to each other
 // * Sessions belong in a domain
 	// - meaning that if you are the owner of com.pageflow.dealership.automobile
-	//  your current session might be com.pageflow.dealership.automobile.sansing.toyota.
+	//  your current session might be com.pageflow.dealership.automobile.tagtech.sansing.toyota.
 	// - at any given time you are always able to see anything in the
 	//	 linear parentage of your current session's domain
 	//	 so we only need to worry about the current session's domain at a time.
@@ -34,7 +34,7 @@ Concurrent.Future run_pg_query(string|array query, mapping|void bindings) {retur
 //  - however some operations such as document searches may span subdomains of the session domain.
 mapping tables = ([
 	"domains": ({
-		"name text PRIMARY KEY", // eg com.pageflow.dealership.automotive.sansing.toyota.
+		"name text PRIMARY KEY", // eg com.pageflow.dealership.automotive.tagtech.sansing.toyota.
 		"ml_model BYTEA",
 		"legacy_org_id int", // TODO make unique, maybe.
 		"display_name text",

@@ -13,7 +13,7 @@ void pythonoutput(mixed _, string data){
 }
 
 @export:
-Concurrent.Future send_msg(mapping json){
+Concurrent.Future classipy(mapping json){
 	// json will always include a cmd (train, classify, etc)
 	json->msgid = G->G->next_model_msgid++;
 	if (!python){
@@ -30,6 +30,6 @@ Concurrent.Future send_msg(mapping json){
 		pythonstdin->write(Standards.JSON.encode((["cmd": "load", "msgid": "init", "model": MIME.encode_base64(Stdio.read_file("model.dat"))]), 1) + "\n");
 		werror("process created");
 	}
-	werror("Json %O", json);
+	werror("Classipy result %O", json);
 	pythonstdin->write(Standards.JSON.encode(json, 1) + "\n");
 }

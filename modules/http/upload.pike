@@ -70,7 +70,7 @@ __async__ array pdf2png(string pdf) {
 }
 
 __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
-
+	werror("template upload %O\n", sizeof(req->body_raw));
 	// if user necessary:
 	// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
 	// string org_name = user->orgs[user->primary_org];
@@ -96,16 +96,29 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		mapping json = ([
 			"template_id": upload->template_id,
 			"page": i+1,
-			"data": page->data,
+			"data": page->data, // hocr data
 		]);
-		await(Protocols.HTTP.Promise.post_url("http://localhost:8002/analyze_page",
-		 Protocols.HTTP.Promise.Arguments(
-			(["headers":
-				(["Authorization": req->request_headers["Authorization"],
-				"Content Type": "application/json"]),
-				"data": Standards.JSON.encode(json, 1) // 1 is for ascii only
-			])
-		)));
+		// hand page->data off to model
+		// get the model for current domain from the db
+		string model = await(G->G->DB->run_pg_query(#"
+			SELECT ml_model
+			FROM domains
+			WHERE name = :domain",
+			(["domain": req->misc->session->domain])));
+		classipy(([
+			"cmd": "load",
+			"model": model[0]->ml_model,
+		]));
+		classipy(([
+			"cmd": "train",
+			"text": page->data,
+			"pageref": upload->template_id + ":" + i+1,
+		]));
+		classipy(([
+			"cmd": "classify",
+			"text": "will be binding on Seller or Broker unless included in this Agreement. Electronic signatures are acceptable and",
+		]));
+
 		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 		// Rescale current_page
 		object scaled = img->image;
@@ -121,31 +134,25 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		string scaled_png = Image.PNG.encode(scaled);
 		werror("[%6.3f] Encoded\n", tm->peek());
 
-		string query = #"
+		mapping results = await(G->G->DB->run_pg_query(#"
 		INSERT INTO template_pages
 			(template_id, page_number, page_data,
 			pxleft, pxright, pxtop, pxbottom)
 		VALUES
 			(:template_id, :page_number, :page_data, :left, :right, :top, :bottom)
-		";
-
-		mapping bindings = ([
+		", ([
 			"template_id":upload->template_id, "page_number":i+1, "page_data":scaled_png,
-			]) | bounds; // the pipe (bitwise or) operator is a way to merge two mappings
-
-		mapping results = await(G->G->DB->run_pg_query(query, bindings));
+			]) | bounds));
 	}
 
 	// Update the template record with the number of pages
-	string query = #"
+	array(mapping) domains = await(G->G->DB->run_pg_query(#"
 		UPDATE templates
 		SET page_count = :page_count
 		WHERE id = :template_id
-		RETURNING primary_org_id
-	";
-	mapping bindings = (["template_id":upload->template_id, "page_count":sizeof(pages)]);
-	array(mapping) primary_org_ids = await(G->G->DB->run_pg_query(query, bindings));
-	G->G->websocket_types["templates"]->send_updates_all(primary_org_ids[0]->primary_org_id + ":");
+		RETURNING domain
+	", (["template_id":upload->template_id, "page_count":sizeof(pages)])));
+	G->G->websocket_types["templates"]->send_updates_all(domains[0]->domain);
 	return "done";
 };
 

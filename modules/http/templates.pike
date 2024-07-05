@@ -201,13 +201,13 @@ __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:m
 
 		string query = #"
 		INSERT INTO templates (
-			name, primary_org_id
+			name, domain
 		)
 		VALUES (:name, :org)
 		RETURNING id
 	";
 
-	mapping bindings = (["name":msg->name, "org":msg->org]);
+	mapping bindings = (["name":msg->name, "org": conn->session->domain]);
 
 	array result = await(G->G->DB->run_pg_query(query, bindings));
 

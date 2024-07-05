@@ -170,7 +170,7 @@ __async__ void tesseract(){
 @"Test the classifier":
 int ml() {
 	object model = G->bootstrap("modules/classifier.pike");
-	model->send_msg(([
+	model->classipy(([
 		"cmd": "classify",
 		"text": "Pirates",
 	]));
