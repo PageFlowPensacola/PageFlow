@@ -16,7 +16,6 @@ const localState = {
 try {
 	localState.pages = pages;
 	localState.current_template = ws_group;
-	localState.current_page = 1;
 	DOM("#template_thumbnails") && set_content("#template_thumbnails", template_thumbnails());
 } catch (e) { }
 
@@ -273,8 +272,9 @@ export function render(state) {
 				UL(
 					state.templates.map((template) => LI({class: 'template-item'},
 						[
-							SPAN({
+							A({
 								class: 'specified-template',
+								href: "templates?id=" + template.id,
 								'data-name': template.name,
 								'data-id': template.id,
 								title: "Click to view template " + template.id
@@ -303,11 +303,6 @@ on("change", "#newTemplateFile", async function (e) {
 		DOM("#newTemplateName").value = file.name;
 	}
 
-});
-
-on("click", ".specified-template", async function (e) {
-	history.pushState(null, null, "#template=" + e.match.dataset.id);
-	update_template_details(e.match.dataset.id);
 });
 
 /*
