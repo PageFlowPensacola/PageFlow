@@ -42,7 +42,6 @@ __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(s
 
 
 string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	werror("validate: %O %O\n", conn, msg);
 	if (!conn->session->domain) {
 		return "Not authorized";
 	}
@@ -76,9 +75,9 @@ __async__ void 	fetch_template_domain(mapping conn, int group) {
 	conn->template_domains[group] = sizeof(domains) ? domains[0]->domain : "---";
 	array pending = conn->pending;
 	conn->pending = 0;
-	werror("Fetched domain: %O %O %O\n", conn->template_domains[group], pending, G->G->bouncers);
+
 	foreach(pending, mapping(string:mixed) msg) {
-		G->G->bouncers["connection.pike()->ws_msg"](conn, msg);
+		G->G->bouncers["connection.pike()->ws_msg"](msg, conn);
 	}
 
 }
