@@ -13,6 +13,13 @@ const localState = {
 	uploading: 0,
 };
 
+try {
+	localState.pages = pages;
+	localState.current_template = ws_group;
+	localState.current_page = 1;
+	DOM("#template_thumbnails") && set_content("#template_thumbnails", template_thumbnails());
+} catch (e) { }
+
 const canvas = CANVAS({width:300, height:450, style: "border: 1px solid black;"});
 const ctx = canvas.getContext('2d');
 let submittedFile = null;
@@ -289,39 +296,6 @@ export function render(state) {
 
 }
 
-async function update_template_details(id) {
-	localState.current_template = id;
-	let org_id = auth.get_org_id();
-	auth.chggrp(id);
-	localState.pages = [];
-	const resp = await fetch(`/orgs/${org_id}/templates/${id}/pages`, {
-		headers: {
-			Authorization: "Bearer " + auth.get_token()
-		}
-	});
-	localState.pages = await resp.json();
-	DOM("#template_thumbnails") && set_content("#template_thumbnails", template_thumbnails());
-}
-
-function handle_url_params() {
-	const params = new URLSearchParams(window.location.hash.slice(1));
-	const template_id = params.get("template") || '';
-	if (template_id) {
-		update_template_details(params.get("template"));
-		localState.current_page = params.get("page");
-	} else {
-		localState.current_template = null;
-		localState.current_page = null;
-		localState.pages = [];
-	}
-	// TODO don't hack this!!!!!!!!
-	auth.chggrp(template_id || "com.pageflow.tagtech.dunder-mifflin.");
-}
-handle_url_params();
-
-window.onpopstate = (event) => {
-	handle_url_params();
-};
 
 on("change", "#newTemplateFile", async function (e) {
 	const file = e.match.files[0];
