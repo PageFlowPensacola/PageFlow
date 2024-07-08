@@ -231,10 +231,11 @@ export function render(state) {
 			pageImage.src = localState.pages[localState.current_page - 1].page_data;
 		}
 			set_content("main", SECTION([
-				H2(A({href: "#template=" + localState.current_template}, state.name)),
+				H2(state.name),
 				localState.current_page ?
 					[
-						P("Current page: " + localState.current_page),
+						localState.current_page && BUTTON({id: "backtotemplate"},"<<"),
+						SPAN(" Current page: " + localState.current_page),
 
 						DIV({id: "auditrects"},[
 							canvas,
@@ -335,8 +336,6 @@ export async function sockmsg_upload(msg) {
 
 on("click", "#template_thumbnails figure", function (e) {
 	localState.current_page = e.match.dataset.idx;
-	history.pushState(null, null, "#template=" + localState.current_template + "&page=" + localState.current_page);
-
 	render(stateSnapshot);
 });
 
@@ -377,6 +376,10 @@ on('mouseout', '.rect-item', () => {
 });
 
 on("click", 'a[href^="#"]', function () {
-	setTimeout(handle_url_params, 0);
 	repaint();
+});
+
+on("click", "#backtotemplate", function () {
+	localState.current_page = null;
+	render(stateSnapshot);
 });
