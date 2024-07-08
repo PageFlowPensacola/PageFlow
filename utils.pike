@@ -168,26 +168,25 @@ __async__ void tesseract(){
 }
 
 @"Test the classifier":
-int ml() {
+Concurrent.Future ml() {
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
 	array model = await(G->G->DB->run_pg_query(#"
-			SELECT ml_model, name
+			SELECT ml_model, LENGTH(ml_model), name
 			FROM domains
 			WHERE :domain LIKE name || '%'
 			AND ml_model IS NOT NULL
 			ORDER BY LENGTH(name) DESC LIMIT 1",
-			(["domain": "com.pageflow."])));
+			(["domain": "com.pageflow.tagtech.dunder-mifflin."])));
 	werror("Model: %O\n", model);
 	classipy(([
 		"cmd": "load",
 		"model": model[0]->ml_model,
 	]));
 
-	classipy(([
+	return classipy(([
 		"cmd": "classify",
 		"text": "This agreement does not create any agency or partnership relationship. This agreementis not assignable or transferable",
 	]));
-	return -1;
 }
 
 @"Update database schema":

@@ -13,7 +13,7 @@ void pythonoutput(mixed _, string data){
 	pythondata += data;
 	while (sscanf(pythondata, "%s\n%s", string line, pythondata)){
 		mapping msg = Standards.JSON.decode(line);
-		werror("Classipy response %O", msg);
+		werror("Classipy response %O\n", msg);
 		object|zero prom = m_delete(pending_messages, msg->msgid);
 		if (prom){
 			prom->success(msg);
@@ -49,7 +49,6 @@ Concurrent.Future classipy(mapping json){
 		pythonstdin->write(Standards.JSON.encode((["cmd": "load", "msgid": "init", "model": MIME.encode_base64(Stdio.read_file("model.dat"))]), 1) + "\n");
 		werror("process created");
 	}
-	werror("Classipy request %O", json);
 
 	pythonstdin->write(Standards.JSON.encode(json, 1) + "\n");
 	return (pending_messages[json->msgid] = Concurrent.Promise())->future();
