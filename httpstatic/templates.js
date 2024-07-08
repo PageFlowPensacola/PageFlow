@@ -236,7 +236,7 @@ export function render(state) {
 					[
 						localState.current_page && BUTTON({id: "backtotemplate"},"<<"),
 						SPAN(" Current page: " + localState.current_page),
-
+						P("Drag to select a region to add a signatory to. Click on a region to edit the signatory."),
 						DIV({id: "auditrects"},[
 							canvas,
 							SECTION([
