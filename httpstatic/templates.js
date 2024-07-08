@@ -74,7 +74,8 @@ canvas.addEventListener('pointerup', (e) => {
 						stateSnapshot.signatories.map(
 							(signatory) => OPTION({value: signatory.signatory_id},
 								signatory.signatory_field)
-						)]).value = rect.template_signatory_id;
+					)]).value = rect.template_signatory_id;
+				dlg.dataset.rectid = rect.id;
 				dlg.showModal();
 				return;
 			}
@@ -320,7 +321,6 @@ on("submit", "#template_submit", async function (e) {
 	ws_sync.send({"cmd": "upload", "name": fileName, "org": org_id});
 });
 
-
 export async function sockmsg_upload(msg) {
 	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",
@@ -333,6 +333,11 @@ export async function sockmsg_upload(msg) {
 	localState.uploading--;
 	render(stateSnapshot);
 };
+
+on("click", "#deleterect", (e) => {
+	ws_sync.send({"cmd": "delete_rect", "id": +e.match.closest("dialog").dataset.rectid});
+	e.match.closest("dialog").close();
+});
 
 on("click", "#template_thumbnails figure", function (e) {
 	localState.current_page = e.match.dataset.idx;

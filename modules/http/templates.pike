@@ -10,7 +10,7 @@ constant markdown = #"# Templates
 > </label>
 >
 >
-> <footer>[Clear Rectangle](: type=submit value=delete) [Cancel](: type=submit value=cancel)</footer>
+> <footer>[Clear Rectangle](: #deleterect) [Cancel](.dialog_close)</footer>
 > </form>
 {: tag=dialog #editauditrect}
 
