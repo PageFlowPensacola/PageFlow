@@ -15,12 +15,15 @@ model = compose.Pipeline(
         ("tokenize", feature_extraction.BagOfWords(lowercase=False, ngram_range=(1, 2))),
         ("nb", naive_bayes.ComplementNB(alpha=1))
     )
+# To seed the model with some data, uncomment the following code,
+# run this script, and insert the output into the "model" field of the
+# for the top domain in the Db.
 # seed with this: print(base64.b64encode(pickle.dumps(model)).decode("utf-8"))
 """ input = {
 		"cmd": "train",
-    "pageref": "42:3",
-    "text": "When I was a lad I served a term As",
-    "msgid": "1"
+		"pageref": "42:3",
+		"text": "When I was a lad I served a term As",
+		"msgid": "1"
 } """
 
 try:
