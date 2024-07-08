@@ -42,7 +42,6 @@ __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(s
 
 
 string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-	werror("validate: Conn: %O \n Message: %O\n", conn, msg);
 	if (!conn->session->domain) {
 		return "Not authorized";
 	}
@@ -55,7 +54,6 @@ string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed)
 	} // else group must be a template id
 
 	if (!conn->template_domains) conn->template_domains = ([]);
-	werror("##########################template_domains: %O\n", conn->template_domains);
 	string domain = conn->template_domains[msg->group];
 	if (domain) {
 		if (has_prefix(conn->session->domain, domain)) {
@@ -222,11 +220,12 @@ mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Serv
 
 __async__ void websocket_cmd_delete_template(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 
+	if (!stringp(conn->group)) return;
+
 	await(G->G->DB->run_pg_query(#"
 		DELETE FROM templates
 		WHERE id = :template
 		AND domain = :domain", (["domain": conn->session->domain, "template":msg->id])));
 
-	send_updates_all(conn->group);
 	send_updates_all(msg->id);
 };
