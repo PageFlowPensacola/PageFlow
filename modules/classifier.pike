@@ -19,6 +19,15 @@ void pythonoutput(mixed _, string data){
 			prom->success(msg);
 			// TODO consider checking for error in Python response.
 		}
+		if (msg->domain && msg->model) {
+			G->G->DB->run_pg_query(#"
+				UPDATE domains
+				SET ml_model = :model
+				WHERE name = :name", ([
+					"name": msg->domain,
+					"model": msg->model
+			]));
+		}
 	}
 }
 

@@ -225,7 +225,8 @@ __async__ void websocket_cmd_delete_template(mapping(string:mixed) conn, mapping
 	await(G->G->DB->run_pg_query(#"
 		DELETE FROM templates
 		WHERE id = :template
-		AND domain = :domain", (["domain": conn->session->domain, "template":msg->id])));
+		AND :domain LIKE domain || '%'", (["domain": conn->group, "template":msg->id])));
 
 	send_updates_all(msg->id);
+	send_updates_all(conn->group);
 };
