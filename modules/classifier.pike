@@ -5,10 +5,20 @@ Stdio.File pythonstdin;
 Stdio.File pythonstdout;
 string pythondata = "";
 
+@retain:
+mapping(int:Concurrent.Promise) pending_messages = ([]);
+// A Promise is a Future but not every Future is a Promise
+
 void pythonoutput(mixed _, string data){
 	pythondata += data;
 	while (sscanf(pythondata, "%s\n%s", string line, pythondata)){
-		werror("line %O", line);
+		mapping msg = Standards.JSON.decode(line);
+		werror("Classipy response %O", msg);
+		object|zero prom = m_delete(pending_messages, msg->msgid);
+		if (prom){
+			prom->success(msg);
+			// TODO consider checking for error in Python response.
+		}
 	}
 }
 
@@ -30,13 +40,11 @@ Concurrent.Future classipy(mapping json){
 		pythonstdin->write(Standards.JSON.encode((["cmd": "load", "msgid": "init", "model": MIME.encode_base64(Stdio.read_file("model.dat"))]), 1) + "\n");
 		werror("process created");
 	}
-	werror("Classipy result %O", json);
+	werror("Classipy request %O", json);
+
 	pythonstdin->write(Standards.JSON.encode(json, 1) + "\n");
+	return (pending_messages[json->msgid] = Concurrent.Promise())->future();
 }
 /* TODO
-* Return future from classipy
-* Retain table of msgid -> promise
-* Parse incoming messages for their IDs
-* If message has "domain" and "model", automatically update the model
-* Fulfil the promise with the result
+* If message has "domain" and "model", automatically update the model.
 */
