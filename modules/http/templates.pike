@@ -72,10 +72,11 @@ __async__ void 	fetch_template_domain(mapping conn, int group) {
 		SELECT domain
 		FROM templates
 		WHERE id = :id", (["id":group])));
-	werror("#####domains: %O\n", domains);
+
 	conn->template_domains[group] = sizeof(domains) ? domains[0]->domain : "---";
 	array pending = conn->pending;
 	conn->pending = 0;
+	werror("Fetched domain: %O %O %O\n", conn->template_domains[group], pending, G->G->bouncers);
 	foreach(pending, mapping(string:mixed) msg) {
 		G->G->bouncers["connection.pike()->ws_msg"](conn, msg);
 	}
@@ -92,9 +93,28 @@ __async__ void websocket_cmd_delete_signatory(mapping(string:mixed) conn, mappin
 	send_updates_all(conn->group);
 }
 
-mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req) {
+__async__ mapping(string:mixed)|string|zero http_request(Protocols.HTTP.Server.Request req) {
 	werror("templates: %O\n", req->misc->session->domain);
-	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));// TODO ability to switch domains & select template.
+	int templateid = (int) req->variables->id;
+	if (templateid) {
+		array(mapping(string:mixed)) pages = await(G->G->DB->run_pg_query(#"
+			SELECT page_data, pxleft, pxtop, pxright, pxbottom
+			FROM template_pages p
+			JOIN templates t ON p.template_id = t.id
+			WHERE t.id = :template_id
+			AND t.domain LIKE :domain
+			ORDER BY p.page_number
+		", (["domain":req->misc->session->auth_domain+"%", "template_id":templateid])));
+		foreach(pages, mapping page) {
+			page->page_data = "data:image/png;base64," + MIME.encode_base64(page->page_data);
+		}
+		if(!sizeof(pages)) {
+			return 0;
+		}
+		werror("pages: %O %O\n", req->misc->session->auth_domain, templateid);
+		return render(req, (["vars": (["ws_group": templateid, "pages": pages])]));
+	}
+	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));
 };
 
 __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string:mixed) msg) {
@@ -146,15 +166,12 @@ __async__ void websocket_cmd_set_rect_signatory(mapping(string:mixed) conn, mapp
 // Called on connection and update.
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	werror("get_state: %O %O %O\n", group, id, type);
-	if (intp(group)){
-		return await(template_details(group));
+	if (stringp(group)){
+		array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
+		return (["templates":templates]);
 	}
-	array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
-	return (["templates":templates]);
-}
 
-__async__ mapping(string:mixed)|string|Concurrent.Future template_details(int template_id) {
-	if (!template_id) return 0;
+	int template_id = group;
 
 	mapping details = await(G->G->DB->run_pg_query(#"
 		SELECT name, page_count as count
@@ -162,6 +179,8 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int te
 		WHERE id = :template_id
 		AND page_count IS NOT NULL
 	", (["template_id":template_id])));
+
+	werror("Details: %O\n", details);
 
 	array(mapping) rects = await(G->G->DB->run_pg_query(#"
 			SELECT x1, y1, x2, y2, page_number, audit_type, template_signatory_id, id
