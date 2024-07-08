@@ -42,6 +42,7 @@ __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(s
 
 
 string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	werror("validate: %O %O\n", conn, msg);
 	if (!conn->session->domain) {
 		return "Not authorized";
 	}
@@ -92,7 +93,7 @@ __async__ void websocket_cmd_delete_signatory(mapping(string:mixed) conn, mappin
 }
 
 mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req) {
-	werror("templates: %O\n", req->misc->session);
+	werror("templates: %O\n", req->misc->session->domain);
 	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));// TODO ability to switch domains & select template.
 };
 
@@ -149,7 +150,6 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		return await(template_details(group));
 	}
 	array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
-	werror("templates: %O\n", templates);
 	return (["templates":templates]);
 }
 
@@ -199,17 +199,13 @@ __async__ mapping(string:mixed)|string|Concurrent.Future template_details(int te
 
 __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 
-		string query = #"
+	array result = await(G->G->DB->run_pg_query(#"
 		INSERT INTO templates (
 			name, domain
 		)
 		VALUES (:name, :domain)
 		RETURNING id
-	";
-
-	mapping bindings = (["name":msg->name, "domain": conn->session->domain]);
-
-	array result = await(G->G->DB->run_pg_query(query, bindings));
+	", (["name":msg->name, "domain": conn->session->domain])));
 
 	string upload_id = G->G->prepare_upload("template", (["template_id": result[0]->id]));
 

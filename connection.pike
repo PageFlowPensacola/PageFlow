@@ -85,12 +85,12 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 	req->response_and_finish(resp);
 }
 
-void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
-{
+void ws_msg(Protocols.WebSocket.Frame|mapping frm, mapping conn) {
 	if (function f = bounce(this_function)) {f(frm, conn); return;}
 	if (arrayp(conn->pending)) {conn->pending += ({frm}); return;}
 	mixed data;
-	if (catch {data = Standards.JSON.decode(frm->text);}) return; //Ignore frames that aren't text or aren't valid JSON
+	if (mappingp(frm)) data = frm;
+	else if (catch {data = Standards.JSON.decode(frm->text);}) return; //Ignore frames that aren't text or aren't valid JSON
 	if (!stringp(data->cmd)) return;
 	if (data->cmd == "init")
 	{
@@ -106,7 +106,7 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 			conn->auth = (["email": conn->session->email, "id": conn->session->user_id]);
 		}
 		if (string err = handler->websocket_validate(conn, data)) {
-			if (err == "") {conn->pending = ({frm}); return;}
+			if (err == "") {conn->pending = ({data}); return;}
 			conn->sock->send_text(Standards.JSON.encode((["cmd": "*DC*", "error": err])));
 			conn->sock->close();
 			return;
@@ -122,7 +122,6 @@ void ws_msg(Protocols.WebSocket.Frame frm, mapping conn)
 void ws_close(int reason, mapping conn)
 {
 	if (function f = bounce(this_function)) {f(reason, conn); return;}
-	werror("WebSocket close: %O\n", conn);
 	if (object handler = G->G->websocket_types[conn->type])
 	{
 		handler->websocket_msg(conn, 0);

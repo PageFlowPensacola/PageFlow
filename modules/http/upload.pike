@@ -77,6 +77,31 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	array pages = await(pdf2png(req->body_raw));
 
+	// hand page->data off to model
+	// get the model for current domain from the db
+	// Fetch all models for this domain and its subdomains
+	// and train on all of them.
+	array(mapping) models = await(G->G->DB->run_pg_query(#"
+		SELECT ml_model, name
+		FROM domains
+		WHERE name LIKE :domain
+		AND ml_model IS NOT NULL
+		ORDER BY LENGTH(name)",
+		(["domain": req->misc->session->domain + "%"])));
+
+	if (!sizeof(models) || models[0]->name != req->misc->session->domain) {
+		// copy into current domain
+		array model = await(G->G->DB->run_pg_query(#"
+		SELECT ml_model, name
+		FROM domains
+		WHERE :domain LIKE name || '%'
+		AND ml_model IS NOT NULL
+		ORDER BY LENGTH(name) DESC LIMIT 1",
+		(["domain": req->misc->session->domain])));
+
+		models += ({(["ml_model": model[0]->ml_model, "name": req->misc->session->domain])});
+	}
+
 	foreach(pages; int i; string current_page) {
 		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
 		// object page = Image.PNG.decode(current_page);
@@ -98,36 +123,18 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			"page": i+1,
 			"data": page->data, // hocr data
 		]);
-		// hand page->data off to model
-		// get the model for current domain from the db
-		array model = await(G->G->DB->run_pg_query(#"
-			SELECT ml_model, name
-			FROM domains
-			WHERE :domain LIKE name || '%'
-			AND ml_model IS NOT NULL
-			ORDER BY LENGTH(name) DESC LIMIT 1",
-			(["domain": req->misc->session->domain])));
-
-		if (model[0]->name != req->misc->session->domain) {
-			// copy into current domain
-			werror("Doing the update\n%O\n", model[0]->ml_model);
-			await(G->G->DB->run_pg_query(#"
-				UPDATE domains
-				SET ml_model = :model
-				WHERE name = :domain",
-				(["model": model[0]->ml_model, "domain": req->misc->session->domain])));
+		foreach (models, mapping model) {
+			classipy(([
+				"cmd": "load",
+				"model": model->ml_model,
+			]));
+			classipy(([
+				"cmd": "train",
+				"text": page->data * "\n\n",
+				"pageref": upload->template_id + ":" + (i+1),
+				"domain": req->misc->session->domain,
+			]));
 		}
-		// TODO train on every matching model.
-		classipy(([
-			"cmd": "load",
-			"model": model[0]->ml_model,
-		]));
-		classipy(([
-			"cmd": "train",
-			"text": page->data * "\n\n",
-			"pageref": upload->template_id + ":" + (i+1),
-			"domain": req->misc->session->domain,
-		]));
 		/*
 		werror("Classify now:");
 		classipy(([

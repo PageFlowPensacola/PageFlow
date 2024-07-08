@@ -327,7 +327,8 @@ class websocket_handler {
 	void websocket_cmd_chgrp(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 
 		if (string err = websocket_validate(conn, msg)) {
-			conn->sock->send_text(Standards.JSON.encode((["error": err])));
+			if (err == "") {conn->pending = ({msg}); return;}
+			conn->sock->send_text(Standards.JSON.encode((["cmd": "*DC*", "error": err])));
 			conn->sock->close();
 			return;
 		}
@@ -380,7 +381,6 @@ class websocket_handler {
 	}
 
 	mapping(string:mixed) render(Protocols.HTTP.Server.Request req, mapping replacements) {
-		werror("render: %O\n", replacements | req->misc->userinfo);
 		if (replacements->vars->?ws_group) {
 			if (!replacements->vars->ws_type) replacements->vars->ws_type = ws_type;
 			if (req->misc->channel) replacements->vars->ws_group += "#" + req->misc->channel->userid;
