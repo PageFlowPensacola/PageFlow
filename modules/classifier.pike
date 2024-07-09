@@ -41,6 +41,17 @@ __async__ void load_model(string domain, mapping proc) {
 	}
 }
 
+void pythondone(mapping proc) {
+	werror("Python process for %O closed\n", proc->domain);
+	m_delete(domain_processes, proc->domain);
+	if (proc->queued_messages) {
+		werror("Orphaned queued messages %O\n", proc->pending_messages);
+	}
+	if (proc->pending_messages) {
+		werror("Orphaned pending messages for %O\n", proc->pending_messages);
+	}
+}
+
 @export:
 Concurrent.Future classipy(string domain, mapping json){
 	// json will always include a cmd (train, classify, etc)
@@ -56,6 +67,7 @@ Concurrent.Future classipy(string domain, mapping json){
 			"queued_messages": ({}),
 		]);
 		pythonstdout->set_read_callback(pythonoutput);
+		pythonstdout->set_close_callback(pythondone);
 		// TODO use a Buffer
 		Process.create_process(
 			({"python", "classify.py"}),

@@ -172,29 +172,45 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	return "done";
 };
 
+__async__ array(mapping) find_closest_domain_with_model(string domain) {
+	return await(G->G->DB->run_pg_query(#"
+	SELECT name
+	FROM domains
+	WHERE name LIKE :domain
+	AND ml_model IS NOT NULL
+	ORDER BY LENGTH(name) LIMIT 1",
+	(["domain": domain + "%"])));
+}
+
 __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("contract upload %O\n", upload);
 	object tm = System.Timer();
 
+	// This will store template pages (rects, etc)
 	mapping templates = ([]);
 
-	array annotated_pages = ({});
+	array rects = ({});
 
-	array pages = await(pdf2png(req->body_raw));
+	// This will store annotated page images
+	array annotated_contract_pages = ({});
+
+	array document_pages = await(pdf2png(req->body_raw));
 
 	constant IS_A_SIGNATURE = 75;
 
 	bool confidence = 1;
 
-	int page_count = sizeof(pages);
+	int document_page_count = sizeof(document_pages);
 
 	upload->conn->sock->send_text(Standards.JSON.encode(
 		(["cmd": "upload_status",
-		"count": page_count,
+		"count": document_page_count,
 		"step": "Received PDF",
 	])));
 
-	foreach(pages; int i; string current_page) {
+	array(mapping) domain = await(find_closest_domain_with_model(req->misc->session->domain));
+
+	foreach(document_pages; int i; string current_page) {
 
 		mapping img = Image.PNG._decode(current_page);
 
@@ -206,10 +222,10 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		}
 		upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
-			"count": page_count,
+			"count": document_page_count,
 			"pages": ({(["number": i+1, "fields": ({})])}),
 			"current_page": i+1,
-			"step": "Analyzing page " + (i+1) + " of " + page_count + " pages.",
+			"step": "Analyzing page " + (i+1) + " of " + document_page_count + " pages.",
 			])));
 
 		mapping page = await(analyze_page(current_page, img->xsize, img->ysize));
@@ -217,28 +233,46 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		mapping json = ([
 			"data": page->data,
 		]);
-		Protocols.HTTP.Promise.Result resp = await(Protocols.HTTP.Promise.post_url("http://localhost:8002/analyze_page",
-		 Protocols.HTTP.Promise.Arguments(
-			(["headers":
-				(["Authorization": req->request_headers["Authorization"],
-				"Content Type": "application/json"]),
-				"data": Standards.JSON.encode(json, 1),
-			])
-		)));
-		mapping response = Standards.JSON.decode(resp->get());
 
-		array(mapping) rects = await(G->G->DB->run_pg_query(#"
-				SELECT x1, y1, x2, y2, template_signatory_id, transition_score, page_number, ts.name
+		upload->conn->sock->send_text(Standards.JSON.encode(
+			(["cmd": "upload_status",
+			"count": document_page_count,
+			"pages": ({(["number": i+1, "fields": ({})])}),
+			"current_page": i+1,
+			"step": "Classifying page " + (i+1) + " of " + document_page_count + " pages.",
+			])));
+
+		mapping response = await(classipy(
+				domain[0]->name,
+				([
+					"cmd": "classify",
+					"text": page->data * "\n\n",
+				])));
+
+		string pageref; float confidence = 0.0;
+
+		foreach(response->results; string pgref; float conf) {
+			if (conf > confidence) {
+				pageref = pgref;
+				confidence = conf;
+			}
+		}
+		sscanf(pageref, "%d:%d", int template_id, int page_number);
+		if (!templates[template_id]) templates[template_id] = ([]);
+		if (!templates[template_id][page_number]) {
+			rects += templates[template_id][page_number] = await(G->G->DB->run_pg_query(#"
+				SELECT x1, y1, x2, y2, template_signatory_id, transition_score, ts.name
 				FROM audit_rects r
 				JOIN template_signatories ts ON ts.id = r.template_signatory_id
 				WHERE r.template_id = :template_id
+				AND page_number = :page_number
 				ORDER BY r.id",
-			(["template_id": response->template_id])));
-		templates[response->template_id] = ([]);
-		foreach (rects, mapping r) templates[response->template_id][r->page_number] += ({r});
+			(["template_id": template_id, "page_number": page_number])));
+		}
 
-		if (!templates[response->template_id][i+1]) {
-			annotated_pages+=({([ "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
+		if (!sizeof(templates[template_id][page_number])) {
+			werror("No rects found for template %d, page %d\n", template_id, page_number);
+			annotated_contract_pages+=({([ "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
 			continue;
 		}
 
@@ -259,7 +293,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		int page_transition_score = 0;
 		int page_calculated_transition_score = 0;
 		array field_results = ({});
-		foreach (templates[response->template_id][i+1] || ({}), mapping r) {
+		foreach (templates[template_id][page_number] || ({}), mapping r) {
 			mapping box = calculate_transition_score(r, bounds, grey);
 
 			img->image->setcolor(@audit_rect_color, 0);
@@ -282,13 +316,19 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				])
 			});
 
-			werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", upload->template_id, i+1, r->template_signatory_id || 0, r->transition_score, box->score);
-		}
+			werror(#"Template Id: %3d
+			Template Page no: %2d
+			Document Page no: %2d
+			Signatory Id: %2d
+			Transition score: %6d,
+			Calculated transition score: %6d \n", template_id, page_number, i+1,
+			r->template_signatory_id || 0, r->transition_score, box->score);
+		} // End loop templates[template_id][page_number] (audit_rects) loop.
 		if (page_calculated_transition_score < page_transition_score) {
-			confidence = 0;
+			confidence = 0.0;
 		}
 
-		annotated_pages+=({
+		annotated_contract_pages+=({
 			([
 				"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
 				"page_no": i+1,
@@ -296,9 +336,9 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			])
 		});
 
-	}
+	} // End of foreach document pages loop.
 	werror("[%6.3f] Done\n", tm->peek());
-	return jsonify((["pages": annotated_pages, "confidence": confidence, "rects": ({})]));
+	return jsonify((["pages": annotated_contract_pages, "confidence": confidence, "rects": rects]));
 }
 
 string prepare_upload(string type, mapping info) {

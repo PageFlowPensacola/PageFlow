@@ -9,23 +9,7 @@ __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:m
 	conn->sock->send_text(Standards.JSON.encode((["cmd": "upload", "upload_id": upload_id])));
 }
 
-// TODO maybe dedupe this with the one in templates.pike
-__async__ void 	fetch_template_domain(mapping conn, int group) {
-	array(mapping) domains = await(G->G->DB->run_pg_query(#"
-		SELECT domain
-		FROM templates
-		WHERE id = :id", (["id":group])));
-
-	conn->template_domains[group] = sizeof(domains) ? domains[0]->domain : "---";
-	array pending = conn->pending;
-	conn->pending = 0;
-
-	foreach(pending, mapping(string:mixed) msg) {
-		G->G->bouncers["connection.pike()->ws_msg"](msg, conn);
-	}
-
-}
-
+// TODO maybe dedupe following two functions with the ones in templates.pike
 string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	if (!conn->session->domain) {
 		return "Not authorized";
@@ -49,6 +33,22 @@ string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed)
 	}
 	fetch_template_domain(conn, msg->group);
 	return "";
+}
+
+__async__ void 	fetch_template_domain(mapping conn, int group) {
+	array(mapping) domains = await(G->G->DB->run_pg_query(#"
+		SELECT domain
+		FROM templates
+		WHERE id = :id", (["id":group])));
+
+	conn->template_domains[group] = sizeof(domains) ? domains[0]->domain : "---";
+	array pending = conn->pending;
+	conn->pending = 0;
+
+	foreach(pending, mapping(string:mixed) msg) {
+		G->G->bouncers["connection.pike()->ws_msg"](msg, conn);
+	}
+
 }
 
 mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req) {

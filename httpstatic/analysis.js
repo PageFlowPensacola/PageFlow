@@ -20,11 +20,7 @@ export function render(state) {
 
 	set_content("main", SECTION([
 		FORM({id: "file_submit"}, [
-			SELECT({id: "templateselect", value: DOM("#templateselect")?.value || 0}, [
-				OPTION({value: 0}, "Select a template"),
-				state.templates.map((t) => OPTION({value: t.id}, t.name +" ("+t.id+")"))
-			]),
-			INPUT({id: "newFile", type: "file", accept: "image/pdf", disabled: true}),
+			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
 			localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
 		]),
 		(typeof (localState.step) !== "undefined") && render_upload_status(localState),
@@ -37,6 +33,7 @@ export function render(state) {
 					DIV([page.fields?.map((field) => {
 						const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
 						const signatoryName = localState.rects.find((f) => f.template_signatory_id === field.signatory)?.name;
+						console.log(localState.rects, field.signatory, signatoryName, field);
 						return SPAN(signatoryName + ": " + status + " ");
 					})]),
 				]);
@@ -50,10 +47,6 @@ export function render(state) {
 	]));
 }
 
-on("change", "#templateselect", (e) => {
-	DOM("#newFile").disabled = e.match.value === "0";
-});
-
 on("change", "#newFile", async (e) => {
 	e.preventDefault();
 	submittedFile = DOM("#newFile").files[0];
@@ -61,8 +54,6 @@ on("change", "#newFile", async (e) => {
 	ws_sync.send({
 		"cmd": "upload",
 		"name": DOM("#newFile").value,
-		"org": org_id,
-		"template": +DOM("#templateselect").value
 	});
 	localState.step = "Uploading";
 	localState.confidence = undefined;

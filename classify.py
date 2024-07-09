@@ -39,7 +39,7 @@ try:
 				"model": base64.b64encode(pickle.dumps(model)).decode("utf-8")}))
 		elif msg["cmd"] == "classify":
 			res = model.predict_proba_one(msg["text"])
-			print(json.dumps({"result": res, "msgid": msg["msgid"]}))
+			print(json.dumps({"results": res, "msgid": msg["msgid"]}))
 		elif msg["cmd"] == "load":
 			model = pickle.loads(base64.b64decode(msg["model"]))
 			print(json.dumps({"status": "ok", "msgid": msg["msgid"]}))
