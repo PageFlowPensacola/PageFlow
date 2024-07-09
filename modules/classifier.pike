@@ -10,7 +10,6 @@ void pythonoutput(mapping proc, string data){
 	proc->idle_count = 0;
 	while (sscanf(proc->pythondata, "%s\n%s", string line, proc->pythondata)){
 		mapping msg = Standards.JSON.decode(line);
-		werror("Classipy response %O\n", msg);
 		object|zero prom = m_delete(proc->pending_messages, msg->msgid);
 		if (prom){
 			prom->success(msg);

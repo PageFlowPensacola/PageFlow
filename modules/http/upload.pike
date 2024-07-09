@@ -74,6 +74,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	// if user necessary:
 	// mapping user = await(G->G->DB->get_user_details(req->misc->auth->email));
 	// string org_name = user->orgs[user->primary_org];
+	string document_domain = req->misc->session->domain;
 
 	array pages = await(pdf2png(req->body_raw));
 
@@ -81,25 +82,27 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	// get the model for current domain from the db
 	// Fetch all models for this domain and its subdomains
 	// and train on all of them.
-	array(mapping) models = await(G->G->DB->run_pg_query(#"
-		SELECT ml_model, name
+	array(mapping) domains = await(G->G->DB->run_pg_query(#"
+		SELECT name
 		FROM domains
 		WHERE name LIKE :domain
 		AND ml_model IS NOT NULL
 		ORDER BY LENGTH(name)",
 		(["domain": req->misc->session->domain + "%"])));
 
-	if (!sizeof(models) || models[0]->name != req->misc->session->domain) {
-		// copy into current domain
-		array model = await(G->G->DB->run_pg_query(#"
-		SELECT ml_model, name
-		FROM domains
-		WHERE :domain LIKE name || '%'
-		AND ml_model IS NOT NULL
-		ORDER BY LENGTH(name) DESC LIMIT 1",
+	if (!sizeof(domains) || domains[0]->name != req->misc->session->domain) {
+		// copy into current domain, awaiting the result
+		await(G->G->DB->run_pg_query(#"
+		UPDATE domains SET ml_model =
+			(SELECT ml_model
+			FROM domains
+			WHERE :domain LIKE name || '%'
+			AND ml_model IS NOT NULL
+			ORDER BY LENGTH(name) DESC LIMIT 1)
+		WHERE name = :domain",
 		(["domain": req->misc->session->domain])));
 
-		models += ({(["ml_model": model[0]->ml_model, "name": req->misc->session->domain])});
+		domains += ({(["name": req->misc->session->domain])});
 	}
 
 	foreach(pages; int i; string current_page) {
@@ -123,19 +126,15 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			"page": i+1,
 			"data": page->data, // hocr data
 		]);
-		foreach (models, mapping model) {
-			classipy(req->misc->session->domain, ([
-				"cmd": "train",
-				"text": page->data * "\n\n",
-				"pageref": upload->template_id + ":" + (i+1),
-			]));
+		foreach (domains, mapping domain) {
+			classipy(
+				domain->name,
+				([
+					"cmd": "train",
+					"text": page->data * "\n\n",
+					"pageref": upload->template_id + ":" + (i+1),
+				]));
 		}
-		/*
-		werror("Classify now:");
-		classipy(([
-			"cmd": "classify",
-			"text": "This agreement does not create any agency or partnership relationship. This agreementis not assignable or transferable",
-		])); */
 
 		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 		// Rescale current_page
@@ -161,16 +160,15 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		", ([
 			"template_id":upload->template_id, "page_number":i+1, "page_data":scaled_png,
 			]) | bounds));
-	}
+	} // end iterate over pages
 
 	// Update the template record with the number of pages
-	array(mapping) domains = await(G->G->DB->run_pg_query(#"
+	await(G->G->DB->run_pg_query(#"
 		UPDATE templates
 		SET page_count = :page_count
 		WHERE id = :template_id
-		RETURNING domain
 	", (["template_id":upload->template_id, "page_count":sizeof(pages)])));
-	G->G->websocket_types["templates"]->send_updates_all(domains[0]->domain);
+	G->G->websocket_types["templates"]->send_updates_all(document_domain);
 	return "done";
 };
 
