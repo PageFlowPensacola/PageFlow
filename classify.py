@@ -27,9 +27,8 @@ model = compose.Pipeline(
 } """
 
 try:
-	print("Ready", file=sys.stderr, flush=True)
+	print("Classipy ready", file=sys.stderr, flush=True)
 	while 1:
-		print("Waiting", file=sys.stderr, flush=True)
 		msg = json.loads(input()) # input looks for one line of txt followed by newline
 		if ("cmd" not in msg):
 			print(json.dumps({"status": "error", "msgid": msg["msgid"], "error": "No command"}))
@@ -37,7 +36,6 @@ try:
 		if msg["cmd"] == "train":
 			model.learn_one(msg["text"], msg["pageref"])
 			print(json.dumps({"status": "ok", "msgid": msg["msgid"],
-				"domain": msg["domain"],
 				"model": base64.b64encode(pickle.dumps(model)).decode("utf-8")}))
 		elif msg["cmd"] == "classify":
 			res = model.predict_proba_one(msg["text"])

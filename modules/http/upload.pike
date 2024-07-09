@@ -124,15 +124,10 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			"data": page->data, // hocr data
 		]);
 		foreach (models, mapping model) {
-			classipy(([
-				"cmd": "load",
-				"model": model->ml_model,
-			]));
-			classipy(([
+			classipy(req->misc->session->domain, ([
 				"cmd": "train",
 				"text": page->data * "\n\n",
 				"pageref": upload->template_id + ":" + (i+1),
-				"domain": req->misc->session->domain,
 			]));
 		}
 		/*
