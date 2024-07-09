@@ -92,6 +92,7 @@ void ws_msg(Protocols.WebSocket.Frame|mapping frm, mapping conn) {
 	if (mappingp(frm)) data = frm;
 	else if (catch {data = Standards.JSON.decode(frm->text);}) return; //Ignore frames that aren't text or aren't valid JSON
 	if (!stringp(data->cmd)) return;
+
 	if (data->cmd == "init")
 	{
 		//Initialization is done with a type and a group.

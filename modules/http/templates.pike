@@ -40,7 +40,7 @@ __async__ void websocket_cmd_set_signatory(mapping(string:mixed) conn, mapping(s
 	send_updates_all(conn->group);
 }
 
-
+// TODO maybe dedupe following two with ones in analysis.pike
 string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	if (!conn->session->domain) {
 		return "Not authorized";

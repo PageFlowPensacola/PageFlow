@@ -22,7 +22,7 @@ export function render(state) {
 		FORM({id: "file_submit"}, [
 			SELECT({id: "templateselect", value: DOM("#templateselect")?.value || 0}, [
 				OPTION({value: 0}, "Select a template"),
-				state.templates.map((t) => OPTION({value: t.id}, t.name))
+				state.templates.map((t) => OPTION({value: t.id}, t.name +" ("+t.id+")"))
 			]),
 			INPUT({id: "newFile", type: "file", accept: "image/pdf", disabled: true}),
 			localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
