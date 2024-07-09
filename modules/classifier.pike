@@ -46,7 +46,6 @@ Concurrent.Future classipy(mapping json){
 				"stdin": pythonstdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE),
 				"stdout": pythonstdout->pipe(Stdio.PROP_IPC)
 			]));
-		pythonstdin->write(Standards.JSON.encode((["cmd": "load", "msgid": "init", "model": MIME.encode_base64(Stdio.read_file("model.dat"))]), 1) + "\n");
 		werror("process created");
 	}
 
