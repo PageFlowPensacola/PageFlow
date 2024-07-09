@@ -194,23 +194,23 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	// This will store annotated page images
 	array annotated_contract_pages = ({});
 
-	array document_pages = await(pdf2png(req->body_raw));
+	array file_pages = await(pdf2png(req->body_raw));
 
 	constant IS_A_SIGNATURE = 75;
 
 	bool confidence = 1;
 
-	int document_page_count = sizeof(document_pages);
+	int file_page_count = sizeof(file_pages);
 
 	upload->conn->sock->send_text(Standards.JSON.encode(
 		(["cmd": "upload_status",
-		"count": document_page_count,
+		"count": file_page_count,
 		"step": "Received PDF",
 	])));
 
 	array(mapping) domain = await(find_closest_domain_with_model(req->misc->session->domain));
 
-	foreach(document_pages; int i; string current_page) {
+	foreach(file_pages; int i; string current_page) {
 
 		mapping img = Image.PNG._decode(current_page);
 
@@ -222,10 +222,10 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		}
 		upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
-			"count": document_page_count,
+			"count": file_page_count,
 			"pages": ({(["number": i+1, "fields": ({})])}),
 			"current_page": i+1,
-			"step": "Analyzing page " + (i+1) + " of " + document_page_count + " pages.",
+			"step": "Analyzing page " + (i+1) + " of " + file_page_count + " pages.",
 			])));
 
 		mapping page = await(analyze_page(current_page, img->xsize, img->ysize));
@@ -236,13 +236,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
-			"count": document_page_count,
+			"count": file_page_count,
 			"pages": ({(["number": i+1, "fields": ({})])}),
 			"current_page": i+1,
-			"step": "Classifying page " + (i+1) + " of " + document_page_count + " pages.",
+			"step": "Classifying page " + (i+1) + " of " + file_page_count + " pages.",
 			])));
 
-		mapping response = await(classipy(
+		mapping classification = await(classipy(
 				domain[0]->name,
 				([
 					"cmd": "classify",
@@ -251,12 +251,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		string pageref; float confidence = 0.0;
 
-		foreach(response->results; string pgref; float conf) {
+		foreach(classification->results; string pgref; float conf) {
 			if (conf > confidence) {
 				pageref = pgref;
 				confidence = conf;
 			}
 		}
+		werror("Confidence level for page %d: %f\n", i+1, confidence);
 		sscanf(pageref, "%d:%d", int template_id, int page_number);
 		if (!templates[template_id]) templates[template_id] = ([]);
 		if (!templates[template_id][page_number]) {
@@ -316,9 +317,9 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				])
 			});
 
-			werror(#"Template Id: %3d
+			werror(#"RECT INFO: Template Id: %3d
 			Template Page no: %2d
-			Document Page no: %2d
+			File Page no: %2d
 			Signatory Id: %2d
 			Transition score: %6d,
 			Calculated transition score: %6d \n", template_id, page_number, i+1,
@@ -331,7 +332,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		annotated_contract_pages+=({
 			([
 				"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
-				"page_no": i+1,
+				"file_page_no": i+1,
 				"fields": field_results,
 			])
 		});

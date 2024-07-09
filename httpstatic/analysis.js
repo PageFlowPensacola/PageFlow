@@ -1,5 +1,5 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {DIV, FIGURE, FORM, H2, H3, H4, IMG, INPUT, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
+const {CAPTION, DIV, FIGURE, FORM, H2, H3, H4, IMG, INPUT, LI, P, SECTION, SPAN, UL} = choc; //autoimport
 import * as auth from "./auth.js";
 
 const localState = {};
@@ -42,6 +42,7 @@ export function render(state) {
 		DIV({class: "thumbnails"}, [localState.templatePages?.map((page, idx) => {
 			return page.annotated_img && FIGURE({class: "thumbnail"}, [
 				IMG({src: page.annotated_img}),
+				CAPTION("Page " + page.file_page_no),
 			]);
 		})]),
 	]));
