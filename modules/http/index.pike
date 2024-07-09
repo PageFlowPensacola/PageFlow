@@ -5,6 +5,10 @@ constant markdown = #"# Signatory Check
 
 ## Check files for signatures based on user defined templates.
 
+Use the menu above to manage templates or submit files for analysis.
+
+For more information, reach out to [Mike](mailto:mike@pageflow.com) or [John](mailto:john@pageflow.com).
+
 ";
 
 
