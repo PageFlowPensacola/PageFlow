@@ -250,21 +250,25 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				])));
 
 		string pageref; float confidence = 0.0;
-
+		array pagerefs = indices(classification->results);
+		array confs = values(classification->results);
+		sort(confs, pagerefs);
+		werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
 		foreach(classification->results; string pgref; float conf) {
 			if (conf > confidence) {
 				pageref = pgref;
 				confidence = conf;
 			}
 		}
-		werror("Confidence level for page %d: %f\n", i+1, confidence);
+		//werror("Confidence level for page %d: %f\n", i+1, confidence);
 		sscanf(pageref, "%d:%d", int template_id, int page_number);
 		if (!templates[template_id]) templates[template_id] = ([]);
 		if (!templates[template_id][page_number]) {
 			rects += templates[template_id][page_number] = await(G->G->DB->run_pg_query(#"
-				SELECT x1, y1, x2, y2, template_signatory_id, transition_score, ts.name
+				SELECT x1, y1, x2, y2, template_signatory_id, transition_score, ts.name as name, t.name as Template
 				FROM audit_rects r
 				JOIN template_signatories ts ON ts.id = r.template_signatory_id
+				JOIN templates t ON t.id = ts.template_id
 				WHERE r.template_id = :template_id
 				AND page_number = :page_number
 				ORDER BY r.id",
