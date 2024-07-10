@@ -36,7 +36,10 @@ try:
 			print(json.dumps({"status": "error", "msgid": msg["msgid"], "error": "No command"}))
 			continue
 		if msg["cmd"] == "train":
-			model.learn_one(msg["text"], msg["pageref"])
+			if("text" in msg):
+				model.learn_one(msg["text"], msg["pageref"])
+			else:
+				del model.steps['nb'].class_counts[msg["pageref"]]
 			print(json.dumps({"status": "ok", "msgid": msg["msgid"],
 				"model": base64.b64encode(pickle.dumps(model)).decode("utf-8")}))
 		elif msg["cmd"] == "classify":
