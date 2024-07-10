@@ -269,7 +269,7 @@ __async__ void model_audit() {
 				werror("\t\e[1;31m%s: Domain mismatch %s\e[0m\n", pageref, t->domain);
 				continue;
 			}
-			werror("\t%s: OK\n", pageref);
+			werror("\t%s: %s\n", pageref, t->name);
 		}
 	}
 
