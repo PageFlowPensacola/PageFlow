@@ -10,6 +10,8 @@ import pickle
 import time
 import json
 
+# https://riverml.xyz/dev/api/naive-bayes/ComplementNB/
+
 start = time.monotonic()
 model = compose.Pipeline(
         ("tokenize", feature_extraction.BagOfWords(lowercase=False, ngram_range=(1, 2))),

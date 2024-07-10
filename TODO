@@ -152,3 +152,6 @@ SEE CLASSIPY.PIKE
 Perhaps eventually spend a week to work on accounting for overlap and scaling in scans.
 Edge detection algorithms publicly available.
 https://xperimex.com/blog/panorama-homography/
+
+## July 10
+Handle "MySQL server has gone away" exception
