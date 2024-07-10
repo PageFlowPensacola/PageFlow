@@ -172,14 +172,14 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	return "done";
 };
 
-__async__ array(mapping) find_closest_domain_with_model(string domain) {
+__async__ string find_closest_domain_with_model(string domain) {
 	return await(G->G->DB->run_pg_query(#"
 	SELECT name
 	FROM domains
 	WHERE :domain LIKE name || '%'
 	AND ml_model IS NOT NULL
 	ORDER BY LENGTH(name) DESC LIMIT 1",
-	(["domain": domain])));
+	(["domain": domain])))[0]->name;
 }
 
 __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
@@ -208,7 +208,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		"step": "Received PDF",
 	])));
 
-	array(mapping) domain = await(find_closest_domain_with_model(req->misc->session->domain));
+	string domain = await(find_closest_domain_with_model(req->misc->session->domain));
 
 	foreach(file_pages; int i; string current_page) {
 
@@ -243,7 +243,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			])));
 
 		mapping classification = await(classipy(
-				domain[0]->name,
+				domain,
 				([
 					"cmd": "classify",
 					"text": page->data * "\n\n",
