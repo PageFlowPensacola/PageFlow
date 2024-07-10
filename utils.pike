@@ -233,6 +233,8 @@ __async__ void cleanup() {
 
 @"Model audit":
 __async__ void model_audit() {
+	// This WILL NOT tell us if there's a template which model hasn't been trained on
+	// or if there is a page missing out of it.
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
 
 	array(mapping) domains = await(G->G->DB->run_pg_query(#"
