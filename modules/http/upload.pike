@@ -176,10 +176,10 @@ __async__ array(mapping) find_closest_domain_with_model(string domain) {
 	return await(G->G->DB->run_pg_query(#"
 	SELECT name
 	FROM domains
-	WHERE name LIKE :domain
+	WHERE :domain LIKE name || '%'
 	AND ml_model IS NOT NULL
-	ORDER BY LENGTH(name) LIMIT 1",
-	(["domain": domain + "%"])));
+	ORDER BY LENGTH(name) DESC LIMIT 1",
+	(["domain": domain])));
 }
 
 __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
@@ -250,6 +250,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				])));
 
 		string pageref; float confidence = 0.0;
+
 		array pagerefs = indices(classification->results);
 		array confs = values(classification->results);
 		sort(confs, pagerefs);
@@ -259,6 +260,11 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				pageref = pgref;
 				confidence = conf;
 			}
+		}
+		if (!pageref) {
+			werror("No classification found for page %d %O \n", i+1, classification);
+			annotated_contract_pages+=({([ "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
+			continue;
 		}
 		//werror("Confidence level for page %d: %f\n", i+1, confidence);
 		sscanf(pageref, "%d:%d", int template_id, int page_number);
