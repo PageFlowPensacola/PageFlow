@@ -171,19 +171,6 @@ __async__ void tesseract(){
 Concurrent.Future ml() {
 	string domain = "com.pageflow.tagtech.dunder-mifflin.";
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
-	array model = await(G->G->DB->run_pg_query(#"
-			SELECT ml_model, LENGTH(ml_model), name
-			FROM domains
-			WHERE :domain LIKE name || '%'
-			AND ml_model IS NOT NULL
-			ORDER BY LENGTH(name) DESC LIMIT 1",
-			(["domain": domain])));
-	werror("Model: %O\n", model);
-	classipy(domain,
-	([
-		"cmd": "load",
-		"model": model[0]->ml_model,
-	]));
 
 	return classipy(domain,
 	([
@@ -214,6 +201,34 @@ __async__ void load_model() {
 		return;
 	}
 	Process.exec("python", "-i", "-c", "import pickle, base64, river; model=pickle.loads(base64.b64decode('" + model[0]->ml_model + "'))");
+}
+
+@"Cleanup pagerefs for a model":
+__async__ void cleanup() {
+	// TODO perhaps eventually do a complete retrain on the model,
+	// as currently, this just prevents it from returning removed templates.
+	[string domain] = G->G->args[Arg.REST];
+	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
+	mapping result = await(classipy(domain,
+	([
+		"cmd": "pagerefs",
+	])));
+	array templateids = (result->pagerefs[*] / ":")[*][0];
+
+	array(mapping) going = await(G->G->DB->run_pg_query("values " + sprintf("(%s)", templateids[*]) * ", " + " except select id from templates"));
+	multiset gone = (multiset) going->column1;
+	werror("Result: %O\n", gone);
+	foreach(result->pagerefs, string pageref) {
+		sscanf(pageref, "%d:", int template);
+		if (gone[template]) {
+			werror("Template %d is gone\n", template);
+			await(classipy(domain,
+				([
+					"cmd": "train",
+					"pageref": pageref,
+				])));
+		}
+	}
 }
 
 @"This help information":

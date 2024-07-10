@@ -42,6 +42,9 @@ try:
 				del model.steps['nb'].class_counts[msg["pageref"]]
 			print(json.dumps({"status": "ok", "msgid": msg["msgid"],
 				"model": base64.b64encode(pickle.dumps(model)).decode("utf-8")}))
+		elif msg["cmd"] == "pagerefs":
+			print(json.dumps({"status": "ok", "msgid": msg["msgid"],
+				"pagerefs": list(model.steps['nb'].class_counts)}))
 		elif msg["cmd"] == "classify":
 			res = model.predict_proba_one(msg["text"])
 			print(json.dumps({"results": res, "msgid": msg["msgid"]}))
