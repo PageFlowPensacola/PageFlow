@@ -198,6 +198,24 @@ __async__ void tables() {
 	await(G->G->DB->create_tables(G->G->args["confirm"]));
 }
 
+@"Load a ml_model":
+__async__ void load_model() {
+	[string domain] = G->G->args[Arg.REST];
+	werror("Loading model\n");
+	array(mapping) model = await(G->G->DB->run_pg_query(#"
+		SELECT ml_model FROM domains WHERE name = :domain",
+		(["domain": domain])));
+	if(!sizeof(model)) {
+		werror("No domain found for %O\n", domain);
+		return;
+	}
+	if(!model[0]->ml_model) {
+		werror("No model found for %O\n", domain);
+		return;
+	}
+	Process.exec("python", "-i", "-c", "import pickle, base64, river; model=pickle.loads(base64.b64decode('" + model[0]->ml_model + "'))");
+}
+
 @"This help information":
 void help() {
 	write("\nUSAGE: pike app --exec=ACTION\nwhere ACTION is one of the following:\n");
