@@ -231,6 +231,48 @@ __async__ void cleanup() {
 	}
 }
 
+@"Model audit":
+__async__ void model_audit() {
+	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
+
+	array(mapping) domains = await(G->G->DB->run_pg_query(#"
+		SELECT name
+		FROM domains
+		WHERE ml_model IS NOT NULL
+		ORDER BY name"));
+
+	array(mapping) all_templates = await(G->G->DB->run_pg_query(#"
+		SELECT *
+		FROM templates"));
+
+		mapping templates = mkmapping(all_templates->id, all_templates);
+	foreach(domains, mapping domain) {
+		werror("Auditing model %O\n", domain->name);
+		mapping result = await(classipy(domain->name,
+			([
+				"cmd": "pagerefs",
+			])));
+		foreach(result->pagerefs, string pageref) {
+			sscanf(pageref, "%d:%d", int template, int page);
+			mapping t = templates[template];
+			if (!t) {
+				werror("\t\e[1;31m%s: Template not found\e[0m\n", pageref);
+				continue;
+			}
+			if (page > t->page_count) {
+				werror("\t\e[1;31m%s: Page out of bounds\e[0m\n", pageref);
+				continue;
+			}
+			if (!has_prefix(domain->name, t->domain)) {
+				werror("\t\e[1;31m%s: Domain mismatch %s\e[0m\n", pageref, t->domain);
+				continue;
+			}
+			werror("\t%s: OK\n", pageref);
+		}
+	}
+
+}
+
 @"This help information":
 void help() {
 	write("\nUSAGE: pike app --exec=ACTION\nwhere ACTION is one of the following:\n");
