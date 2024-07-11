@@ -213,8 +213,6 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	string domain = await(find_closest_domain_with_model(req->misc->session->domain));
 
-	timings["find_closest_domain_with_model"] = tm->get();
-
 	foreach(file_pages; int i; string current_page) {
 
 		mapping img = Image.PNG._decode(current_page);
@@ -224,7 +222,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			// Paste original into it, fading based on alpha channel
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
-		timings["decode_page"] += tm->get();
+
 		upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
 			"count": file_page_count,
