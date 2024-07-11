@@ -240,7 +240,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"pages": ({(["number": i+1, "fields": ({})])}),
 			"current_page": i+1,
 			"step": "Classifying page " + (i+1) + " of " + file_page_count + " pages.",
-			])));
+		])));
 
 		mapping classification = await(classipy(
 				domain,
@@ -261,15 +261,34 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				confidence = conf;
 			}
 		}
-		if (!pageref) {
+		if (!pageref || confidence < 0.5) {
 			werror("No classification found for page %d %O \n", i+1, classification);
-			annotated_contract_pages+=({(["fields": ({}), "file_page_no": i+1,  "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
+			upload->conn->sock->send_text(Standards.JSON.encode(
+				(["cmd": "upload_status",
+				"count": file_page_count,
+				"pages": ({(["number": i+1, "fields": ({})])}),
+				"current_page": i+1,
+				"step": sprintf("No document template found for file page %d", i+1),
+			])));
+			annotated_contract_pages+=({(["error": "No document template found for page.",
+			"fields": ({}),
+			"file_page_no": i+1,
+			"annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page),
+			"template_id": 0,
+			"template_name": "No template found...",
+			 ])});
 			continue;
 		}
 		//werror("Confidence level for page %d: %f\n", i+1, confidence);
+		string templateName = await(G->G->DB->run_pg_query(#"
+			SELECT name
+			FROM templates
+			WHERE id = :id", (["id": pageref])))[0]->name;
+
 		sscanf(pageref, "%d:%d", int template_id, int page_number);
 		if (!templates[template_id]) templates[template_id] = ([]);
 		if (!templates[template_id][page_number]) {
+			// TODO stop getting template name here as getting separately anyway.
 			rects += templates[template_id][page_number] = await(G->G->DB->run_pg_query(#"
 				SELECT x1, y1, x2, y2, template_signatory_id, transition_score, ts.name as name, t.name as Template
 				FROM audit_rects r
@@ -283,7 +302,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		if (!sizeof(templates[template_id][page_number])) {
 			werror("No rects found for template %d, page %d\n", template_id, page_number);
-			annotated_contract_pages+=({(["fields": ({}), "file_page_no": i+1, "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
+			annotated_contract_pages+=({([
+				"fields": ({}),
+				"file_page_no": i+1,
+				"annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page),
+				"template_id": template_id,
+				"template_name": templateName,
+			])});
 			continue;
 		}
 
@@ -344,12 +369,20 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
 				"file_page_no": i+1,
 				"fields": field_results,
+				"template_id": template_id,
+				"template_name": templateName,
+				"page_transition_score": page_transition_score,
+				"page_calculated_transition_score": page_calculated_transition_score,
 			])
 		});
 
 	} // End of foreach document pages loop.
 	werror("[%6.3f] Done\n", tm->peek());
-	return jsonify((["pages": annotated_contract_pages, "confidence": confidence, "rects": rects]));
+	mapping annotated_pages_by_template = ([]);
+	foreach(annotated_contract_pages, mapping page) {
+		annotated_pages_by_template[(string) page->template_id] += ({page});
+	}
+	return jsonify((["documents": annotated_pages_by_template, "confidence": confidence, "rects": rects]));
 }
 
 string prepare_upload(string type, mapping info) {

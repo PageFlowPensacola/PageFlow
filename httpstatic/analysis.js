@@ -18,7 +18,8 @@ const render_upload_status = (state) => {
 export function render(state) {
 	stateSnapshot = state;
 	console.log("Rendering", state);
-
+	console.log("Local state", localState);
+	window.templateDocuments = localState.templateDocuments;
 	set_content("main", SECTION([
 		FORM({id: "file_submit"}, [
 			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
@@ -27,24 +28,34 @@ export function render(state) {
 		(typeof (localState.step) !== "undefined") && render_upload_status(localState),
 		(typeof (localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
 		(typeof (localState.rects) !== "undefined") && H4("Fields checked: " + localState.rects.length),
-		localState.templatePages && UL({id: "pagesinfo"}, [
-			localState.templatePages?.map((page, idx) => {
-				return LI([
-					P("Page " + (idx+1)),
-					DIV([page.fields?.map((field) => {
-						const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
-						const signatoryName = localState.rects.find((f) => f.template_signatory_id === field.signatory)?.name;
-						console.log(localState.rects, field.signatory, signatoryName, field);
-						return SPAN(signatoryName + ": " + status + " ");
-					})]),
-				]);
-			}),
+		localState.templateDocuments && UL({id: "pagesinfo"}, [
+			Object.values(localState.templateDocuments).map((document) => {
+				return document.map((page, idx) => {
+					console.log("Document page", page, idx);
+					return LI([
+						P("Page " + (idx+1)),
+						DIV([page.fields?.map((field) => {
+							console.log("Field", field, localState.rects);
+							const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
+							const signatoryName = localState.rects.find((f) => f.template_signatory_id === field.signatory)?.name;
+							console.log(localState.rects, field.signatory, signatoryName, field);
+							return SPAN(signatoryName + ": " + status + " ");
+						})]),
+					]);
+			})}),
 		]),
-		DIV({class: "thumbnails"}, [localState.templatePages?.map((page, idx) => {
-			return page.annotated_img && FIGURE({class: "thumbnail"}, [
-				IMG({src: page.annotated_img}),
-				CAPTION("Page " + page.file_page_no),
-			]);
+		DIV({class: "thumbnails"}, [localState.templateDocuments && Object.values(localState.templateDocuments).map((document) => {
+			return document.map((page, idx) => {
+				return page.annotated_img && FIGURE({class: "thumbnail"}, [
+					IMG({src: page.annotated_img}),
+					CAPTION(UL([
+						LI("Page " + page.file_page_no),
+						LI("Page Transition Score " + page.page_transition_score),
+						LI("Calculated " + page.page_calculated_transition_score),
+						page.error && LI("ERROR " + page.error),
+					])),
+				]);
+			})
 		})]),
 	]));
 }
@@ -60,7 +71,7 @@ on("change", "#newFile", async (e) => {
 	localState.step = "Uploading";
 	localState.confidence = undefined;
 	localState.rects = undefined;
-	localState.templatePages = undefined;
+	localState.templateDocuments = undefined;
 	console.log("Clearing local state", stateSnapshot);
 	render(stateSnapshot);
 });
@@ -75,7 +86,7 @@ export async function sockmsg_upload(msg) {
 	});
 	const json = await resp.json();
 	console.log("Upload response", json);
-	localState.templatePages = json.pages;
+	localState.templateDocuments = json.documents;
 	localState.confidence = json.confidence;
 	localState.rects = json.rects;
 	localState.uploading--;
