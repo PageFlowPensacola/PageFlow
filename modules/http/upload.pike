@@ -194,7 +194,10 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	// This will store annotated page images
 	array annotated_contract_pages = ({});
 
+	mapping timings = ([]);
+
 	array file_pages = await(pdf2png(req->body_raw));
+	timings["pdf2png"] = tm->get();
 
 	constant IS_A_SIGNATURE = 75;
 
@@ -210,16 +213,18 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	string domain = await(find_closest_domain_with_model(req->misc->session->domain));
 
+	timings["find_closest_domain_with_model"] = tm->get();
+
 	foreach(file_pages; int i; string current_page) {
 
 		mapping img = Image.PNG._decode(current_page);
-
 		if (img->alpha) {
 			// Make a blank image of the same size as the original image
 			object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
 			// Paste original into it, fading based on alpha channel
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
+		timings["decode_page"] += tm->get();
 		upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
 			"count": file_page_count,
@@ -229,6 +234,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			])));
 
 		mapping page = await(analyze_page(current_page, img->xsize, img->ysize));
+		timings["Tesseract"] += tm->get();
 		mapping bounds = page->bounds;
 		mapping json = ([
 			"data": page->data,
@@ -248,6 +254,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 					"cmd": "classify",
 					"text": page->data * "\n\n",
 				])));
+		timings["classify_page"] += tm->get();
 
 		string pageref; float confidence = 0.0;
 
@@ -277,6 +284,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"template_id": 0,
 			"template_name": "No template found...",
 			 ])});
+			 timings["analyze page"] += tm->get();
 			continue;
 		}
 		//werror("Confidence level for page %d: %f\n", i+1, confidence);
@@ -309,6 +317,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				"template_id": template_id,
 				"template_name": templateName,
 			])});
+			timings["analyze page"] += tm->get();
 			continue;
 		}
 
@@ -375,9 +384,9 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				"page_calculated_transition_score": page_calculated_transition_score,
 			])
 		});
-
+		timings["analyze page"] += tm->get();
 	} // End of foreach document pages loop.
-	werror("[%6.3f] Done\n", tm->peek());
+	werror("Timings %O\n", timings);
 	mapping annotated_pages_by_template = ([]);
 	foreach(annotated_contract_pages, mapping page) {
 		annotated_pages_by_template[(string) page->template_id] += ({page});
