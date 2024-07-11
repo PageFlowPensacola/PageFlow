@@ -389,6 +389,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	foreach(annotated_contract_pages, mapping page) {
 		annotated_pages_by_template[(string) page->template_id] += ({page});
 	}
+	upload->conn->sock->send_text(Standards.JSON.encode(
+			(["cmd": "upload_status",
+			"count": file_page_count,
+			"pages": ({(["number": i+1, "fields": ({})])}),
+			"current_page": i+1,
+			"step": sprintf("Matched %d pages to templates", file_page_count),
+		])));
 	return jsonify((["documents": annotated_pages_by_template, "confidence": confidence, "rects": rects]));
 }
 

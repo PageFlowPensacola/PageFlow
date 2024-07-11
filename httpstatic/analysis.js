@@ -29,8 +29,8 @@ export function render(state) {
 		(typeof (localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
 		(typeof (localState.rects) !== "undefined") && H4("Fields checked: " + localState.rects.length),
 		localState.templateDocuments && UL({id: "pagesinfo"}, [
-			Object.values(localState.templateDocuments).map((document) => {
-				return document.map((page, idx) => {
+			Object.values(localState.templateDocuments).map((document) => [
+				H3(document[0].template_name), document.map((page, idx) => {
 					console.log("Document page", page, idx);
 					return LI([
 						P("Page " + (idx+1)),
@@ -42,7 +42,7 @@ export function render(state) {
 							return SPAN(signatoryName + ": " + status + " ");
 						})]),
 					]);
-			})}),
+			})]),
 		]),
 		DIV({class: "thumbnails"}, [localState.templateDocuments && Object.values(localState.templateDocuments).map((document) => {
 			return document.map((page, idx) => {
