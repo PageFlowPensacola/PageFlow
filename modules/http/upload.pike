@@ -263,7 +263,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		}
 		if (!pageref) {
 			werror("No classification found for page %d %O \n", i+1, classification);
-			annotated_contract_pages+=({([ "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
+			annotated_contract_pages+=({(["fields": ({}), "file_page_no": i+1,  "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
 			continue;
 		}
 		//werror("Confidence level for page %d: %f\n", i+1, confidence);
@@ -283,7 +283,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		if (!sizeof(templates[template_id][page_number])) {
 			werror("No rects found for template %d, page %d\n", template_id, page_number);
-			annotated_contract_pages+=({([ "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
+			annotated_contract_pages+=({(["fields": ({}), "file_page_no": i+1, "annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page) ])});
 			continue;
 		}
 
