@@ -280,7 +280,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"file_page_no": i+1,
 			"annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page),
 			"template_id": 0,
-			"template_name": "No template found...",
+			"template_name": "No template found",
 			 ])});
 			 timings["analyze page"] += tm->get();
 			continue;
@@ -391,9 +391,6 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	}
 	upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
-			"count": file_page_count,
-			"pages": ({(["number": i+1, "fields": ({})])}),
-			"current_page": i+1,
 			"step": sprintf("Matched %d pages to templates", file_page_count),
 		])));
 	return jsonify((["documents": annotated_pages_by_template, "confidence": confidence, "rects": rects]));

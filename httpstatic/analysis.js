@@ -33,7 +33,8 @@ export function render(state) {
 				H3(document[0].template_name), document.map((page, idx) => {
 					console.log("Document page", page, idx);
 					return LI([
-						P("Page " + (idx+1)),
+						P([page.template_id && "Document Page " + (idx + 1) + " ",
+						SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)]),
 						DIV([page.fields?.map((field) => {
 							console.log("Field", field, localState.rects);
 							const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
