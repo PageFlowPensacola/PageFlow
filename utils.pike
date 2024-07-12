@@ -231,6 +231,12 @@ __async__ void cleanup() {
 	}
 }
 
+@"End all python processes":
+__async__ void kickpy() {
+	object result = await(Protocols.HTTP.Promise.get_url("http://localhost:8002/kickpy"));
+	write(result->data);
+}
+
 @"Model audit":
 __async__ void model_audit() {
 	// This WILL NOT tell us if there's a template which model hasn't been trained on

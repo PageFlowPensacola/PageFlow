@@ -101,9 +101,21 @@ void count_idle() {
 	}
 }
 
+string kick_python() {
+	// TODO this doesn't tell us what the processes were doing
+	string kicked = sprintf("%d processes\n", sizeof(domain_processes));
+	foreach(domain_processes; string domain; mapping proc){
+		if (sizeof(proc->pending_messages)) kicked += sprintf("\nShortcircuiting %s process\n", domain);
+		proc->pythonstdin->close();
+		kicked += sprintf("\tEnded %s process\n", domain);
+	}
+	return kicked;
+}
+
 protected void create(string name){
 	::create(name);
 	register_bouncer(pythonoutput);
 	remove_call_out(G->G->classipy_idle_callout);
 	G->G->classipy_idle_callout = call_out(count_idle, 300);
+	G->G->kick_python = kick_python;
 }

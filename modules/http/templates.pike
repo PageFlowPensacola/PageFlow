@@ -249,15 +249,13 @@ __async__ void websocket_cmd_delete_template(mapping(string:mixed) conn, mapping
 		FROM domains
 		WHERE name LIKE :domain || '%'", (["domain": conn->group])));
 
-	werror("Domains %O\n", domains);
-
 	foreach(domains, mapping domain) {
 		for (int i = 1; i <= pagecounts[0]->page_count; i++) {
 			werror("Clearing page %O for %s and template %O\n", i, domain->name, msg->id);
 			classipy(domain->name,
 					([
-						"cmd": "train",
-						"pageref": sprintf("%d:%d", msg->id, i),
+						"cmd": "untrain",
+						"pageref_prefix": sprintf("%d:", msg->id),
 					]));
 		}
 	}
