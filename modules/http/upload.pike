@@ -90,8 +90,10 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		ORDER BY LENGTH(name)",
 		(["domain": req->misc->session->domain + "%"])));
 
+	werror("domains: %O\n", domains);
+
 	if (!sizeof(domains) || domains[0]->name != req->misc->session->domain) {
-		// copy into current domain, awaiting the result
+		// copy upstream model into current domain before making the change.
 		await(G->G->DB->run_pg_query(#"
 		UPDATE domains SET ml_model =
 			(SELECT ml_model
@@ -103,6 +105,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		(["domain": req->misc->session->domain])));
 
 		domains += ({(["name": req->misc->session->domain])});
+		werror("Copying for %s %O\n", req->misc->session->domain, domains);
 	}
 
 	foreach(pages; int i; string current_page) {
@@ -127,6 +130,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			"data": page->data, // hocr data
 		]);
 		foreach (domains, mapping domain) {
+			werror("Classifying for %s\n", domain->name);
 			classipy(
 				domain->name,
 				([
@@ -286,10 +290,18 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			continue;
 		}
 		//werror("Confidence level for page %d: %f\n", i+1, confidence);
-		string templateName = await(G->G->DB->run_pg_query(#"
+		array(mapping) matchingTemplates = await(G->G->DB->run_pg_query(#"
 			SELECT name
 			FROM templates
-			WHERE id = :id", (["id": pageref])))[0]->name;
+			WHERE id = :id", (["id": pageref])));
+
+		string templateName = "Unknown";
+
+		if(!sizeof(matchingTemplates)) {
+			continue;
+		}
+
+		templateName = matchingTemplates[0]->name;
 
 		sscanf(pageref, "%d:%d", int template_id, int page_number);
 		if (!templates[template_id]) templates[template_id] = ([]);

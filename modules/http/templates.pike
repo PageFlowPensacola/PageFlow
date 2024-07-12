@@ -233,13 +233,35 @@ __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:m
 mapping(string:mixed)|string|Concurrent.Future handle_update(Protocols.HTTP.Server.Request req, string org, string template) { };
 
 __async__ void websocket_cmd_delete_template(mapping(string:mixed) conn, mapping(string:mixed) msg) {
-
+	werror("Delete template %O\n", msg->id);
 	if (!stringp(conn->group)) return;
 
-	await(G->G->DB->run_pg_query(#"
+	array(mapping) pagecounts = await(G->G->DB->run_pg_query(#"
 		DELETE FROM templates
 		WHERE id = :template
-		AND :domain LIKE domain || '%'", (["domain": conn->group, "template":msg->id])));
+		AND :domain LIKE domain || '%'
+		RETURNING page_count", (["domain": conn->group, "template":msg->id])));
+
+	if (!sizeof(pagecounts) || !pagecounts[0]->page_count) return;
+
+	array(mapping) domains = await(G->G->DB->run_pg_query(#"
+		SELECT name
+		FROM domains
+		WHERE name LIKE :domain || '%'", (["domain": conn->group])));
+
+	werror("Domains %O\n", domains);
+
+	foreach(domains, mapping domain) {
+		for (int i = 1; i <= pagecounts[0]->page_count; i++) {
+			werror("Clearing page %O for %s and template %O\n", i, domain->name, msg->id);
+			classipy(domain->name,
+					([
+						"cmd": "train",
+						"pageref": sprintf("%d:%d", msg->id, i),
+					]));
+		}
+	}
+
 
 	send_updates_all(msg->id);
 	send_updates_all(conn->group);
