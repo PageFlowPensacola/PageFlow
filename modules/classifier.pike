@@ -101,12 +101,17 @@ void count_idle() {
 	}
 }
 
-string kick_python() {
-	// TODO this doesn't tell us what the processes were doing
+string kick_python(string|zero force) {
 	string kicked = sprintf("%d processes\n", sizeof(domain_processes));
 	foreach(domain_processes; string domain; mapping proc){
-		if (sizeof(proc->pending_messages)) kicked += sprintf("\nShortcircuiting %s process\n", domain);
-		proc->pythonstdin->close();
+		if (sizeof(proc->pending_messages)) {
+			if(force) kicked += sprintf("\nShortcircuiting %s process\n", domain);
+			else {
+				kicked += sprintf("\nNot kicking %s process with pending messages (use force to override) %O\n", domain, proc->pending_messages);
+				continue;
+			}
+			proc->pythonstdin->close();
+		}
 		kicked += sprintf("\tEnded %s process\n", domain);
 	}
 	return kicked;

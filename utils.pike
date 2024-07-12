@@ -233,7 +233,8 @@ __async__ void cleanup() {
 
 @"End all python processes":
 __async__ void kickpy() {
-	object result = await(Protocols.HTTP.Promise.get_url("http://localhost:8002/kickpy"));
+	string force = G->G->args->force ? "?force=1" : "";
+	object result = await(Protocols.HTTP.Promise.get_url("http://localhost:8002/kickpy" + force));
 	write(result->data);
 }
 
