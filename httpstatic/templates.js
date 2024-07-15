@@ -1,7 +1,6 @@
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
 const {A, BUTTON, CANVAS, DIV, FIELDSET, FIGCAPTION, FIGURE, FORM, H2, IMG, INPUT, LABEL, LEGEND, LI, OPTION, P, SECTION, SELECT, SPAN, UL} = choc; //autoimport
 import {simpleconfirm} from "./utils.js";
-import * as auth from "./auth.js";
 
 let stateSnapshot = {};
 

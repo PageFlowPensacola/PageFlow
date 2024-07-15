@@ -19,6 +19,11 @@ button {
 	line-height: 1.3;
 }
 
+#user {
+	display: flex;
+	gap: 0.5em;
+}
+
 figure img {
 	border: 2px solid cyan;
 }
@@ -175,6 +180,35 @@ main ul {
 	justify-content: center;
 	align-items: center;
 	padding: 10px;
+}
+
+.delete {
+	cursor: pointer;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: red;
+	color: white;
+	border-radius: 50%;
+	border: 1px solid var(--brand-secondary-light);
+}
+
+.delete:hover {
+	background-color: var(--white);
+	color: var(--highlight);
+	border-radius: 3px;
+}
+
+.delete:hover::after {
+	content: "\00a0 Delete";
+}
+
+.deleteitem {
+	cursor: pointer;
+}
+
+.delete[data-verb]:hover::after {
+	content: "\00a0 " attr(data-verb);
 }
 
 #auditrects {

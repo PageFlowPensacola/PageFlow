@@ -385,6 +385,17 @@ class websocket_handler {
 			if (!replacements->vars->ws_type) replacements->vars->ws_type = ws_type;
 			if (req->misc->channel) replacements->vars->ws_group += "#" + req->misc->channel->userid;
 		}
+		werror("SESSION: %O\n", req->misc->session);
+
+		if(req->misc->session->user_id) {
+			replacements->userform = req->misc->session->email + " <button class='logout delete' data-verb='Logout' href='/logout'>x</a>";
+		} else {
+			replacements->userform = #"<form method=post action='/login'>
+			<label>email: <input type=text name=email></label>
+			<label>pass: <input type=password name=password></label>
+			<button type=submit>Log in</button>
+			</form>";
+		}
 		if (markdown != "") return render_template(markdown, replacements | req->misc->userinfo);
 		return render_template(ws_type + ".md", replacements | req->misc->userinfo);
 	}

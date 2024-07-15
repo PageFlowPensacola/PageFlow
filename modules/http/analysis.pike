@@ -52,6 +52,9 @@ __async__ void 	fetch_template_domain(mapping conn, int group) {
 }
 
 mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req) {
+	if (!req->misc->session->user_id) {
+		return render_template("login.md", (["msg": "You must be logged in to analyze files."]));
+	}
 	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));
 };
 
