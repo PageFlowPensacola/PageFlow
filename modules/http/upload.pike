@@ -193,6 +193,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	// This will store template pages (rects, etc)
 	mapping templates = ([]);
 
+	mapping template_pages = ([]);
+
 	array rects = ({});
 
 	// This will store annotated page images
@@ -263,7 +265,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		array pagerefs = indices(classification->results);
 		array confs = values(classification->results);
 		sort(confs, pagerefs);
-		werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
+		// werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
 		foreach(classification->results; string pgref; float conf) {
 			if (conf > confidence) {
 				pageref = pgref;
@@ -283,7 +285,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"fields": ({}),
 			"file_page_no": i+1,
 			"annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page),
-			"template_id": 0,
+			"template_id": 1<<41,
 			"template_name": "No template found",
 			 ])});
 			 timings["analyze page"] += tm->get();
@@ -291,9 +293,9 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		}
 		//werror("Confidence level for page %d: %f\n", i+1, confidence);
 		array(mapping) matchingTemplates = await(G->G->DB->run_pg_query(#"
-			SELECT name
+			SELECT name, page_count
 			FROM templates
-			WHERE id = :id", (["id": pageref])));
+			WHERE id = :id", (["id": (int) pageref]))); // (int) will disregard colon and anything after it.
 
 		string templateName = "Unknown";
 
@@ -301,6 +303,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			continue;
 		}
 
+		template_pages[pageref] = 1;
+		werror("######Template pages: %O\n", template_pages);
 		templateName = matchingTemplates[0]->name;
 
 		sscanf(pageref, "%d:%d", int template_id, int page_number);
@@ -371,29 +375,50 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				])
 			});
 
-			werror(#"RECT INFO: Template Id: %3d
+			/* werror(#"RECT INFO: Template Id: %3d
 			Template Page no: %2d
 			File Page no: %2d
 			Signatory Id: %2d
 			Transition score: %6d,
 			Calculated transition score: %6d \n", template_id, page_number, i+1,
-			r->template_signatory_id || 0, r->transition_score, box->score);
+			r->template_signatory_id || 0, r->transition_score, box->score); */
 		} // End loop templates[template_id][page_number] (audit_rects) loop.
 		if (page_calculated_transition_score < page_transition_score) {
 			confidence = 0.0;
 		}
+		if (!template_pages[pageref]) {
+			werror("### Template %d, page %d not yet accounted for (%s)\n", template_id, page_number, pageref);
+			annotated_contract_pages+=({
+				([
+					"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
+					"file_page_no": i+1,
+					"fields": field_results,
+					"template_id": template_id,
+					"template_name": templateName,
+					"page_transition_score": page_transition_score,
+					"page_calculated_transition_score": page_calculated_transition_score,
+					"document_page": page_number,
+				])
+			});
+		} else {
+			werror("### Template %d, page %d already accounted for (%s)\n", template_id, page_number, pageref);
+			annotated_contract_pages+=({
+				([
+					"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
+					"file_page_no": i+1,
+					"fields": field_results,
+					"template_id": template_id,
+					"template_name": templateName,
+					"page_transition_score": page_transition_score,
+					"page_calculated_transition_score": page_calculated_transition_score,
+					"error": "Duplicate document page.",
+					"document_page": page_number,
+					"template_id": 1<<40,
+					"template_name": "Duplicate document page.",
+				])
+			});
+		}
 
-		annotated_contract_pages+=({
-			([
-				"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
-				"file_page_no": i+1,
-				"fields": field_results,
-				"template_id": template_id,
-				"template_name": templateName,
-				"page_transition_score": page_transition_score,
-				"page_calculated_transition_score": page_calculated_transition_score,
-			])
-		});
 		timings["analyze page"] += tm->get();
 	} // End of foreach document pages loop.
 	werror("Timings %O\n", timings);
