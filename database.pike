@@ -85,21 +85,22 @@ mapping tables = ([
 	// For each page we need the pageref it was detected as eg: 102:1, 102:2, etc...
 	// Thinking we shouldn't store
 	//
-	/* "uploaded_files": ({
+	"uploaded_files": ({
 		"id SERIAL PRIMARY KEY",
 		"filename text NOT NULL",
+		"page_count smallint",
 		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
 		"pdf_data BYTEA NOT NULL",
 	}),
 	"uploaded_file_pages": ({
 		"file_id int NOT NULL REFERENCES uploaded_files ON DELETE CASCADE",
-		"seq_idx smallint NOT NULL",
+		"seq_idx smallint NOT NULL", // file sequence index
 		"png_data BYTEA NOT NULL",
 		"template_id int REFERENCES templates ON DELETE RESTRICT",
-		"page_number smallint",
+		"page_number smallint", // document page number from classification
 		"ocr_result jsonb",
 		" PRIMARY KEY (file_id, seq_idx)",
-	}), */
+	}),
 ]);
 
 array(mapping) parse_mysql_result(array(mapping) result) {

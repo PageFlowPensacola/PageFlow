@@ -188,12 +188,17 @@ __async__ string find_closest_domain_with_model(string domain) {
 
 __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("contract upload %O\n", upload);
+
+	object analysis = G->G->websocket_types->analysis;
+
 	object tm = System.Timer();
 
 	// This will store template pages (rects, etc)
 	mapping templates = ([]);
 
 	mapping template_pages = ([]);
+
+	string fileid = msg->file_id;
 
 	array rects = ({});
 
@@ -202,8 +207,22 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	mapping timings = ([]);
 
+	G->G->DB->run_pg_query(#"
+		INSERT INTO uploaded_files
+		pdf_data
+		VALUES (:pdf_data)", (["pdf_data": upload->body_raw]))
+		->then() {
+			analysis->send_updates_all(fileid);
+		};
+
 	array file_pages = await(pdf2png(req->body_raw));
 	timings["pdf2png"] = tm->get();
+
+	// update uploaded files with page_count
+	G->G->DB->run_pg_query(#"
+		UPDATE uploaded_files
+		SET page_count = :page_count
+		WHERE id = :file_id", (["page_count": sizeof(file_pages), "file_id": fileid]));
 
 	constant IS_A_SIGNATURE = 75;
 
@@ -211,11 +230,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	int file_page_count = sizeof(file_pages);
 
-	upload->conn->sock->send_text(Standards.JSON.encode(
-		(["cmd": "upload_status",
-		"count": file_page_count,
-		"step": "Received PDF",
-	])));
+	analysis->send_updates_all();
 
 	string domain = await(find_closest_domain_with_model(req->misc->session->domain));
 
@@ -229,13 +244,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
 
-		upload->conn->sock->send_text(Standards.JSON.encode(
+		/* upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
 			"count": file_page_count,
 			"pages": ({(["number": i+1, "fields": ({})])}),
 			"current_page": i+1,
 			"step": "Analyzing page " + (i+1) + " of " + file_page_count + " pages.",
-			])));
+			]))); */
 
 		mapping page = await(analyze_page(current_page, img->xsize, img->ysize));
 		timings["Tesseract"] += tm->get();
@@ -244,13 +259,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"data": page->data,
 		]);
 
-		upload->conn->sock->send_text(Standards.JSON.encode(
+		/* upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
 			"count": file_page_count,
 			"pages": ({(["number": i+1, "fields": ({})])}),
 			"current_page": i+1,
 			"step": "Classifying page " + (i+1) + " of " + file_page_count + " pages.",
-		])));
+		]))); */
 
 		mapping classification = await(classipy(
 				domain,
@@ -274,22 +289,31 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		}
 		if (!pageref || confidence < 0.5) {
 			werror("No classification found for page %d %O \n", i+1, classification);
-			upload->conn->sock->send_text(Standards.JSON.encode(
-				(["cmd": "upload_status",
-				"count": file_page_count,
-				"pages": ({(["number": i+1, "fields": ({})])}),
-				"current_page": i+1,
-				"step": sprintf("No document template found for file page %d", i+1),
-			])));
-			annotated_contract_pages+=({(["error": "No document template found for page.",
-			"fields": ({}),
-			"file_page_no": i+1,
-			"annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page),
-			"template_id": 1<<41,
-			"template_name": "No template found",
-			 ])});
-			 timings["analyze page"] += tm->get();
-			continue;
+
+			G->G->DB->run_pg_query(#"
+			INSERT INTO uploaded_file_pages
+				(file_id, seq_idx, png_data, ocr_result)
+			VALUES
+				(:file_id, :seq_idx, :png_data, :ocr_result)",
+				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "ocr_result": page->data]));
+
+				/* upload->conn->sock->send_text(Standards.JSON.encode(
+					(["cmd": "upload_status",
+					"count": file_page_count,
+					"pages": ({(["number": i+1, "fields": ({})])}),
+					"current_page": i+1,
+					"step": sprintf("No document template found for file page %d", i+1),
+				]))); */
+
+				annotated_contract_pages+=({(["error": "No document template found for page.",
+				"fields": ({}),
+				"file_page_no": i+1,
+				"annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page),
+				"template_id": 1<<41,
+				"template_name": "No template found",
+				])});
+				timings["analyze page"] += tm->get();
+				continue;
 		}
 		//werror("Confidence level for page %d: %f\n", i+1, confidence);
 		array(mapping) matchingTemplates = await(G->G->DB->run_pg_query(#"
@@ -305,11 +329,18 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		template_pages[pageref] = 1;
 		werror("######Template pages: %O\n", template_pages);
-		templateName = matchingTemplates[0]->name;
+		templateName = matchingTemplates[0]->name; // assume it has a name at this point
 
 		sscanf(pageref, "%d:%d", int template_id, int page_number);
+		G->G->DB->run_pg_query(#"
+			INSERT INTO uploaded_file_pages
+				(file_id, seq_idx, png_data, template_id, page_number, ocr_result)
+			VALUES
+				(:file_id, :seq_idx, :png_data, :template_id, :page_number, :ocr_result)",
+				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "template_id": template_id, "page_number": page_number, "ocr_result": page->data]));
+
 		if (!templates[template_id]) templates[template_id] = ([]);
-		if (!templates[template_id][page_number]) {
+		if (!templates[template_id][page_number]) { // if not a duplicate
 			// TODO stop getting template name here as getting separately anyway.
 			rects += templates[template_id][page_number] = await(G->G->DB->run_pg_query(#"
 				SELECT x1, y1, x2, y2, template_signatory_id, transition_score, ts.name as name, t.name as Template

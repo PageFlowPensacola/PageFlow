@@ -24,6 +24,10 @@ on("click", ".logout", e =>
 			.then(r => location.reload());
 });
 
+export function chggrp(grp) {
+	ws_sync.send({cmd: "chgrp", group: ws_group = grp});
+}
+
 function ensure_simpleconfirm_dlg() {
 	//Setting the z-index is necessary only on older Firefoxes that don't support true showModal()
 	if (!DOM("#simpleconfirmdlg")) document.body.appendChild(DIALOG({id: "simpleconfirmdlg", style: "z-index: 999"}, SECTION([

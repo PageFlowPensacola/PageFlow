@@ -63,7 +63,6 @@ export function render(state) {
 on("change", "#newFile", async (e) => {
 	e.preventDefault();
 	submittedFile = DOM("#newFile").files[0];
-	let org_id = auth.get_org_id();
 	ws_sync.send({
 		"cmd": "upload",
 		"name": DOM("#newFile").value,
@@ -77,12 +76,11 @@ on("change", "#newFile", async (e) => {
 });
 
 export async function sockmsg_upload(msg) {
+	ws_sync.send({cmd: "chgrp", group: msg.upload_id});
 	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",
-		headers: {
-			Authorization: "Bearer " + auth.get_token()
-		},
-		body: submittedFile
+		body: submittedFile,
+		filename: submittedFile.name,
 	});
 	const json = await resp.json();
 	console.log("Upload response", json);

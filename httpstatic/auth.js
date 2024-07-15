@@ -39,10 +39,6 @@ export function get_user() {
 	return user;
 }
 
-export function chggrp(grp) {
-	ws_sync.send({cmd: "chgrp", group: ws_group = grp});
-}
-
 export async function get_user_details() {
 	if (!user?.token) {
 		return false;

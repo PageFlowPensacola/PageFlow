@@ -6,7 +6,6 @@
 //destination.
 import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
 const {BUTTON, FORM, INPUT, LABEL} = choc; //autoimport
-import * as auth from "./auth.js";
 
 let default_handler = null;
 let send_socket, send_sockets = { }; //If populated, send() is functional.
@@ -37,7 +36,6 @@ export function connect(group, handler)
 		reconnect_delay = 250;
 		verbose("conn", "Socket connection established.");
 		const msg = {cmd: "init", type: handler.ws_type || ws_type, group};
-		msg.auth = auth.get_token();
 		if (redirect_host && redirect_xfr) msg.xfr = redirect_xfr;
 		verbose("Sending init message:", msg);
 		socket.send(JSON.stringify(msg));
@@ -140,23 +138,8 @@ export function connect(group, handler)
 }
 //When ready, import the handler code. It'll be eg "/subpoints.js" but with automatic mtime handling.
 async function init() {
-	/* if (!await auth.get_user_details()) {
-		set_content("#pageheader #user",
-			FORM({id: "loginform"}, [
-				LABEL([
-					"Email: ", INPUT({name: "email"})
-				]),
-				LABEL([
-					"Password: ", INPUT({type: "password", name: "password"})
-				]),
-				BUTTON("Log in"),
-			])
-		);
-	} else { // no user token end
-		set_content("#user", ["Welcome, ", auth.get_user().email, " ", BUTTON({id: "logout"}, "Log out")]); */
-		default_handler = await import(ws_code);
-		connect(ws_group);
-	//}
+	default_handler = await import(ws_code);
+	connect(ws_group);
 }
 
 if (document.readyState !== "loading") init();

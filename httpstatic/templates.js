@@ -316,16 +316,12 @@ on("submit", "#template_submit", async function (e) {
 	const fileName = DOM("#newTemplateName").value;
 	localState.uploading++;
 	render(stateSnapshot);
-	let org_id = auth.get_org_id();
-	ws_sync.send({"cmd": "upload", "name": fileName, "org": org_id});
+	ws_sync.send({"cmd": "upload", "name": fileName});
 });
 
 export async function sockmsg_upload(msg) {
 	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",
-		headers: {
-			Authorization: "Bearer " + auth.get_token()
-		},
 		body: submittedFile
 	});
 	console.log("Upload response", resp);
