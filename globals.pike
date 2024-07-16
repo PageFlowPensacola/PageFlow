@@ -206,7 +206,7 @@ Concurrent.Future run_promise(string|array(string) cmd, mapping modifiers = ([])
   return promise->future();
 }
 
-__async__ mapping analyze_page(string page_data, int imgwidth, int imgheight) {
+__async__ array analyze_page(string page_data, int imgwidth, int imgheight) {
 	//Bounds are in the form of left, top, right, bottom
 	// where left is the number of px from the left edge of the image
 	// and top is the number of px from the top edge of the image
@@ -221,34 +221,23 @@ __async__ mapping analyze_page(string page_data, int imgwidth, int imgheight) {
 	// as opposed to individual characters.
 	mapping hocr = await(run_promise(({"tesseract", "-", "-", "hocr"}), (["stdin": page_data])));
 	array data = Parser.XML.Simple()->parse(hocr->stdout){
-		// implicit lambda
-		[string type, string name, mapping attr, mixed data, mixed loc] = __ARGS__;
-		switch (type) {
-			case "<?xml": return 0;
-			case "<": return 0;
-			case "":
-				data = String.trim(data);
-				return data != "" && data;
-			case ">":
-			// Ensure we always get back an array of arrays, but flatten to single array.
-			if (name == "body") return Array.arrayify(data[*]) * ({ });
-			if (name == "html") return data * ({ });
-				switch (attr->class) {
-					case "ocr_page": return data;
-					case "ocr_carea": {
-						sscanf(attr->title, "%*sbbox %d %d %d %d", int l, int t, int r, int b);
-						bounds->left = min(bounds->left, l); bounds->top = min(bounds->top, t);
-						bounds->right = max(bounds->right, r); bounds->bottom = max(bounds->bottom, b);
-						return data * "\n\n";
-					}
-					case "ocr_par": return data * "\n";
-					case "ocr_line": return data * " ";
-					case "ocrx_word": return data * " ";
-					default: return 0;
+		[string type, string name, mapping(string:string) attr, mixed data, mixed loc] = __ARGS__;
+		switch(type) {
+			case "": data = String.trim(data); return data != "" && data;
+			case "<>": case ">":
+				if (arrayp(data) && sizeof(data) == 1 && stringp(data[0])) {
+					//Parse out the bounding box (eg "bbox 100 100 400 200")
+					array pos;
+					foreach (attr->title / "; ", string thing)
+						if (has_prefix(thing, "bbox ")) pos = (array(int))(thing / " ")[1..];
+					return (["text": data[0], "pos": pos]);
 				}
+				if (arrayp(data)) return Array.arrayify(data[*]) * ({ });
+				return data;
+			default: return 0;
 		}
-	} * ({ }); // then flatten at the end
-	return (["bounds": bounds, "data": data]);
+	}[0];
+	return data;
 }
 
 mapping calculate_transition_score(mapping r, mapping bounds, object grey) {

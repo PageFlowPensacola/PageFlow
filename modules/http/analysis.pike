@@ -4,16 +4,16 @@ constant markdown = "# Analysis\n\n";
 
 __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:mixed) msg){
 	// @TODO actually create a group for this once we're actually saving something
-
+	werror("MSG: %O\n", msg);
 	string fileid = await(G->G->DB->run_pg_query(#"
 		INSERT INTO uploaded_files
-		filename
+		(filename)
 		VALUES (:filename)
-		returning id", (["filename": msg->filename])))[0]->id;
+		returning id", (["filename": msg->name])))[0]->id;
 
 	string upload_id = G->G->prepare_upload(
 		"contract", ([
-			"template_id": msg->template,
+			"template_id": msg->template, // TODO this is no longer relevant
 			"file_id": fileid,
 			"conn": conn]));
 	conn->sock->send_text(Standards.JSON.encode((["cmd": "upload", "upload_id": upload_id, "group": fileid])));

@@ -90,7 +90,7 @@ mapping tables = ([
 		"filename text NOT NULL",
 		"page_count smallint",
 		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
-		"pdf_data BYTEA NOT NULL",
+		"pdf_data BYTEA",
 	}),
 	"uploaded_file_pages": ({
 		"file_id int NOT NULL REFERENCES uploaded_files ON DELETE CASCADE",
@@ -344,9 +344,15 @@ __async__ void compare_transition_scores(int template_id, int page_number, int f
 
 	mapping img = Image.PNG._decode(page[0]->page_data);
 	object grey = img->image->grey();
-	mapping bounds = await(analyze_page(page[0]->page_data, img->xsize, img->ysize))->bounds;
+	array ocr_data = await(analyze_page(page[0]->page_data, img->xsize, img->ysize));
 	foreach (rects, mapping r) {
-		int calculated_transition_score = calculate_transition_score(r, bounds, grey)->score;
+		int calculated_transition_score = calculate_transition_score(r,
+		([
+			"left": min(@ocr_data->pos[0]),
+			"right": max(@ocr_data->pos[2]),
+			"top": min(@ocr_data->pos[1]),
+			"bottom": max(@ocr_data->pos[3])
+		]), grey)->score;
 
 		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", template_id, page_number, r->template_signatory_id || 0, r->transition_score, calculated_transition_score);
 	}

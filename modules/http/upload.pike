@@ -78,7 +78,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	array pages = await(pdf2png(req->body_raw));
 
-	// hand page->data off to model
+	// hand ocr_data off to model
 	// get the model for current domain from the db
 	// Fetch all models for this domain and its subdomains
 	// and train on all of them.
@@ -122,12 +122,11 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			img->image = blank->paste_mask(img->image, img->alpha);
 		}
 		werror("\t[%6.3f] Calculating bounds\n", tm->peek());
-		mapping page = await(analyze_page(current_page, img->xsize, img->ysize));
-		mapping bounds = page->bounds;
+		array ocr_data = await(analyze_page(current_page, img->xsize, img->ysize));
 		mapping json = ([
 			"template_id": upload->template_id,
 			"page": i+1,
-			"data": page->data, // hocr data
+			"data": ocr_data, // hocr data
 		]);
 		foreach (domains, mapping domain) {
 			werror("Classifying for %s\n", domain->name);
@@ -135,7 +134,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 				domain->name,
 				([
 					"cmd": "train",
-					"text": page->data * "\n\n",
+					"text": ocr_data * " ",
 					"pageref": upload->template_id + ":" + (i+1),
 				]));
 		}
@@ -143,12 +142,13 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 		// Rescale current_page
 		object scaled = img->image;
+		int left = min(@ocr_data->pos[0]);
+		int top = min(@ocr_data->pos[1]);
+		int right = max(@ocr_data->pos[2]);
+		int bottom = max(@ocr_data->pos[3]);
 		while(scaled->xsize() > 1000) {
 			scaled = scaled->scale(0.5);
-			bounds->left /= 2;
-			bounds->right /= 2;
-			bounds->top /= 2;
-			bounds->bottom /= 2;
+			left /= 2; top /= 2; right /= 2; bottom /= 2;
 		}
 		werror("\t[%6.3f] Scaled\n", tm->peek());
 		// Encode the scaled image
@@ -163,7 +163,12 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 			(:template_id, :page_number, :page_data, :left, :right, :top, :bottom)
 		", ([
 			"template_id":upload->template_id, "page_number":i+1, "page_data":scaled_png,
-			]) | bounds));
+			// To be replaced when using Rosuav imgmap code
+			"left":min(@ocr_data->pos[0]),
+			"right":max(@ocr_data->pos[2]),
+			"top":min(@ocr_data->pos[1]),
+			"bottom":max(@ocr_data->pos[3])
+			])));
 	} // end iterate over pages
 
 	// Update the template record with the number of pages
@@ -198,19 +203,19 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	mapping template_pages = ([]);
 
-	string fileid = msg->file_id;
+	string fileid = upload->file_id;
 
 	array rects = ({});
 
 	// This will store annotated page images
-	array annotated_contract_pages = ({});
+	array file_page_details = ({});
 
 	mapping timings = ([]);
 
 	G->G->DB->run_pg_query(#"
-		INSERT INTO uploaded_files
-		pdf_data
-		VALUES (:pdf_data)", (["pdf_data": upload->body_raw]))
+		UPDATE uploaded_files
+		SET pdf_data = :pdf_data
+		WHERE id = :fileid", (["pdf_data": upload->body_raw, "fileid": fileid]))
 		->then() {
 			analysis->send_updates_all(fileid);
 		};
@@ -230,7 +235,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	int file_page_count = sizeof(file_pages);
 
-	analysis->send_updates_all();
+	analysis->send_updates_all(fileid);
 
 	string domain = await(find_closest_domain_with_model(req->misc->session->domain));
 
@@ -252,11 +257,11 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"step": "Analyzing page " + (i+1) + " of " + file_page_count + " pages.",
 			]))); */
 
-		mapping page = await(analyze_page(current_page, img->xsize, img->ysize));
+		array ocr_results = await(analyze_page(current_page, img->xsize, img->ysize));
+
 		timings["Tesseract"] += tm->get();
-		mapping bounds = page->bounds;
 		mapping json = ([
-			"data": page->data,
+			"data": ocr_results,
 		]);
 
 		/* upload->conn->sock->send_text(Standards.JSON.encode(
@@ -271,7 +276,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				domain,
 				([
 					"cmd": "classify",
-					"text": page->data * "\n\n",
+					"text": ocr_results->text * " ",
 				])));
 		timings["classify_page"] += tm->get();
 
@@ -295,7 +300,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				(file_id, seq_idx, png_data, ocr_result)
 			VALUES
 				(:file_id, :seq_idx, :png_data, :ocr_result)",
-				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "ocr_result": page->data]));
+				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "ocr_result": Standards.JSON.encode(ocr_results)]));
 
 				/* upload->conn->sock->send_text(Standards.JSON.encode(
 					(["cmd": "upload_status",
@@ -305,10 +310,10 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 					"step": sprintf("No document template found for file page %d", i+1),
 				]))); */
 
-				annotated_contract_pages+=({(["error": "No document template found for page.",
+				file_page_details+=({(["error": "No document template found for page.",
 				"fields": ({}),
 				"file_page_no": i+1,
-				"annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page),
+				"img":"data:image/png;base64," + MIME.encode_base64(current_page),
 				"template_id": 1<<41,
 				"template_name": "No template found",
 				])});
@@ -337,7 +342,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				(file_id, seq_idx, png_data, template_id, page_number, ocr_result)
 			VALUES
 				(:file_id, :seq_idx, :png_data, :template_id, :page_number, :ocr_result)",
-				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "template_id": template_id, "page_number": page_number, "ocr_result": page->data]));
+				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "template_id": template_id, "page_number": page_number, "ocr_result": Standards.JSON.encode(ocr_results)]));
+		// Send back a message so we can fetch the annotated templates
 
 		if (!templates[template_id]) templates[template_id] = ([]);
 		if (!templates[template_id][page_number]) { // if not a duplicate
@@ -355,17 +361,17 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		if (!sizeof(templates[template_id][page_number])) {
 			werror("No rects found for template %d, page %d\n", template_id, page_number);
-			annotated_contract_pages+=({([
+			file_page_details+=({([
 				"fields": ({}),
 				"file_page_no": i+1,
-				"annotated_img":"data:image/png;base64," + MIME.encode_base64(current_page),
+				"img":"data:image/png;base64," + MIME.encode_base64(current_page),
 				"template_id": template_id,
 				"template_name": templateName,
 			])});
 			timings["analyze page"] += tm->get();
 			continue;
 		}
-
+/*
 		object grey = img->image->grey();
 
 		int left = bounds->left;
@@ -404,7 +410,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 					"signatory": r->template_signatory_id,
 					"status": (difference >= 100) ? "Signed" : (difference >= 25) ? "Unclear" : "Unsigned",
 				])
-			});
+			}); */
 
 			/* werror(#"RECT INFO: Template Id: %3d
 			Template Page no: %2d
@@ -412,14 +418,14 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			Signatory Id: %2d
 			Transition score: %6d,
 			Calculated transition score: %6d \n", template_id, page_number, i+1,
-			r->template_signatory_id || 0, r->transition_score, box->score); */
+			r->template_signatory_id || 0, r->transition_score, box->score);
 		} // End loop templates[template_id][page_number] (audit_rects) loop.
 		if (page_calculated_transition_score < page_transition_score) {
 			confidence = 0.0;
-		}
-		if (!template_pages[pageref]) {
+		}*/
+		/* if (!template_pages[pageref]) {
 			werror("### Template %d, page %d not yet accounted for (%s)\n", template_id, page_number, pageref);
-			annotated_contract_pages+=({
+			file_page_details+=({
 				([
 					"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
 					"file_page_no": i+1,
@@ -448,20 +454,20 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 					"template_name": "Duplicate document page.",
 				])
 			});
-		}
+		}  */
 
 		timings["analyze page"] += tm->get();
 	} // End of foreach document pages loop.
 	werror("Timings %O\n", timings);
 	mapping annotated_pages_by_template = ([]);
-	foreach(annotated_contract_pages, mapping page) {
+	foreach(file_page_details, mapping page) {
 		annotated_pages_by_template[(string) page->template_id] += ({page});
 	}
 	upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
 			"step": sprintf("Matched %d pages to templates", file_page_count),
 		])));
-	return jsonify((["documents": annotated_pages_by_template, "confidence": confidence, "rects": rects]));
+	return jsonify((["documents": annotated_pages_by_template, "confidence": confidence]));
 }
 
 string prepare_upload(string type, mapping info) {

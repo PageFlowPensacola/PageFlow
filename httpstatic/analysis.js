@@ -65,7 +65,7 @@ on("change", "#newFile", async (e) => {
 	submittedFile = DOM("#newFile").files[0];
 	ws_sync.send({
 		"cmd": "upload",
-		"name": DOM("#newFile").value,
+		"name": submittedFile.name,
 	});
 	localState.step = "Uploading";
 	localState.confidence = undefined;
@@ -80,7 +80,6 @@ export async function sockmsg_upload(msg) {
 	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",
 		body: submittedFile,
-		filename: submittedFile.name,
 	});
 	const json = await resp.json();
 	console.log("Upload response", json);
