@@ -31,6 +31,8 @@ string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed)
 		}
 	} // else group must be a template id
 
+	/*
+	@TODO eventually reenstate some validation here
 	if (!conn->template_domains) conn->template_domains = ([]);
 	string domain = conn->template_domains[msg->group];
 	if (domain) {
@@ -41,7 +43,8 @@ string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed)
 		}
 	}
 	fetch_template_domain(conn, msg->group);
-	return "";
+	return ""; */
+	// implicitly return 0
 }
 
 __async__ void 	fetch_template_domain(mapping conn, int group) {
