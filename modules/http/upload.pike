@@ -224,8 +224,6 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			analysis->send_updates_all(fileid);
 		};
 
-	constant IS_A_SIGNATURE = 75;
-
 	bool confidence = 1;
 
 	int file_page_count = sizeof(file_pages);
@@ -366,46 +364,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			timings["analyze page"] += tm->get();
 			continue;
 		}
-/*
-		object grey = img->image->grey();
-
-		int left = bounds->left;
-		int top = bounds->top;
-		int right = bounds->right;
-		int bottom = bounds->bottom;
-
-		img->image->setcolor(@bbox_color);
-		img->image->line(left, top, right, top);
-		img->image->line(right, top, right, bottom);
-		img->image->line(right, bottom, left, bottom);
-		img->image->line(left, bottom, left, top);
-		img->image->line(left, top, right, bottom);
-		img->image->line(right, top, left, bottom);
-		int page_transition_score = 0;
-		int page_calculated_transition_score = 0;
-		array field_results = ({});
-		foreach (templates[template_id][page_number] || ({}), mapping r) {
-			mapping box = calculate_transition_score(r, bounds, grey);
-
-			img->image->setcolor(@audit_rect_color, 0);
-			img->image->line(box->x1, box->y1, box->x2, box->y1);
-			img->image->line(box->x2, box->y1, box->x2, box->y2);
-			img->image->line(box->x2, box->y2, box->x1, box->y2);
-			img->image->line(box->x1, box->y2, box->x1, box->y1);
-
-			int alpha = limit(16, (box->score - r->transition_score) * 255 / IS_A_SIGNATURE, 255);
-
-			img->image->box(box->x1, box->y1, box->x2, box->y2, 0, 192, 192, 255 - alpha);
-
-			page_transition_score += r->transition_score;
-			page_calculated_transition_score += box->score;
-			int difference = abs(r->transition_score - box->score);
-			field_results += ({
-				([
-					"signatory": r->template_signatory_id,
-					"status": (difference >= 100) ? "Signed" : (difference >= 25) ? "Unclear" : "Unsigned",
-				])
-			}); */
+		// maybe eventually calculate transition scores HERE
 
 			/* werror(#"RECT INFO: Template Id: %3d
 			Template Page no: %2d

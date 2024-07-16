@@ -74,6 +74,7 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));
 };
 
+
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	if (group == "" || stringp(group)) {
 		return ([]);
