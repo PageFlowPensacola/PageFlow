@@ -76,13 +76,12 @@ on("change", "#newFile", async (e) => {
 });
 
 export async function sockmsg_upload(msg) {
-	ws_sync.send({cmd: "chgrp", group: msg.upload_id});
+	ws_sync.send({cmd: "chgrp", group: msg.group});
 	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",
 		body: submittedFile,
 	});
 	const json = await resp.json();
-	console.log("Upload response", json);
 	localState.templateDocuments = json.documents;
 	localState.confidence = json.confidence;
 	localState.rects = json.rects;
