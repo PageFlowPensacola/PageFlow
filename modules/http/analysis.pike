@@ -75,7 +75,6 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 };
 
 __async__ mapping get_state(string|int group, string|void id, string|void type){
-	werror("\e[1;3mget_state: %O %O %O\e[0m\n", group, id, type);
 	if (group == "" || stringp(group)) {
 		return ([]);
 	}
@@ -88,6 +87,5 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
 		FROM uploaded_file_pages
 		WHERE file_id = :id", (["id": group]))));
-		werror("pages: %O\n", pages);
 	return (["file":file[0], "pages":pages]);
 }
