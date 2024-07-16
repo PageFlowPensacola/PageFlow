@@ -4,8 +4,7 @@ constant markdown = "# Analysis\n\n";
 
 __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:mixed) msg){
 	// @TODO actually create a group for this once we're actually saving something
-	werror("MSG: %O\n", msg);
-	string fileid = await(G->G->DB->run_pg_query(#"
+	int fileid = await(G->G->DB->run_pg_query(#"
 		INSERT INTO uploaded_files
 		(filename)
 		VALUES (:filename)
@@ -65,12 +64,27 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	if (!req->misc->session->user_id) {
 		return render_template("login.md", (["msg": "You must be logged in to analyze files."]));
 	}
+	int fileid = (int) req->variables->id;
+	if (fileid) {
+		return render(req, (["vars": (["ws_group": fileid])]));
+	}
 	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));
 };
 
 __async__ mapping get_state(string|int group, string|void id, string|void type){
-	werror("get_state: %O %O %O\n", group, id, type);
-	// BROKEN.
-	array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
-	return (["templates":templates]);
+	werror("\e[1;3mget_state: %O %O %O\e[0m\n", group, id, type);
+	if (group == "" || stringp(group)) {
+		return ([]);
+	}
+	// Must have an analysis set in mind
+	array(mapping) file = await((G->G->DB->run_pg_query(#"
+		SELECT filename, page_count, created_at as created
+		FROM uploaded_files
+		WHERE id = :id", (["id": group]))));
+	array(mapping) pages = await((G->G->DB->run_pg_query(#"
+		SELECT png_data, template_id, page_number, ocr_result, seq_idx
+		FROM uploaded_file_pages
+		WHERE file_id = :id", (["id": group]))));
+		werror("pages: %O\n", pages);
+	return (["file":file[0], "pages":pages]);
 }
