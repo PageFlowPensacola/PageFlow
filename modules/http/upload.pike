@@ -212,22 +212,17 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	mapping timings = ([]);
 
-	G->G->DB->run_pg_query(#"
-		UPDATE uploaded_files
-		SET pdf_data = :pdf_data
-		WHERE id = :fileid", (["pdf_data": upload->body_raw, "fileid": fileid]))
-		->then() {
-			analysis->send_updates_all(fileid);
-		};
-
 	array file_pages = await(pdf2png(req->body_raw));
 	timings["pdf2png"] = tm->get();
 
 	// update uploaded files with page_count
 	G->G->DB->run_pg_query(#"
 		UPDATE uploaded_files
-		SET page_count = :page_count
-		WHERE id = :file_id", (["page_count": sizeof(file_pages), "file_id": fileid]));
+		SET page_count = :page_count, pdf_data = :pdf_data
+		WHERE id = :file_id", (["pdf_data": req->body_raw, "page_count": sizeof(file_pages), "file_id": fileid]))
+		->then() {
+			analysis->send_updates_all(fileid);
+		};
 
 	constant IS_A_SIGNATURE = 75;
 
@@ -463,10 +458,10 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	foreach(file_page_details, mapping page) {
 		annotated_pages_by_template[(string) page->template_id] += ({page});
 	}
-	upload->conn->sock->send_text(Standards.JSON.encode(
+	/* upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",
 			"step": sprintf("Matched %d pages to templates", file_page_count),
-		])));
+		]))); */
 	return jsonify((["documents": annotated_pages_by_template, "confidence": confidence]));
 }
 
