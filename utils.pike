@@ -149,15 +149,15 @@ __async__ void tesseract(){
 }
 
 @"Test the classifier":
-Concurrent.Future ml() {
+__async__ void ml() {
 	string domain = "com.pageflow.tagtech.dunder-mifflin.";
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
 
-	return classipy(domain,
+	werror("Result: %O\n", await(classipy(domain,
 	([
 		"cmd": "classify",
-		"text": "This agreement does not create any agency or partnership relationship. This agreementis not assignable or transferable",
-	]));
+		"text": "hereby certify that to the best of my knowledge the odometer reading reflects the amount of mileage ni excess of its mechanical limits.",
+	]))));
 }
 
 @"Update database schema":
