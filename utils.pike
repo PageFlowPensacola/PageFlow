@@ -195,6 +195,10 @@ __async__ void cleanup() {
 		"cmd": "pagerefs",
 	])));
 	array templateids = (result->pagerefs[*] / ":")[*][0];
+	if (!sizeof(templateids)) {
+		werror("No templates found for %O\n", domain);
+		return;
+	}
 
 	array(mapping) going = await(G->G->DB->run_pg_query("values " + sprintf("(%s)", templateids[*]) * ", " + " except select id from templates"));
 	multiset gone = (multiset) going->column1;
