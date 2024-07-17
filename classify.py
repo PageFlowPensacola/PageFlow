@@ -43,7 +43,7 @@ try:
 			print(json.dumps({"status": "ok", "msgid": msg["msgid"],
 				"model": base64.b64encode(pickle.dumps(model)).decode("utf-8")}))
 		elif (msg["cmd"] == "untrain"):
-			for pageref in model.steps['nb'].class_counts:
+			for pageref in list(model.steps['nb'].class_counts):
 				if pageref.startswith(msg["pageref_prefix"]):
 					del model.steps['nb'].class_counts[pageref]
 			print(json.dumps({"status": "ok", "msgid": msg["msgid"],
