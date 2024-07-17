@@ -250,7 +250,7 @@ __async__ void websocket_cmd_delete_template(mapping(string:mixed) conn, mapping
 	array(mapping) domains = await(G->G->DB->run_pg_query(#"
 		SELECT name
 		FROM domains
-		WHERE name LIKE :domain || '%'", (["domain": conn->group])));
+		WHERE name LIKE :domain || '%' AND ml_model IS NOT NULL", (["domain": conn->group])));
 
 	foreach(domains, mapping domain) {
 		for (int i = 1; i <= pagecounts[0]->page_count; i++) {
