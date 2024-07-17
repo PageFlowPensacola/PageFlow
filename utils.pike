@@ -209,8 +209,8 @@ __async__ void cleanup() {
 			werror("Template %d is gone\n", template);
 			await(classipy(domain,
 				([
-					"cmd": "train",
-					"pageref": pageref,
+					"cmd": "untrain",
+					"pageref_prefix": ((int) pageref) + ":",
 				])));
 		}
 	}
