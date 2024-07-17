@@ -163,6 +163,10 @@ Log/persist process updates
 ## DATABASE
 Deal with table updates where a new table depends on another new table
 
+There seems to be a LOCK held when needs to be addressed.
+
+### Something critically wrong. Failing to rollback after an exception.
+
 ## FOR July 18th Demo
 Abridged Deal Jacket (six or seven pages)
 	* one digitally signed

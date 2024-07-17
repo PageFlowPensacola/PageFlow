@@ -207,15 +207,6 @@ Concurrent.Future run_promise(string|array(string) cmd, mapping modifiers = ([])
 }
 
 __async__ array analyze_page(string page_data, int imgwidth, int imgheight) {
-	//Bounds are in the form of left, top, right, bottom
-	// where left is the number of px from the left edge of the image
-	// and top is the number of px from the top edge of the image
-	// and right is the number of px from the _left_ edge of the image
-	// and bottom is the number of px from the _top_ edge of the image.
-	// Returned in px coordinates
-	mapping bounds = ([]);
-	bounds->left = imgwidth;
-	bounds->top = imgheight;
 	// Maybe output tesseract as hocr instead of makebox, which
 	// gives a list of "words", per line, with bounding boxes
 	// as opposed to individual characters.

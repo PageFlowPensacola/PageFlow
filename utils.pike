@@ -96,25 +96,6 @@ __async__ void compare_scores() {
 	await(G->G->DB->compare_transition_scores(@args));
 }
 
-@"Update page bounds":
-__async__ void update_page_bounds() {
-	werror("Updating page bounds\n");
-	array(mapping) pages = await(G->G->DB->run_pg_query(#"
-			SELECT template_id, page_number, page_data
-			FROM template_pages
-			WHERE pxleft IS NULL"));
-
-	foreach(pages, mapping page) {
-		mapping img = Image.PNG._decode(page->page_data);
-		mapping bounds = await(analyze_page(page->page_data, img->xsize, img->ysize))->bounds;
-		await(G->G->DB->run_pg_query(#"
-				UPDATE template_pages
-				SET pxleft = :left, pxright = :right, pxtop = :top, pxbottom = :bottom
-				WHERE template_id = :template_id
-				AND page_number = :page_number",
-			(["template_id": page->template_id, "page_number": page->page_number]) | bounds));
-	}
-}
 
 @"Tesseract and parse HOCR on a PNG file named annoteted.png":
 __async__ void tesseract(){

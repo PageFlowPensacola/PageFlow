@@ -107,8 +107,7 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		domains += ({(["name": req->misc->session->domain])});
 		werror("Copying for %s %O\n", req->misc->session->domain, domains);
 	}
-
-	foreach(pages; int i; string current_page) {
+foreach(pages; int i; string current_page) {
 		// https://pike.lysator.liu.se/generated/manual/modref/ex/predef_3A_3A/Image/Image.html#Image
 		// object page = Image.PNG.decode(current_page);
 
@@ -123,29 +122,25 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 		}
 		werror("\t[%6.3f] Calculating bounds\n", tm->peek());
 		array ocr_data = await(analyze_page(current_page, img->xsize, img->ysize));
-		mapping json = ([
-			"template_id": upload->template_id,
-			"page": i+1,
-			"data": ocr_data, // hocr data
-		]);
 		foreach (domains, mapping domain) {
 			werror("Classifying for %s\n", domain->name);
 			classipy(
 				domain->name,
 				([
 					"cmd": "train",
-					"text": ocr_data * " ",
+					"text": ocr_data->text * " ",
 					"pageref": upload->template_id + ":" + (i+1),
 				]));
 		}
-
 		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
 		// Rescale current_page
 		object scaled = img->image;
-		int left = min(@ocr_data->pos[0]);
-		int top = min(@ocr_data->pos[1]);
-		int right = max(@ocr_data->pos[2]);
-		int bottom = max(@ocr_data->pos[3]);
+		int left = min(@ocr_data->pos[*][0]);
+		int top = min(@ocr_data->pos[*][1]);
+		int right = max(@ocr_data->pos[*][2]);
+		int bottom = max(@ocr_data->pos[*][3]);
+
+
 		while(scaled->xsize() > 1000) {
 			scaled = scaled->scale(0.5);
 			left /= 2; top /= 2; right /= 2; bottom /= 2;
@@ -157,17 +152,15 @@ __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 
 		mapping results = await(G->G->DB->run_pg_query(#"
 		INSERT INTO template_pages
-			(template_id, page_number, page_data,
+			(template_id, page_number, page_data, ocr_result,
 			pxleft, pxright, pxtop, pxbottom)
 		VALUES
-			(:template_id, :page_number, :page_data, :left, :right, :top, :bottom)
+			(:template_id, :page_number, :page_data, :ocr_result, :left, :right, :top, :bottom)
 		", ([
 			"template_id":upload->template_id, "page_number":i+1, "page_data":scaled_png,
+			"ocr_result": Standards.JSON.encode(ocr_data),
 			// To be replaced when using Rosuav imgmap code
-			"left":min(@ocr_data->pos[0]),
-			"right":max(@ocr_data->pos[2]),
-			"top":min(@ocr_data->pos[1]),
-			"bottom":max(@ocr_data->pos[3])
+			"left": left, "right": right, "top": top, "bottom": bottom
 			])));
 	} // end iterate over pages
 
@@ -253,9 +246,6 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		array ocr_results = await(analyze_page(current_page, img->xsize, img->ysize));
 
 		timings["Tesseract"] += tm->get();
-		mapping json = ([
-			"data": ocr_results,
-		]);
 
 		/* upload->conn->sock->send_text(Standards.JSON.encode(
 			(["cmd": "upload_status",

@@ -57,6 +57,7 @@ mapping tables = ([
 		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
 		"page_number smallint NOT NULL",
 		"page_data BYTEA NOT NULL",
+		"ocr_result jsonb NOT NULL",
 		"pxleft smallint",
 		"pxtop smallint",
 		"pxright smallint",
@@ -154,6 +155,7 @@ __async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void 
 				else ret += ({parse_mysql_result(await(conn->promise_query(q, bindings))->get())});
 			}) break;
 		}
+		// TODO Something critically wrong. Failing to rollback after an exception.
 		//Ignore errors from rolling back - the exception that gets raised will have come from
 		//the actual query (or possibly the BEGIN), not from rolling back.
 		if (ex) catch {await(conn->promise_query("rollback"))->get();};
@@ -348,10 +350,10 @@ __async__ void compare_transition_scores(int template_id, int page_number, int f
 	foreach (rects, mapping r) {
 		int calculated_transition_score = calculate_transition_score(r,
 		([
-			"left": min(@ocr_data->pos[0]),
-			"right": max(@ocr_data->pos[2]),
-			"top": min(@ocr_data->pos[1]),
-			"bottom": max(@ocr_data->pos[3])
+			"left": min(@ocr_data->pos[*][0]),
+			"right": max(@ocr_data->pos[*][2]),
+			"top": min(@ocr_data->pos[*][1]),
+			"bottom": max(@ocr_data->pos[*][3])
 		]), grey)->score;
 
 		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", template_id, page_number, r->template_signatory_id || 0, r->transition_score, calculated_transition_score);

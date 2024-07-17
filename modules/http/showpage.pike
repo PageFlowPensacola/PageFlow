@@ -49,7 +49,7 @@ __async__ mapping http_request(Protocols.HTTP.Server.Request req) {
 	int file = (int) req->variables->id;
 	int file_page = (int) req->variables->page;
 	array(mapping) image = await(G->G->DB->run_pg_query(#"
-		SELECT ocr_result, png_data, template_id, page_number
+		SELECT ocr_result, png_data, template_id, page_number, pxleft, pxtop, pxright, pxbottom
 		FROM uploaded_file_pages
 		WHERE file_id = :id AND seq_idx = :page", (["id": file, "page": file_page])));
 		if (!sizeof(image)) return 0;
@@ -62,10 +62,10 @@ __async__ mapping http_request(Protocols.HTTP.Server.Request req) {
 			WHERE template_id = :id AND page_number = :page", (["id": image[0]->template_id, "page": image[0]->page_number])));
 		mapping ocr = Standards.JSON.decode(image[0]->ocr_result);
 		calculate_transition_scores(img, ([
-			"left": min(@ocr->pos[0]),
-			"top": min(@ocr->pos[1]),
-			"right": max(@ocr->pos[2]),
-			"bottom": max(@ocr->pos[3]),
+			"left": image[0]->pxleft,
+			"top": image[0]->pxtop,
+			"right": image[0]->pxright,
+			"bottom": image[0]->pxbottom,
 		]), audit_rects);
 		png = Image.PNG.encode(img);
 	}
