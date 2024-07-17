@@ -104,6 +104,8 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
 		FROM uploaded_file_pages
 		WHERE file_id = :id", (["id": group]))));
+
+	multiset signatories = (<>);
 	array pageinfo = ({});
 	foreach(pages, mapping page){
 		string png = page->png_data;
@@ -123,6 +125,13 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 					),
 			])
 		});
+		signatories |= (multiset) audit_rects->template_signatory_id;
 	}
-	return (["file":file[0], "pages":pageinfo]);
+	// fetch signatory names from template_signatories
+	array(mapping) signatory_names = await((G->G->DB->run_pg_query(sprintf(#"
+		SELECT id, name
+		FROM template_signatories
+		WHERE id IN  (%{%d,%}0)", (array) signatories))));
+	mapping signatory_map = mkmapping((array(string)) signatory_names->id, signatory_names->name);
+	return (["file":file[0], "pages":pageinfo, "signatories": signatory_map]);
 }
