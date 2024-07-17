@@ -74,6 +74,22 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));
 };
 
+array calc_transition_scores(Image.Image img, mapping bounds, array(mapping) rects){
+	array results = ({});
+	object grey = img->grey();
+	foreach (rects || ({}), mapping r) {
+		mapping box = calculate_transition_score(r, bounds, grey);
+		int difference = abs(r->transition_score - box->score);
+		results += ({
+			([
+				"signatory": r->template_signatory_id,
+				"status": (difference >= 100) ? "Signed" : (difference >= 25) ? "Unclear" : "Unsigned",
+			])
+		});
+	}
+	return results;
+}
+
 
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	if (group == "" || stringp(group)) {
@@ -88,5 +104,25 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
 		FROM uploaded_file_pages
 		WHERE file_id = :id", (["id": group]))));
-	return (["file":file[0], "pages":pages]);
+	array pageinfo = ({});
+	foreach(pages, mapping page){
+		string png = page->png_data;
+		array(mapping) audit_rects = await((G->G->DB->run_pg_query(#"
+			SELECT x1, y1, x2, y2, template_signatory_id, transition_score
+			FROM audit_rects
+			WHERE template_id = :id AND page_number = :page", (["id": page->template_id, "page": page->page_number]))));
+		pageinfo += ({
+			([
+				"audit_rects": audit_rects,
+				"scores": calc_transition_scores(Image.PNG.decode(png), ([
+						"left": page->pxleft,
+						"top": page->pxtop,
+						"right": page->pxright,
+						"bottom": page->pxbottom]),
+						audit_rects
+					),
+			])
+		});
+	}
+	return (["file":file[0], "pages":pageinfo]);
 }
