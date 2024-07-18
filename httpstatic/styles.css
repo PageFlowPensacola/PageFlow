@@ -5,6 +5,14 @@
 	box-sizing: border-box;
 }
 
+.doc_page {
+	margin: 0 auto;
+}
+
+#pagesinfo h3 {
+	margin-bottom: 0.3em;
+}
+
 body {
 	display: flex;
 	flex-direction: column;

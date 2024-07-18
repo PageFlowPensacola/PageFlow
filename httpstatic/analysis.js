@@ -30,7 +30,7 @@ export function render(state) {
 					console.log("Document page", page_no, details);
 					const page_details = details[0]; // for now not supporting duplicates (TODO)
 					return LI([
-						P(["Document Page " + page_no + " ",
+						P({class: "doc_page"}, [page_no,
 						/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
 						DIV([page_details.scores?.map((field) => {
 							console.log("Field", field);
