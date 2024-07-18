@@ -96,7 +96,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	}
 	// Must have an analysis set in mind
 	array(mapping) file = await((G->G->DB->run_pg_query(#"
-		SELECT filename, page_count, created_at as created
+		SELECT filename, page_count, id, created_at as created
 		FROM uploaded_files
 		WHERE id = :id", (["id": group]))));
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
@@ -129,6 +129,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 						"bottom": page->pxbottom]),
 						audit_rects
 					),
+				"seq_idx": page->seq_idx,
 			])
 		});
 		signatories |= (multiset) audit_rects->template_signatory_id;

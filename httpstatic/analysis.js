@@ -29,7 +29,7 @@ export function render(state) {
 				H3(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
 					console.log("Document page", page_no, details);
 					const page_details = details[0]; // for now not supporting duplicates (TODO)
-					return LI({"data-template": document.id, "data-page": page_no}, [
+					return LI({"data-page": page_details.seq_idx}, [
 						P({class: "doc_page"}, [page_no,
 						/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
 						DIV([page_details.scores?.map((field) => {
@@ -55,7 +55,7 @@ export function render(state) {
 			})
 		})]) */,
 		DIV({class: "thumbnail"}, [
-			localState.currentPage && IMG({src: `/showpage?id=${localState.currentTemplate}&page=${localState.currentPage}`}),
+			localState.currentPage && IMG({src: `/showpage?id=${state.file.id}&page=${localState.currentPage}`}),
 		]),
 	]));
 }
@@ -73,10 +73,8 @@ on("change", "#newFile", async (e) => {
 });
 
 on("click", "#pagesinfo li", async (e) => {
-	localState.currentTemplate = e.match.dataset.template;
 	localState.currentPage = e.match.dataset.page;
 	render(stateSnapshot);
-	console.log("RENDERED", stateSnapshot);
  });
 
 export async function sockmsg_upload(msg) {

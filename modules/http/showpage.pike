@@ -49,7 +49,7 @@ __async__ mapping http_request(Protocols.HTTP.Server.Request req) {
 	int file = (int) req->variables->id;
 	int file_page = (int) req->variables->page;
 	array(mapping) image = await(G->G->DB->run_pg_query(#"
-		SELECT ocr_result, png_data, template_id, page_number, pxleft, pxtop, pxright, pxbottom
+		SELECT ocr_result, png_data, template_id, page_number
 		FROM uploaded_file_pages
 		WHERE file_id = :id AND seq_idx = :page", (["id": file, "page": file_page])));
 		if (!sizeof(image)) return 0;
