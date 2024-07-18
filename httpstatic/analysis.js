@@ -27,13 +27,11 @@ export function render(state) {
 		state.template_names && UL({id: "pagesinfo"}, [
 			state.template_names.map((document) => [
 				H3(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
-					console.log("Document page", page_no, details);
 					const page_details = details[0]; // for now not supporting duplicates (TODO)
 					return LI({"data-page": page_details.seq_idx}, [
 						P({class: "doc_page"}, [page_no,
 						/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
 						DIV([page_details.scores?.map((field) => {
-							console.log("Field", field);
 							const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
 							const signatoryName = state.signatories[field.signatory];
 							return SPAN(signatoryName + ": " + status + " ");

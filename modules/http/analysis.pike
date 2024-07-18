@@ -82,6 +82,8 @@ array calc_transition_scores(Image.Image img, mapping bounds, array(mapping) rec
 		int difference = abs(r->transition_score - box->score);
 		results += ({
 			([
+				"difference": difference,
+				"bounds": bounds,
 				"signatory": r->template_signatory_id,
 				"status": (difference >= 100) ? "Signed" : (difference >= 25) ? "Unclear" : "Unsigned",
 			])
@@ -112,6 +114,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	// TODO can we move this into a function?
 	multiset signatories = (<>);
 	foreach(pages, mapping page){
+		mapping ocr = Standards.JSON.decode(page->ocr_result);
 		string template_id = (string) page->template_id;
 		if (!templates[template_id]) templates[template_id] = ([]);
 		string png = page->png_data;
@@ -123,10 +126,11 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 			([
 				"audit_rects": audit_rects,
 				"scores": calc_transition_scores(Image.PNG.decode(png), ([
-						"left": page->pxleft,
-						"top": page->pxtop,
-						"right": page->pxright,
-						"bottom": page->pxbottom]),
+						"left": min(@ocr->pos[*][0]),
+						"top": min(@ocr->pos[*][1]),
+						"right": max(@ocr->pos[*][0]),
+						"bottom": max(@ocr->pos[*][1]),
+						]),
 						audit_rects
 					),
 				"seq_idx": page->seq_idx,
