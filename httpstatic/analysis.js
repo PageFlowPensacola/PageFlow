@@ -17,8 +17,8 @@ const render_upload_status = (state) => {
 export function render(state) {
 	stateSnapshot = state;
 	console.log("Rendering", state);
+	localState.templateDocuments = state.pages;
 	console.log("Local state", localState);
-	window.templateDocuments = localState.templateDocuments;
 	set_content("main", SECTION([
 		FORM({id: "file_submit"}, [
 			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),

@@ -90,7 +90,6 @@ array calc_transition_scores(Image.Image img, mapping bounds, array(mapping) rec
 	return results;
 }
 
-
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	if (group == "" || stringp(group)) {
 		return ([]);
@@ -104,16 +103,23 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
 		FROM uploaded_file_pages
 		WHERE file_id = :id", (["id": group]))));
+	if (!sizeof(file) || !sizeof(pages)) {
+		return 0;
+	}
+	// This will store template pages (rects, etc)
+	mapping templates = ([]);
 
+	// TODO can we move this into a function?
 	multiset signatories = (<>);
-	array pageinfo = ({});
 	foreach(pages, mapping page){
+		string template_id = (string) page->template_id;
+		if (!templates[template_id]) templates[template_id] = ([]);
 		string png = page->png_data;
 		array(mapping) audit_rects = await((G->G->DB->run_pg_query(#"
 			SELECT x1, y1, x2, y2, template_signatory_id, transition_score
 			FROM audit_rects
 			WHERE template_id = :id AND page_number = :page", (["id": page->template_id, "page": page->page_number]))));
-		pageinfo += ({
+		templates[template_id][ (string) page->page_number] += ({
 			([
 				"audit_rects": audit_rects,
 				"scores": calc_transition_scores(Image.PNG.decode(png), ([
@@ -127,11 +133,19 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		});
 		signatories |= (multiset) audit_rects->template_signatory_id;
 	}
+
 	// fetch signatory names from template_signatories
 	array(mapping) signatory_names = await((G->G->DB->run_pg_query(sprintf(#"
 		SELECT id, name
 		FROM template_signatories
 		WHERE id IN  (%{%d,%}0)", (array) signatories))));
 	mapping signatory_map = mkmapping((array(string)) signatory_names->id, signatory_names->name);
-	return (["file":file[0], "pages":pageinfo, "signatories": signatory_map]);
+	// fetch signatory names from template_signatories
+	array(mapping) template_names = await((G->G->DB->run_pg_query(sprintf(#"
+		SELECT id, name
+		FROM templates
+		WHERE id IN  (%{%s,%}0)", indices(templates)))));
+	mapping template_names_map = mkmapping((array(string)) (string) template_names->id, template_names->name);
+
+	return (["file":file[0], "templates":templates, "template_names": template_names_map, "signatories": signatory_map]);
 }

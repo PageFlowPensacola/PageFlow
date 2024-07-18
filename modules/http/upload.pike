@@ -41,7 +41,7 @@ __async__ array pdf2png(string pdf) {
 		// deskew
 	// May be better to always run at 300 density.
 	mapping results = await(run_promise(
-		({"convert", "-density", "150", "-", "png:-"}),
+		({"convert", "-density", "300", "-", "png:-"}),
 		(["stdin": pdf]))
 	);
 	//werror("results: %O\n", indices(results));
@@ -140,7 +140,6 @@ foreach(pages; int i; string current_page) {
 		int right = max(@ocr_data->pos[*][2]);
 		int bottom = max(@ocr_data->pos[*][3]);
 
-
 		while(scaled->xsize() > 1000) {
 			scaled = scaled->scale(0.5);
 			left /= 2; top /= 2; right /= 2; bottom /= 2;
@@ -162,6 +161,7 @@ foreach(pages; int i; string current_page) {
 			// To be replaced when using Rosuav imgmap code
 			"left": left, "right": right, "top": top, "bottom": bottom
 			])));
+	Stdio.write_file(sprintf("ocr_data%d.json", i+1), Standards.JSON.encode(ocr_data, 6));
 	} // end iterate over pages
 
 	// Update the template record with the number of pages
@@ -411,6 +411,11 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			(["cmd": "upload_status",
 			"step": sprintf("Matched %d pages to templates", file_page_count),
 		]))); */
+	werror("Before %O\n", tm->get());
+		await(G->G->DB->run_pg_query(#"
+			SELECT 1"));
+	werror("After %O\n", tm->get());
+	analysis->send_updates_all(fileid);
 	return jsonify((["documents": annotated_pages_by_template, "confidence": confidence]));
 }
 
