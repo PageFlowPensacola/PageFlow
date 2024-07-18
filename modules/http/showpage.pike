@@ -45,6 +45,9 @@ mapping calculate_transition_scores(Image.Image img, mapping bounds, array rects
 	}
 }
 
+/*
+TODO support width equals
+*/
 __async__ mapping http_request(Protocols.HTTP.Server.Request req) {
 	int file = (int) req->variables->id;
 	int file_page = (int) req->variables->page;
@@ -62,10 +65,10 @@ __async__ mapping http_request(Protocols.HTTP.Server.Request req) {
 			WHERE template_id = :id AND page_number = :page", (["id": image[0]->template_id, "page": image[0]->page_number])));
 		mapping ocr = Standards.JSON.decode(image[0]->ocr_result);
 		calculate_transition_scores(img, ([
-			"left": image[0]->pxleft,
-			"top": image[0]->pxtop,
-			"right": image[0]->pxright,
-			"bottom": image[0]->pxbottom,
+			"left": min(@ocr->pos[*][0]),
+			"top": min(@ocr->pos[*][1]),
+			"right": max(@ocr->pos[*][2]),
+			"bottom": max(@ocr->pos[*][3]),
 		]), audit_rects);
 		png = Image.PNG.encode(img);
 	}

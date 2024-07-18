@@ -55,7 +55,7 @@ export function render(state) {
 			})
 		})]) */,
 		DIV({class: "thumbnail"}, [
-			localState.currentPage && IMG({src: `/showpage?id=${state.file.id}&page=${localState.currentPage}`}),
+			localState.currentPage && IMG({src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`}),
 		]),
 	]));
 }
