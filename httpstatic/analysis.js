@@ -77,6 +77,7 @@ on("change", "#newFile", async (e) => {
 
 export async function sockmsg_upload(msg) {
 	ws_sync.send({cmd: "chgrp", group: msg.group});
+	history.replaceState(null, "", `/analysis?id=${msg.group}`);
 	const resp = await fetch(`/upload?id=${msg.upload_id}`, {
 		method: "POST",
 		body: submittedFile,
