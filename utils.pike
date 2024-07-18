@@ -92,7 +92,7 @@ __async__ void audit_score() {
 @"Compare scores":
 __async__ void compare_scores() {
 	array(int) args = (array(int)) G->G->args[Arg.REST];
-	// expecting 3 arguments: template_id, page_no, file_id (a second template, perhaps)
+	// expecting 1 arguments: file_id, seq_idx
 	await(G->G->DB->compare_transition_scores(@args));
 }
 
