@@ -2,7 +2,7 @@ inherit http_endpoint;
 
 constant IS_A_SIGNATURE = 75;
 
-mapping calculate_transition_scores(Image.Image img, mapping bounds, array rects){
+mapping calculate_transition_scores(object img, mapping bounds, array rects){
 	object grey = img->grey();
 
 	int left = bounds->left;
@@ -10,7 +10,7 @@ mapping calculate_transition_scores(Image.Image img, mapping bounds, array rects
 	int right = bounds->right;
 	int bottom = bounds->bottom;
 
-	img->setcolor(@bbox_color);
+	img->setcolor(128, 0 , 128);
 	img->line(left, top, right, top);
 	img->line(right, top, right, bottom);
 	img->line(right, bottom, left, bottom);
@@ -22,6 +22,7 @@ mapping calculate_transition_scores(Image.Image img, mapping bounds, array rects
 	array field_results = ({});
 	foreach (rects || ({}), mapping r) {
 		mapping box = calculate_transition_score(r, bounds, grey);
+		werror("Box %O\n", box);
 
 		img->setcolor(@audit_rect_color, 0);
 		img->line(box->x1, box->y1, box->x2, box->y1);
@@ -29,9 +30,9 @@ mapping calculate_transition_scores(Image.Image img, mapping bounds, array rects
 		img->line(box->x2, box->y2, box->x1, box->y2);
 		img->line(box->x1, box->y2, box->x1, box->y1);
 
-		int alpha = limit(16, (box->score - r->transition_score) * 255 / IS_A_SIGNATURE, 255);
+		int alpha = 200; // HACK limit(16, (box->score - r->transition_score) * 255 / IS_A_SIGNATURE, 255);
 
-		img->box(box->x1, box->y1, box->x2, box->y2, 0, alpha, alpha);
+		img->box(box->x1, box->y1, box->x2, box->y2, 0, 255, 255, alpha);
 
 		/*page_transition_score += r->transition_score;
 		page_calculated_transition_score += box->score;

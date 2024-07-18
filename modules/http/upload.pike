@@ -189,6 +189,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 
 	object analysis = G->G->websocket_types->analysis;
 
+
 	object tm = System.Timer();
 
 	// This will store template pages (rects, etc)
@@ -197,6 +198,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	mapping template_pages = ([]);
 
 	string fileid = upload->file_id;
+
+	analysis->send_updates_all(fileid);
 
 	array rects = ({});
 
@@ -226,6 +229,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	string domain = await(find_closest_domain_with_model(req->misc->session->domain));
 
 	foreach(file_pages; int i; string current_page) {
+
+		analysis->send_updates_all(fileid);
 
 		mapping img = Image.PNG._decode(current_page);
 		if (img->alpha) {

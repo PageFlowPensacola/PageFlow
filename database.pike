@@ -351,8 +351,8 @@ __async__ void compare_transition_scores(int template_id, int page_number, int f
 		int calculated_transition_score = calculate_transition_score(r,
 		([
 			"left": min(@ocr_data->pos[*][0]),
-			"right": max(@ocr_data->pos[*][2]),
 			"top": min(@ocr_data->pos[*][1]),
+			"right": max(@ocr_data->pos[*][2]),
 			"bottom": max(@ocr_data->pos[*][3])
 		]), grey)->score;
 
