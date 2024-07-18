@@ -144,8 +144,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	array(mapping) template_names = await((G->G->DB->run_pg_query(sprintf(#"
 		SELECT id, name
 		FROM templates
-		WHERE id IN  (%{%s,%}0)", indices(templates)))));
-	mapping template_names_map = mkmapping((array(string)) (string) template_names->id, template_names->name);
+		WHERE id IN (%{%s,%}0) ORDER BY name", indices(templates)))));
 
-	return (["file":file[0], "templates":templates, "template_names": template_names_map, "signatories": signatory_map]);
+	return (["file":file[0], "templates":templates, "template_names": template_names, "signatories": signatory_map]);
 }
