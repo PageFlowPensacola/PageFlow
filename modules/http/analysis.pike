@@ -115,14 +115,15 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	multiset signatories = (<>);
 	foreach(pages, mapping page){
 		mapping ocr = Standards.JSON.decode(page->ocr_result);
-		string template_id = (string) page->template_id;
+		string template_id = (string) (page->template_id || 9999999999);
 		if (!templates[template_id]) templates[template_id] = ([]);
 		string png = page->png_data;
 		array(mapping) audit_rects = await((G->G->DB->run_pg_query(#"
 			SELECT x1, y1, x2, y2, template_signatory_id, transition_score
 			FROM audit_rects
 			WHERE template_id = :id AND page_number = :page", (["id": page->template_id, "page": page->page_number]))));
-		templates[template_id][ (string) page->page_number] += ({
+
+		templates[template_id][ (string) (page->page_number || 1)] += ({
 			([
 				"audit_rects": audit_rects,
 				"scores": calc_transition_scores(Image.PNG.decode(png), ([
@@ -150,6 +151,9 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		SELECT id, name
 		FROM templates
 		WHERE id IN (%{%s,%}0) ORDER BY name", indices(templates)))));
+
+	template_names += ({([ "id": 9999999999, "name": "No template matched" ])});
+	// TODO handle duplicate pages
 
 	return (["file":file[0], "templates":templates, "template_names": template_names, "signatories": signatory_map]);
 }

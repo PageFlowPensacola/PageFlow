@@ -83,6 +83,7 @@ export async function sockmsg_upload(msg) {
 		body: submittedFile,
 	});
 	localState.uploading--;
+	localState.currentPage = 0;
 	render(stateSnapshot);
 };
 
