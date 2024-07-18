@@ -1,5 +1,5 @@
-import {choc, set_content, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {CAPTION, DIV, FIGURE, FORM, H2, H3, H4, IMG, INPUT, LI, P, SECTION, SPAN, UL} = choc; //autoimport
+import {lindt, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
+const {CAPTION, DIV, FIGURE, FORM, H2, H3, H4, IMG, INPUT, LI, P, SECTION, SPAN, UL} = lindt; //autoimport
 import "./utils.js";
 
 const localState = {};
@@ -18,7 +18,7 @@ export function render(state) {
 	stateSnapshot = state;
 	console.log("Rendering", state);
 	console.log("Local state", localState);
-	set_content("main", SECTION([
+	replace_content("main", SECTION([
 		FORM({id: "file_submit"}, [
 			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
 			localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
@@ -29,18 +29,17 @@ export function render(state) {
 				H3(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
 					console.log("Document page", page_no, details);
 					const page_details = details[0]; // for now not supporting duplicates (TODO)
-					return LI([
+					return LI({"data-template": document.id, "data-page": page_no}, [
 						P({class: "doc_page"}, [page_no,
 						/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
 						DIV([page_details.scores?.map((field) => {
 							console.log("Field", field);
 							const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
 							const signatoryName = state.signatories[field.signatory];
-							console.log(localState.rects, field.signatory, signatoryName, field);
 							return SPAN(signatoryName + ": " + status + " ");
 						})]),
 					]);
-			})]),
+				})]),
 		]),
 		/* DIV({class: "thumbnails"}, [localState.templateDocuments && Object.values(localState.templateDocuments).map((document) => {
 			return document.map((page, idx) => {
@@ -55,6 +54,9 @@ export function render(state) {
 				]);
 			})
 		})]) */,
+		DIV({class: "thumbnail"}, [
+			localState.currentPage && IMG({src: `/showpage?id=${localState.currentTemplate}&page=${localState.currentPage}`}),
+		]),
 	]));
 }
 
@@ -69,6 +71,13 @@ on("change", "#newFile", async (e) => {
 	console.log("Clearing local state", stateSnapshot);
 	render(stateSnapshot);
 });
+
+on("click", "#pagesinfo li", async (e) => {
+	localState.currentTemplate = e.match.dataset.template;
+	localState.currentPage = e.match.dataset.page;
+	render(stateSnapshot);
+	console.log("RENDERED", stateSnapshot);
+ });
 
 export async function sockmsg_upload(msg) {
 	ws_sync.send({cmd: "chgrp", group: msg.group});

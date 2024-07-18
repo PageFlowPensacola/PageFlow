@@ -262,6 +262,10 @@ main ul {
 	font-size: 1em;
 }
 
+#pagesinfo li {
+	cursor: pointer;
+}
+
 .thumbnails {
 	display: flex;
 	flex-wrap: wrap;
