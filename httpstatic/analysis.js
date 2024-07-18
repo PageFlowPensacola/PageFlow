@@ -17,34 +17,32 @@ const render_upload_status = (state) => {
 export function render(state) {
 	stateSnapshot = state;
 	console.log("Rendering", state);
-	localState.templateDocuments = state.pages;
 	console.log("Local state", localState);
 	set_content("main", SECTION([
 		FORM({id: "file_submit"}, [
 			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
 			localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
 		]),
-		(typeof (localState.step) !== "undefined") && render_upload_status(localState),
-		(typeof (localState.confidence) !== "undefined") && H3("Confidence: " + (localState.confidence === 1 ? "High" : "Low")),
-		(typeof (localState.rects) !== "undefined") && H4("Fields checked: " + localState.rects.length),
-		localState.templateDocuments && UL({id: "pagesinfo"}, [
-			Object.values(localState.templateDocuments).map((document) => [
-				H3(document[0].template_name), document.map((page, idx) => {
-					console.log("Document page", page, idx);
+		//(typeof (localState.template_names) !== "undefined") && H4("Fields checked: " + localState.rects.length),
+		state.template_names && UL({id: "pagesinfo"}, [
+			state.template_names.map((document) => [
+				H3(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
+					console.log("Document page", page_no, details);
+					const page_details = details[0]; // for now not supporting duplicates (TODO)
 					return LI([
-						P([page.template_id && "Document Page " + (idx + 1) + " ",
-						SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)]),
-						DIV([page.fields?.map((field) => {
-							console.log("Field", field, localState.rects);
+						P(["Document Page " + page_no + " ",
+						/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
+						DIV([page_details.scores?.map((field) => {
+							console.log("Field", field);
 							const status = field.status === "Signed" ? "✅" : field.status === "Unsigned" ? "❌" : "❓";
-							const signatoryName = localState.rects.find((f) => f.template_signatory_id === field.signatory)?.name;
+							const signatoryName = state.signatories[field.signatory];
 							console.log(localState.rects, field.signatory, signatoryName, field);
 							return SPAN(signatoryName + ": " + status + " ");
 						})]),
 					]);
 			})]),
 		]),
-		DIV({class: "thumbnails"}, [localState.templateDocuments && Object.values(localState.templateDocuments).map((document) => {
+		/* DIV({class: "thumbnails"}, [localState.templateDocuments && Object.values(localState.templateDocuments).map((document) => {
 			return document.map((page, idx) => {
 				return page.annotated_img && FIGURE({class: "thumbnail"}, [
 					IMG({src: page.annotated_img}),
@@ -56,7 +54,7 @@ export function render(state) {
 					])),
 				]);
 			})
-		})]),
+		})]) */,
 	]));
 }
 
@@ -68,9 +66,6 @@ on("change", "#newFile", async (e) => {
 		"name": submittedFile.name,
 	});
 	localState.step = "Uploading";
-	localState.confidence = undefined;
-	localState.rects = undefined;
-	localState.templateDocuments = undefined;
 	console.log("Clearing local state", stateSnapshot);
 	render(stateSnapshot);
 });
@@ -82,10 +77,6 @@ export async function sockmsg_upload(msg) {
 		method: "POST",
 		body: submittedFile,
 	});
-	const json = await resp.json();
-	localState.templateDocuments = json.documents;
-	localState.confidence = json.confidence;
-	localState.rects = json.rects;
 	localState.uploading--;
 	render(stateSnapshot);
 };
