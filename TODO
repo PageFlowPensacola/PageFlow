@@ -177,3 +177,12 @@ Abridged Deal Jacket (six or seven pages)
 
 Organize CSS file (if possible)
 Refine "User" styling
+
+## July 24, 2024
+Some misalignment on audit rects/page bounds
+Analysis result replace unicode chars with something prettier
+Layout making more use of desktop layout
+Develop a non-instrusive but distinguishing color palette
+Previous analysis listing view
+Check for false negative/positive on Odometer document.
+List unmatched documents
