@@ -2,26 +2,14 @@ inherit http_endpoint;
 
 constant IS_A_SIGNATURE = 75;
 
-mapping calculate_transition_scores(object img, mapping bounds, array rects){
+mapping annotate_transition_scores(object img, array rects){
 	object grey = img->grey();
 
-	int left = bounds->left;
-	int top = bounds->top;
-	int right = bounds->right;
-	int bottom = bounds->bottom;
-
-	img->setcolor(128, 0 , 128);
-	img->line(left, top, right, top);
-	img->line(right, top, right, bottom);
-	img->line(right, bottom, left, bottom);
-	img->line(left, bottom, left, top);
-	img->line(left, top, right, bottom);
-	img->line(right, top, left, bottom);
 	int page_transition_score = 0;
 	int page_calculated_transition_score = 0;
 	array field_results = ({});
 	foreach (rects || ({}), mapping r) {
-		mapping box = calculate_transition_score(r, bounds, grey);
+		mapping box = calculate_transition_score(r, grey);
 		werror("Box %O\n", box);
 
 		img->setcolor(@audit_rect_color, 0);
@@ -33,16 +21,6 @@ mapping calculate_transition_scores(object img, mapping bounds, array rects){
 		int alpha = 200; // HACK limit(16, (box->score - r->transition_score) * 255 / IS_A_SIGNATURE, 255);
 
 		img->box(box->x1, box->y1, box->x2, box->y2, 0, 255, 255, alpha);
-
-		/*page_transition_score += r->transition_score;
-		page_calculated_transition_score += box->score;
-		int difference = abs(r->transition_score - box->score);
-		field_results += ({
-			([
-				"signatory": r->template_signatory_id,
-				"status": (difference >= 100) ? "Signed" : (difference >= 25) ? "Unclear" : "Unsigned",
-			])
-		}); */
 	}
 }
 
@@ -65,12 +43,7 @@ __async__ mapping http_request(Protocols.HTTP.Server.Request req) {
 			FROM audit_rects
 			WHERE template_id = :id AND page_number = :page", (["id": image[0]->template_id, "page": image[0]->page_number])));
 		mapping ocr = Standards.JSON.decode(image[0]->ocr_result);
-		calculate_transition_scores(img, ([
-			"left": min(@ocr->pos[*][0]),
-			"top": min(@ocr->pos[*][1]),
-			"right": max(@ocr->pos[*][2]),
-			"bottom": max(@ocr->pos[*][3]),
-		]), audit_rects);
+		annotate_transition_scores(img, audit_rects);
 		png = Image.PNG.encode(img);
 	}
 	return (["data": png, "type": "image/png"]);

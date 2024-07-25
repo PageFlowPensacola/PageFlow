@@ -74,16 +74,15 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));
 };
 
-array calc_transition_scores(Image.Image img, mapping bounds, array(mapping) rects){
+array calc_transition_scores(Image.Image img, array(mapping) rects){
 	array results = ({});
 	object grey = img->grey();
 	foreach (rects || ({}), mapping r) {
-		mapping box = calculate_transition_score(r, bounds, grey);
+		mapping box = calculate_transition_score(r, grey);
 		int difference = abs(r->transition_score - box->score);
 		results += ({
 			([
 				"difference": difference,
-				"bounds": bounds,
 				"signatory": r->template_signatory_id,
 				"status": (difference >= 100) ? "Signed" : (difference >= 25) ? "Unclear" : "Unsigned",
 			])
@@ -126,12 +125,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		templates[template_id][ (string) (page->page_number || 1)] += ({
 			([
 				"audit_rects": audit_rects,
-				"scores": calc_transition_scores(Image.PNG.decode(png), ([
-						"left": min(@ocr->pos[*][0]),
-						"top": min(@ocr->pos[*][1]),
-						"right": max(@ocr->pos[*][0]),
-						"bottom": max(@ocr->pos[*][1]),
-						]),
+				"scores": calc_transition_scores(Image.PNG.decode(png),
 						audit_rects
 					),
 				"seq_idx": page->seq_idx,
