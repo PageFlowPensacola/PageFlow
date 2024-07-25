@@ -44,10 +44,10 @@ __async__ void load_model(string domain, mapping proc) {
 void pythondone(mapping proc) {
 	werror("Python process for %O closed\n", proc->domain);
 	m_delete(domain_processes, proc->domain);
-	if (proc->queued_messages) {
+	if (sizeof(proc->queued_messages)) {
 		werror("Orphaned queued messages %O\n", proc->pending_messages);
 	}
-	if (proc->pending_messages) {
+	if (sizeof(proc->pending_messages)) {
 		werror("Orphaned pending messages for %O\n", proc->pending_messages);
 	}
 }
