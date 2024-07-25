@@ -60,7 +60,7 @@ __async__ void test() {
 	object page = Image.PNG.decode(pages[0]->png_data)->grey();
 	object pythonstdin = Stdio.File(), pythonstdout = Stdio.File();
 	string pythonbuf = "";
-	object python = Process.create_process(({"python3.12", "regress.py"}),
+	object python = Process.create_process(({"python3", "regress.py"}),
 		(["stdin": pythonstdin->pipe(Stdio.PROP_IPC | Stdio.PROP_REVERSE), "stdout": pythonstdout->pipe(Stdio.PROP_IPC)]));
 
 	array template_words = Standards.JSON.decode(rects[0]->ocr_result);
