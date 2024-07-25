@@ -99,6 +99,7 @@ mapping tables = ([
 		"png_data BYTEA NOT NULL",
 		"template_id int REFERENCES templates ON DELETE RESTRICT",
 		"page_number smallint", // document page number from classification
+		"transform jsonb NOT NULL default '[1,0,0,0,1,0]'", // six coefficients: x, y and constant for each of x and y
 		"ocr_result jsonb",
 		" PRIMARY KEY (file_id, seq_idx)",
 	}),
