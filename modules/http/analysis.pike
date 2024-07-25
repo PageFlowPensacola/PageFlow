@@ -74,11 +74,11 @@ mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Serve
 	return render(req, (["vars": (["ws_group": req->misc->session->domain])]));
 };
 
-array calc_transition_scores(Image.Image img, array(mapping) rects){
+array calc_transition_scores(Image.Image img, array(mapping) rects, array transform){
 	array results = ({});
 	object grey = img->grey();
 	foreach (rects || ({}), mapping r) {
-		mapping box = calculate_transition_score(r, grey);
+		mapping box = calculate_transition_score(r, grey, transform);
 		int difference = abs(r->transition_score - box->score);
 		results += ({
 			([
@@ -101,7 +101,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		FROM uploaded_files
 		WHERE id = :id", (["id": group]))));
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
-		SELECT png_data, template_id, page_number, ocr_result, seq_idx
+		SELECT png_data, template_id, page_number, ocr_result, seq_idx, transform
 		FROM uploaded_file_pages
 		WHERE file_id = :id", (["id": group]))));
 	if (!sizeof(file) || !sizeof(pages)) {
@@ -125,8 +125,10 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		templates[template_id][ (string) (page->page_number || 1)] += ({
 			([
 				"audit_rects": audit_rects,
-				"scores": calc_transition_scores(Image.PNG.decode(png),
-						audit_rects
+				"scores": calc_transition_scores(
+						Image.PNG.decode(png),
+						audit_rects,
+						Standards.JSON.decode(page->transform),
 					),
 				"seq_idx": page->seq_idx,
 			])
