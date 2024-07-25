@@ -101,7 +101,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		FROM uploaded_files
 		WHERE id = :id", (["id": group]))));
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
-		SELECT png_data, template_id, page_number, ocr_result, seq_idx, transform
+		SELECT png_data, template_id, page_number, seq_idx, transform
 		FROM uploaded_file_pages
 		WHERE file_id = :id", (["id": group]))));
 	if (!sizeof(file) || !sizeof(pages)) {
@@ -113,7 +113,6 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	// TODO can we move this into a function?
 	multiset signatories = (<>);
 	foreach(pages, mapping page){
-		mapping ocr = Standards.JSON.decode(page->ocr_result);
 		string template_id = (string) (page->template_id || 9999999999);
 		if (!templates[template_id]) templates[template_id] = ([]);
 		string png = page->png_data;
