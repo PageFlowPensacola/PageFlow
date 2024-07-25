@@ -12,6 +12,7 @@ mapping annotate_transition_scores(object img, array rects, array transform) {
 		mapping box = calculate_transition_score(r, grey, transform);
 		werror("Box %O\n", box);
 
+		// This identifies the axis aligned box used for calculating the transition score
 		img->setcolor(@audit_rect_color, 0);
 		img->line(box->x1, box->y1, box->x2, box->y1);
 		img->line(box->x2, box->y1, box->x2, box->y2);
@@ -19,8 +20,13 @@ mapping annotate_transition_scores(object img, array rects, array transform) {
 		img->line(box->x1, box->y2, box->x1, box->y1);
 
 		int alpha = 200; // HACK limit(16, (box->score - r->transition_score) * 255 / IS_A_SIGNATURE, 255);
-
-		img->box(box->x1, box->y1, box->x2, box->y2, 0, 255, 255, alpha);
+		array points = ({
+			matrix_transform(transform, box->x1, box->y1),
+			matrix_transform(transform, box->x2, box->y1),
+			matrix_transform(transform, box->x2, box->y2),
+			matrix_transform(transform, box->x1, box->y2),
+		});
+		img->setcolor(255, 0, 0, alpha)->polyfill(points * ({ }));
 	}
 }
 
