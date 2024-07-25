@@ -31,36 +31,38 @@ export function render(state) {
 			localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
 		]),
 		//(typeof (localState.template_names) !== "undefined") && H4("Fields checked: " + localState.rects.length),
-		state.templates && state.template_names && UL({id: "pagesinfo"}, [
-			state.template_names.map((document) => [
-				H3(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
-					const page_details = details[0]; // for now not supporting duplicates (TODO)
-					return LI({"data-page": page_details.seq_idx}, [
-						P({class: "doc_page"}, [page_no,
-						/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
-						DIV([page_details.scores?.map((field) => {
-							const status = field.status === "Signed" ? checkmark : field.status === "Unsigned" ? crossmark : questionmark;
-							const signatoryName = state.signatories[field.signatory];
-							return SPAN([signatoryName + ": ", status," "]);
-						})]),
+		DIV({id: "analysis-results"}, [
+			state.templates && state.template_names && UL({id: "pagesinfo"}, [
+				state.template_names.map((document) => [
+					H3(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
+						const page_details = details[0]; // for now not supporting duplicates (TODO)
+						return LI({"data-page": page_details.seq_idx}, [
+							P({class: "doc_page"}, [page_no,
+							/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
+							DIV([page_details.scores?.map((field) => {
+								const status = field.status === "Signed" ? checkmark : field.status === "Unsigned" ? crossmark : questionmark;
+								const signatoryName = state.signatories[field.signatory];
+								return SPAN([signatoryName + ": ", status," "]);
+							})]),
+						]);
+					})]),
+			]),
+			/* DIV({class: "thumbnails"}, [localState.templateDocuments && Object.values(localState.templateDocuments).map((document) => {
+				return document.map((page, idx) => {
+					return page.annotated_img && FIGURE({class: "thumbnail"}, [
+						IMG({src: page.annotated_img}),
+						CAPTION(UL([
+							LI("Page " + page.file_page_no),
+							LI("Page Transition Score " + page.page_transition_score),
+							LI("Calculated " + page.page_calculated_transition_score),
+							page.error && LI("ERROR " + page.error),
+						])),
 					]);
-				})]),
-		]),
-		/* DIV({class: "thumbnails"}, [localState.templateDocuments && Object.values(localState.templateDocuments).map((document) => {
-			return document.map((page, idx) => {
-				return page.annotated_img && FIGURE({class: "thumbnail"}, [
-					IMG({src: page.annotated_img}),
-					CAPTION(UL([
-						LI("Page " + page.file_page_no),
-						LI("Page Transition Score " + page.page_transition_score),
-						LI("Calculated " + page.page_calculated_transition_score),
-						page.error && LI("ERROR " + page.error),
-					])),
-				]);
-			})
-		})]) */,
-		DIV({class: "thumbnail"}, [
-			localState.currentPage && IMG({src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`}),
+				})
+			})]) */,
+			DIV({class: "thumbnail"}, [
+				localState.currentPage ? IMG({src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`}) : DIV("Click item in list to the left to load page view."),
+			])
 		]),
 	]));
 }
