@@ -207,9 +207,7 @@ Concurrent.Future run_promise(string|array(string) cmd, mapping modifiers = ([])
 }
 
 __async__ array analyze_page(string page_data, int imgwidth, int imgheight) {
-	// Maybe output tesseract as hocr instead of makebox, which
-	// gives a list of "words", per line, with bounding boxes
-	// as opposed to individual characters.
+	// Could minimize storage by just storing word centroids rather than full bounding boxes.
 	mapping hocr = await(run_promise(({"tesseract", "-", "-", "hocr"}), (["stdin": page_data])));
 	array data = Parser.XML.Simple()->parse(hocr->stdout){
 		[string type, string name, mapping(string:string) attr, mixed data, mixed loc] = __ARGS__;

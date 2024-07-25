@@ -89,13 +89,6 @@ __async__ void audit_score() {
 	await(G->G->DB->recalculate_transition_scores(0, 0));
 }
 
-@"Compare scores":
-__async__ void compare_scores() {
-	array(int) args = (array(int)) G->G->args[Arg.REST];
-	// expecting 1 arguments: file_id, seq_idx
-	await(G->G->DB->compare_transition_scores(@args));
-}
-
 
 @"Tesseract and parse HOCR on a PNG file named annoteted.png":
 __async__ void tesseract(){

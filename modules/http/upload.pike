@@ -133,21 +133,10 @@ foreach(pages; int i; string current_page) {
 				]));
 		}
 		werror("\t[%6.3f] Calculated (expensive) bounds\n", tm->peek());
-		// Rescale current_page
-		object scaled = img->image;
 		int left = min(@ocr_data->pos[*][0]);
 		int top = min(@ocr_data->pos[*][1]);
 		int right = max(@ocr_data->pos[*][2]);
 		int bottom = max(@ocr_data->pos[*][3]);
-
-		while(scaled->xsize() > 1000) {
-			scaled = scaled->scale(0.5);
-			left /= 2; top /= 2; right /= 2; bottom /= 2;
-		}
-		werror("\t[%6.3f] Scaled\n", tm->peek());
-		// Encode the scaled image
-		string scaled_png = Image.PNG.encode(scaled);
-		werror("[%6.3f] Encoded\n", tm->peek());
 
 		mapping results = await(G->G->DB->run_pg_query(#"
 		INSERT INTO template_pages
@@ -156,7 +145,7 @@ foreach(pages; int i; string current_page) {
 		VALUES
 			(:template_id, :page_number, :page_data, :ocr_result, :left, :right, :top, :bottom)
 		", ([
-			"template_id":upload->template_id, "page_number":i+1, "page_data":scaled_png,
+			"template_id":upload->template_id, "page_number":i+1, "page_data":Image.PNG.encode(img->image),
 			"ocr_result": Standards.JSON.encode(ocr_data),
 			// To be replaced when using Rosuav imgmap code
 			"left": left, "right": right, "top": top, "bottom": bottom

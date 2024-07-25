@@ -325,41 +325,6 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 	}
 }
 
-__async__ void compare_transition_scores(int file_id, int seq_idx ) {
-
-	mapping page = await(G->G->DB->run_pg_query(#"
-			SELECT *
-			FROM uploaded_file_pages
-			WHERE file_id = :file_id
-			AND seq_idx = :seq_idx",
-		(["file_id": file_id, "seq_idx": seq_idx])))[0];
-
-
-	array(mapping) rects = await(G->G->DB->run_pg_query(#"
-			SELECT x1, y1, x2, y2, template_signatory_id, transition_score
-			FROM audit_rects
-			WHERE template_id = :template_id
-			AND page_number = :page_number
-			ORDER BY id",
-		(["template_id": page->template_id, "page_number": page->page_number])));
-
-	mapping img = Image.PNG._decode(page->png_data);
-	object grey = img->image->grey();
-	array ocr_data = Standards.JSON.decode(page->ocr_result);
-	mapping bounds = ([
-			"left": min(@ocr_data->pos[*][0]),
-			"top": min(@ocr_data->pos[*][1]),
-			"right": max(@ocr_data->pos[*][2]),
-			"bottom": max(@ocr_data->pos[*][3])
-		]);
-	werror("Bounds: %O\n", bounds);
-	foreach (rects, mapping r) {
-		int calculated_transition_score = calculate_transition_score(r,
-		bounds, grey)->score;
-
-		werror("Template Id: %3d Page no: %2d Signatory Id: %2d Transition score: %6d, Calculated transition score: %6d \n", page->template_id, page->page_number, r->template_signatory_id || 0, r->transition_score, calculated_transition_score);
-	}
-}
 
 //Attempt to create all tables and alter them as needed to have all columns
 __async__ void create_tables(int confirm) {
