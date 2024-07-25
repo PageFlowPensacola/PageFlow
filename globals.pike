@@ -229,19 +229,23 @@ __async__ array analyze_page(string page_data, int imgwidth, int imgheight) {
 	return data;
 }
 
-mapping calculate_transition_score(mapping r, mapping bounds, object grey) {
+array matrix_transform(array matrix, int x, int y) {
+	//No easy matmul operation, so we do it manually
+	// multiply a 3x2 matrix (returned from Python) by a 1x2 vector (x and y)
+	return ({matrix[0] * x + matrix[1] * y + matrix[2],
+		 matrix[3] * x + matrix[4] * y + matrix[5]});
+}
+
+mapping calculate_transition_score(mapping r, object grey, array|void transform) {
 	int last = -1, transition_count = 0;
-	// Represent the box in px coords for the box we are now using,
-	// which may be based on a template or on a document.
-	int x1 = (int) (r->x1 * (bounds->right - bounds->left) + bounds->left);
-	int x2 = (int) (r->x2 * (bounds->right - bounds->left) + bounds->left);
-	int y1 = (int) (r->y1 * (bounds->bottom - bounds->top) + bounds->top);
-	int y2 = (int) (r->y2 * (bounds->bottom - bounds->top) + bounds->top);
-	// Now clamp to the image bounds
-	x1 = limit(0, x1, grey->xsize() - 1);
-	x2 = limit(0, x2, grey->xsize() - 1);
-	y1 = limit(0, y1, grey->ysize() - 1);
-	y2 = limit(0, y2, grey->ysize() - 1);
+	if (!transform) transform = ({1, 0, 0, 0, 1, 0}); // identity matrix
+	[int x1, int y1] = matrix_transform(transform, r->x1, r->y1);
+	[int x2, int y2] = matrix_transform(transform, r->x2, r->y2);
+	// Clamp to the image bounds just in case.
+	x1 = limit(0, (int) x1, grey->xsize() - 1);
+	x2 = limit(1, (int) x2, grey->xsize());
+	y1 = limit(0, (int) y1, grey->ysize() - 1);
+	y2 = limit(1, (int) y2, grey->ysize());
 	constant STRIP_COUNT = 16;
 	// regions and middle
 	int ymid = y1 + (y2 - y1) / STRIP_COUNT / 2;

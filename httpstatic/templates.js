@@ -62,11 +62,7 @@ canvas.addEventListener('pointerup', (e) => {
 		// did you click in a rect?
 		// iterate over all rects, find the one that contains the click
 		for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
-			const left = rect.x1 * (bounds.pxright - bounds.pxleft) + bounds.pxleft;
-			const top = rect.y1 * (bounds.pxbottom - bounds.pxtop) + bounds.pxtop;
-			const right = rect.x2 * (bounds.pxright - bounds.pxleft) + bounds.pxleft;
-			const bottom = rect.y2 * (bounds.pxbottom - bounds.pxtop) + bounds.pxtop;
-			if (rect_end_x >= left && rect_end_x <= right && rect_end_y >= top && rect_end_y <= bottom) {
+			if (rect_end_x >= rect.x1 && rect_end_x <= rect.x2 && rect_end_y >= rect.y1 && rect_end_y <= rect.y2) {
 				// found it
 				let dlg = DOM("#editauditrect");
 				set_content("#signatories", [OPTION({value: 0}, "Select a signatory"),
@@ -80,13 +76,7 @@ canvas.addEventListener('pointerup', (e) => {
 			}
 		}
 		return;
-	}
-
-
-	// Calculate the width and height of the (text-based) bounding box
-	// returned based on Tesseract's output.
-	const width = bounds.pxright - bounds.pxleft;
-	const height = bounds.pxbottom - bounds.pxtop;
+	} // end if clicking
 
 	// Clamp rectangle to canvas/image bounds
 	rect_start_x = Math.min(Math.max(rect_start_x, 0), canvas.width);
@@ -107,20 +97,8 @@ canvas.addEventListener('pointerup', (e) => {
 	let right = Math.max(rect_start_x, rect_end_x);
 	let bottom = Math.max(rect_start_y, rect_end_y);
 
-	// Now we change the coordinate system from pixels to bounding box coordinates.
-	// The edges of the bounding box are defined as 0 and 1.
-	// Since most of these documents will be in portrait orientation,
-	// the Y scale will generally have a larger step size than the X scale,
-	// but this won't make a difference.
-	// First we cut off the margin, then in order to
-	// get the percentage of the bounding box, we divide by the width or height,
-	// which is the scale of our percentage.
-	left = (left - bounds.pxleft) / width;
-	top = (top - bounds.pxtop) / height;
-	right = (right - bounds.pxleft) / width;
-	bottom = (bottom - bounds.pxtop) / height;
-
-	if (right - left < .01 || bottom - top < .01) return;
+	// Don't create rectangles smaller than 5x5
+	if (right - left < 5 || bottom - top < 5) return;
 	ws_sync.send({
 		"cmd": "add_rect",
 		"rect": {
@@ -135,26 +113,13 @@ function repaint() {
 	canvas.height = pageImage.height;
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	// Draw stuff here
 	ctx.drawImage(pageImage, 0, 0);
-	const bounds = localState.pages[localState.current_page - 1];
-	ctx.strokeStyle = "magenta";
-	ctx.lineWidth = 1;
-	ctx.moveTo(bounds.pxleft, bounds.pxtop);
-	ctx.lineTo(bounds.pxright, bounds.pxtop);
-	ctx.lineTo(bounds.pxright, bounds.pxbottom);
-	ctx.lineTo(bounds.pxleft, bounds.pxbottom);
-	ctx.lineTo(bounds.pxleft, bounds.pxtop);
-	ctx.lineTo(bounds.pxright, bounds.pxbottom);
-	ctx.moveTo(bounds.pxright, bounds.pxtop);
-	ctx.lineTo(bounds.pxleft, bounds.pxbottom);
-	ctx.stroke();
 	for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
 		ctx.fillStyle = +hovering === rect.id ? "#ff88" : "#00f8";
-		const left = rect.x1 * (bounds.pxright - bounds.pxleft) + bounds.pxleft;
-		const top = rect.y1 * (bounds.pxbottom - bounds.pxtop) + bounds.pxtop;
-		const width = (rect.x2 - rect.x1) * (bounds.pxright - bounds.pxleft);
-		const height = (rect.y2 - rect.y1) * (bounds.pxbottom - bounds.pxtop);
+		const left = rect.x1;
+		const top = rect.y1;
+		const width = (rect.x2 - rect.x1);
+		const height = (rect.y2 - rect.y1);
 		ctx.fillRect(
 			left,
 			top,

@@ -2,9 +2,86 @@ protected void create (string name) {
 	G->G->utils = this;
 }
 
+array match_arrays(array arr1, array arr2, function pred) {
+	//Step through the arrays, finding those that match
+	//The predicate function should return a truthy value when they match, and these values
+	//will be collected into the result.
+	int d1, d2; //Denoters for the respective arrays
+	array ret = ({ });
+	nextmatch: while (d1 < sizeof(arr1) && d2 < sizeof(arr2)) {
+		if (mixed match = pred(arr1[d1], arr2[d2])) {
+			//Match!
+			d1++; d2++;
+			ret += ({match});
+			continue;
+		}
+		//Try to advance d1 until we get a match; not too many steps though.
+		//The limit is a tweakable - if resynchronization can happen after
+		//that many failures, it might be a phantom resync and not actually
+		//helpful. A lower number is also faster than a higher one.
+		for (int i = 1; i < 10 && d1 + i < sizeof(arr1); ++i) {
+			if (mixed match = pred(arr1[d1+i], arr2[d2])) {
+				//That'll do!
+				d1 += i + 1; d2++;
+				ret += ({match});
+				continue nextmatch;
+			}
+		}
+		//No match in the next few? Skip one from arr2 and carry on.
+		d2++;
+	}
+	return ret;
+}
+
+array centroid(array pos) {
+	return ({(pos[0] + pos[2]) / 2, (pos[1] + pos[3]) / 2});
+}
+
+
 @"Test":
-void test() {
-	werror("Hello World\n");
+__async__ void test() {
+	array(mapping) pages = await((G->G->DB->run_pg_query(#"
+		SELECT png_data, template_id, page_number, ocr_result, seq_idx
+		FROM uploaded_file_pages
+		WHERE file_id = :id", (["id": 59]))));
+		werror("Page words: %O\n", pages[0]->ocr_result);
+	array(mapping) rects = await(G->G->DB->run_pg_query(#"
+			SELECT x1, y1, x2, y2,
+				audit_type,
+				template_signatory_id,
+				id, page_data, ocr_result
+			FROM audit_rects
+			NATURAL JOIN template_pages
+			WHERE (template_id = :template_id OR :template_id = 0)
+			AND (page_number = :page_number OR :page_number = 0)
+			ORDER BY template_id, page_number, id",
+		(["template_id": pages[0]->template_id, "page_number": pages[0]->page_number])));
+	object template = Image.PNG.decode(rects[0]->page_data)->grey();
+	object page = Image.PNG.decode(pages[0]->png_data)->grey();
+	object pythonstdin = Stdio.File(), pythonstdout = Stdio.File();
+	string pythonbuf = "";
+	object python = Process.create_process(({"python3.12", "regress.py"}),
+		(["stdin": pythonstdin->pipe(Stdio.PROP_IPC | Stdio.PROP_REVERSE), "stdout": pythonstdout->pipe(Stdio.PROP_IPC)]));
+
+	array template_words = Standards.JSON.decode(rects[0]->ocr_result);
+	array page_words = Standards.JSON.decode(pages[0]->ocr_result);
+	array pairs = match_arrays(template_words, page_words) {[mapping o, mapping d] = __ARGS__;
+		return o->text == d->text && (centroid(o->pos) + centroid(d->pos));
+	};
+	werror("Pairs: %O\n", pairs);
+	//5. Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
+	pythonstdin->write(Standards.JSON.encode(pairs, 1) + "\n");
+	while (!has_value(pythonbuf, '\n')) {
+		pythonbuf += pythonstdout->read(1024, 1);
+	}
+	sscanf(pythonbuf, "%s\n%s", string line, pythonbuf);
+	array matrix = Standards.JSON.decode(line);
+	werror("Matrix: %O\n", matrix);
+	foreach (rects, mapping r) {
+		mapping template_score = calculate_transition_score(r, template);
+		mapping page_score = calculate_transition_score(r, page, matrix);
+		werror("Score %O \n %O \n", template_score, page_score);
+	}
 }
 
 

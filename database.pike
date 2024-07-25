@@ -74,10 +74,10 @@ mapping tables = ([
 		"audit_type varchar NOT NULL", //NOT IN USE initials, signature, date
 		"template_id int NOT NULL REFERENCES templates ON DELETE CASCADE",
 		"page_number smallint NOT NULL",
-		"x1 double precision NOT NULL",
-		"y1 double precision NOT NULL",
-		"x2 double precision NOT NULL",
-		"y2 double precision NOT NULL",
+		"x1 smallint NOT NULL",
+		"y1 smallint NOT NULL",
+		"x2 smallint NOT NULL",
+		"y2 smallint NOT NULL",
 		"name varchar DEFAULT NULL",
 		"transition_score int NOT NULL DEFAULT -1", // to compare against signature
 		"template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE"
@@ -316,7 +316,7 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 			last_page_data = r->page_data;
 		}
 
-		int transition_score = calculate_transition_score(r, bounds, grey)->score;
+		int transition_score = calculate_transition_score(r, grey)->score;
 		await(G->G->DB->run_pg_query(#"
 			UPDATE audit_rects
 			SET transition_score = :score
