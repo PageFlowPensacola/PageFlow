@@ -150,7 +150,6 @@ __async__ void audit_score() {
 	await(G->G->DB->recalculate_transition_scores(0, 0));
 }
 
-
 @"Test the classifier":
 __async__ void ml() {
 	string domain = "com.pageflow.tagtech.dunder-mifflin.";

@@ -309,9 +309,6 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		if(!sizeof(matchingTemplates)) {
 			continue;
 		}
-
-		template_pages[pageref] = 1;
-		werror("######Template pages: %O\n", template_pages);
 		templateName = matchingTemplates[0]->name; // assume it has a name at this point
 
 		sscanf(pageref, "%d:%d", int template_id, int page_number);
