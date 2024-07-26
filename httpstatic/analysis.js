@@ -1,5 +1,5 @@
 import {lindt, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {DIV, FORM, "svg:g": G, H3, IMG, INPUT, LI, P, "svg:path": PATH, SECTION, SPAN, "svg:svg": SVG, UL} = lindt; //autoimport
+const {A, DIV, FORM, "svg:g": G, H3, IMG, INPUT, LI, P, "svg:path": PATH, SECTION, SPAN, "svg:svg": SVG, UL} = lindt; //autoimport
 import "./utils.js";
 
 const localState = {};
@@ -61,7 +61,9 @@ export function render(state) {
 				})
 			})]) */,
 			DIV({class: "thumbnail"}, [
-				localState.currentPage ? IMG({src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`}) : DIV("Click item in list to the left to load page view."),
+				localState.currentPage
+					? A({href: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`}, IMG({src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate&width=400`}))
+					: DIV("Click item in list to the left to load page view."),
 			])
 		]),
 	]));
