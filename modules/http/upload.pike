@@ -320,22 +320,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			AND page_number = :page_number",
 			(["template_id": template_id, "page_number": page_number])))[0]->ocr_result);
 
-		object pythonstdin = Stdio.File(), pythonstdout = Stdio.File();
-		string pythonbuf = "";
-		object python = Process.create_process(({"python3", "regress.py"}),
-			(["stdin": pythonstdin->pipe(Stdio.PROP_IPC | Stdio.PROP_REVERSE), "stdout": pythonstdout->pipe(Stdio.PROP_IPC)]));
-
 		array pairs = match_arrays(template_words, page_ocr, 0) {[mapping o, mapping d] = __ARGS__;
 			return o->text == d->text && (centroid(o->pos) + centroid(d->pos));
 		};
 
 		//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
-		pythonstdin->write(Standards.JSON.encode(pairs, 1) + "\n");
-		while (!has_value(pythonbuf, '\n')) {
-			pythonbuf += pythonstdout->read(1024, 1);
-		}
-		sscanf(pythonbuf, "%s\n%s", string line, pythonbuf);
-		array matrix = Standards.JSON.decode(line);
+		array matrix = await(regression(pairs));
+
 		// Since not awaiting, won't report errors!
 		G->G->DB->run_pg_query(#"
 			INSERT INTO uploaded_file_pages

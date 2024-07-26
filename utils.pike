@@ -4,6 +4,7 @@ protected void create (string name) {
 
 @"Test":
 __async__ void test() {
+	function regression = G->bootstrap("modules/regress.pike")->regression;
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
 		FROM uploaded_file_pages
@@ -17,17 +18,13 @@ __async__ void test() {
 		(["template_id": pages[0]->template_id, "page_number": pages[0]->page_number])));
 	object template = Image.PNG.decode(templates[0]->page_data)->grey();
 	object page = Image.PNG.decode(pages[0]->png_data)->grey();
-	object pythonstdin = Stdio.File(), pythonstdout = Stdio.File();
-	string pythonbuf = "";
-	object python = Process.create_process(({"python3", "regress.py"}),
-		(["stdin": pythonstdin->pipe(Stdio.PROP_IPC | Stdio.PROP_REVERSE), "stdout": pythonstdout->pipe(Stdio.PROP_IPC)]));
 
 	array template_words = Standards.JSON.decode(templates[0]->ocr_result);
 	array page_words = Standards.JSON.decode(pages[0]->ocr_result);
+
 	array pairs = match_arrays(template_words, page_words, 1) {[mapping template, mapping filepage] = __ARGS__;
 		return sizeof(template->text) > 1 && template->text == filepage->text && (centroid(template->pos) + centroid(filepage->pos));
 	};
-
 	/*
 	Above can also be done with explicit lambda:
 	array pairs = match_arrays(template_words, page_words, 1, lambda( mixed ...__ARGS__ ) {
@@ -35,21 +32,8 @@ __async__ void test() {
 		return sizeof(o->text) > 1 && o->text == d->text && (centroid(o->pos) + centroid(d->pos));
 	}); */
 
-	mapping long = template_words[0];
-	foreach (template_words, mapping w) {
-		if (sizeof(w->text) > sizeof(long->text)) long = w;
-	}
-	foreach (page_words, mapping w) {
-		if (sizeof(w->text) > sizeof(long->text)) long = w;
-	}
-	werror("%O\n", long);
 	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
-	pythonstdin->write(Standards.JSON.encode(pairs, 1) + "\n");
-	while (!has_value(pythonbuf, '\n')) {
-		pythonbuf += pythonstdout->read(1024, 1);
-	}
-	sscanf(pythonbuf, "%s\n%s", string line, pythonbuf);
-	array matrix = Standards.JSON.decode(line);
+	array matrix = await(regression(pairs));
 	constant gutter = 10;
 	constant center = 1;
 	werror("Matrix: %O\n", matrix);

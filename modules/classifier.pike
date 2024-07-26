@@ -99,6 +99,14 @@ void count_idle() {
 			werror("Closing process for %O\n", domain);
 		}
 	}
+	// Breach encapsulation to check if we should close the regression process
+	if (G->G->regression_status->pythonstdout) {
+		G->G->regression_status->idle_count++;
+		if (G->G->regression_status->idle_count >= 3) {
+			G->G->regression_status->pythonstdin->close();
+			werror("Closing regression process\n");
+		}
+	}
 }
 
 string kick_python(string|zero force) {
