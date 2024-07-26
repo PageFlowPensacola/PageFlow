@@ -21,10 +21,10 @@ mapping annotate_transition_scores(object img, array rects, array transform) {
 
 		int alpha = 200; // HACK limit(16, (box->score - r->transition_score) * 255 / IS_A_SIGNATURE, 255);
 		array points = ({
-			matrix_transform(transform, box->x1, box->y1),
-			matrix_transform(transform, box->x2, box->y1),
-			matrix_transform(transform, box->x2, box->y2),
-			matrix_transform(transform, box->x1, box->y2),
+			matrix_transform(transform, r->x1, r->y1),
+			matrix_transform(transform, r->x2, r->y1),
+			matrix_transform(transform, r->x2, r->y2),
+			matrix_transform(transform, r->x1, r->y2),
 		});
 		img->setcolor(255, 0, 0, alpha)->polyfill(points * ({ }));
 	}
