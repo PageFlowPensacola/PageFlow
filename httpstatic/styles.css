@@ -136,6 +136,7 @@ main {
 	min-width: 100%;
 }
 
+
 main li {
 	margin-left: 10px;
 	cursor: pointer;
@@ -255,6 +256,11 @@ main ul {
 }
 
 #pagesinfo li {
+	display: flex;
+	gap: 0.5em;
+}
+
+#pagesinfo li.active {
 	display: flex;
 	gap: 0.5em;
 }
