@@ -263,7 +263,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		array pagerefs = indices(classification->results);
 		array confs = values(classification->results);
 		sort(confs, pagerefs);
-		// werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
+		werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
 		foreach(classification->results; string pgref; float conf) {
 			if (conf > confidence) {
 				pageref = pgref;
@@ -373,51 +373,6 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			timings["analyze page"] += tm->get();
 			continue;
 		}
-		// maybe eventually calculate transition scores HERE
-
-			/* werror(#"RECT INFO: Template Id: %3d
-			Template Page no: %2d
-			File Page no: %2d
-			Signatory Id: %2d
-			Transition score: %6d,
-			Calculated transition score: %6d \n", template_id, page_number, i+1,
-			r->template_signatory_id || 0, r->transition_score, box->score);
-		} // End loop templates[template_id][page_number] (audit_rects) loop.
-		if (page_calculated_transition_score < page_transition_score) {
-			confidence = 0.0;
-		}*/
-		/* if (!template_pages[pageref]) {
-			werror("### Template %d, page %d not yet accounted for (%s)\n", template_id, page_number, pageref);
-			file_page_details+=({
-				([
-					"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
-					"file_page_no": i+1,
-					"fields": field_results,
-					"template_id": template_id,
-					"template_name": templateName,
-					"page_transition_score": page_transition_score,
-					"page_calculated_transition_score": page_calculated_transition_score,
-					"document_page": page_number,
-				])
-			});
-		} else {
-			werror("### Template %d, page %d already accounted for (%s)\n", template_id, page_number, pageref);
-			annotated_contract_pages+=({
-				([
-					"annotated_img": "data:image/png;base64," + MIME.encode_base64(Image.PNG.encode(img->image)),
-					"file_page_no": i+1,
-					"fields": field_results,
-					"template_id": template_id,
-					"template_name": templateName,
-					"page_transition_score": page_transition_score,
-					"page_calculated_transition_score": page_calculated_transition_score,
-					"error": "Duplicate document page.",
-					"document_page": page_number,
-					"template_id": 1<<40,
-					"template_name": "Duplicate document page.",
-				])
-			});
-		}  */
 
 		timings["analyze page"] += tm->get();
 	} // End of foreach document pages loop.
