@@ -167,57 +167,6 @@ __async__ void audit_score() {
 }
 
 
-@"Tesseract and parse HOCR on a PNG file named annoteted.png":
-__async__ void tesseract(){
-	[string fn] = G->G->args[Arg.REST];
-	mapping|object img = Image.PNG._decode(Stdio.read_file(fn));
-	if (img->alpha) {
-		// Make a blank image of the same size as the original image
-		object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
-		// Paste original into it, fading based on alpha channel
-		img->image = blank->paste_mask(img->image, img->alpha);
-	}
-	int left = img->xsize, top = img->ysize, right = 0, bottom = 0;
-	img = img->image;
-	img->setcolor(@bbox_color);
-	mapping hocr = await(run_promise(({"tesseract", fn, "-", "hocr"})));
-	array data = Parser.XML.Simple()->parse(hocr->stdout){
-		// implicit lambda
-		[string type, string name, mapping attr, mixed data, mixed loc] = __ARGS__;
-		switch (type) {
-			case "<?xml": return 0;
-			case "<": return 0;
-			case "":
-				data = String.trim(data);
-				return data != "" && data;
-			case ">":
-			// Ensure we always get back an array of arrays, but flatten to single array.
-			if (name == "body") return Array.arrayify(data[*]) * ({ });
-			if (name == "html") return data * ({ });
-				switch (attr->class) {
-					case "ocr_page": return data;
-					case "ocr_carea": {
-						sscanf(attr->title, "%*sbbox %d %d %d %d", int l, int t, int r, int b);
-						left = min(left, l); top = min(top, t);
-						right = max(right, r); bottom = max(bottom, b);
-						return data * "\n\n";
-					}
-					case "ocr_par": return data * "\n";
-					case "ocr_line": return data * " ";
-					case "ocrx_word": return data * " ";
-					default: return 0;
-				}
-		}
-	} * ({ }); // then flatten at the end
-	img->line(left, top, right, top);
-	img->line(right, top, right, bottom);
-	img->line(right, bottom, left, bottom);
-	img->line(left, bottom, left, top);
-	img->line(left, top, right, bottom);
-	img->line(right, top, left, bottom);
-	Stdio.write_file("annotated.png", Image.PNG.encode(img));
-}
-
 @"Test the classifier":
 __async__ void ml() {
 	string domain = "com.pageflow.tagtech.dunder-mifflin.";
