@@ -236,6 +236,72 @@ array matrix_transform(array matrix, int x, int y) {
 		 matrix[3] * x + matrix[4] * y + matrix[5]});
 }
 
+array centroid(array pos) {
+	return ({(pos[0] + pos[2]) / 2, (pos[1] + pos[3]) / 2});
+}
+
+array match_arrays(array arr1, array arr2, int debug, function pred) {
+	//Step through the arrays, finding those that match
+	//The predicate function should return a truthy value when they match, and these values
+	//will be collected into the result.
+	int d1, d2; //Denoters for the respective arrays
+	array ret = ({ });
+	constant base_span = 4; //How many steps to look ahead for a match
+	int span = base_span;
+	nextmatch: while (d1 < sizeof(arr1) && d2 < sizeof(arr2)) {
+		if (mixed match = pred(arr1[d1], arr2[d2])) {
+			//Match!
+			if (debug) werror("%-20s %-20s MATCH\n", arr1[d1]->text, arr2[d2]->text);
+			d1++; d2++;
+			ret += ({match});
+			span = base_span;
+			continue;
+		}
+		//Try to advance d1 until we get a match; not too many steps though.
+		//The limit is a tweakable - if resynchronization can happen after
+		//that many failures, it might be a phantom resync and not actually
+		//helpful. A lower number is also faster than a higher one.
+		for (int i = 1; i < span && d1 + i < sizeof(arr1); ++i) {
+			if (mixed match = pred(arr1[d1+i], arr2[d2])) {
+				//That'll do!
+				if (debug) {for (int j = 0; j < i; ++j) {
+						werror("%-20s %-20s ADVANCE\n", arr1[d1+j]->text, "");
+					}
+					werror("%-20s %-20s MATCH\n", arr1[d1+i]->text, arr2[d2]->text);
+				}
+				d1 += i + 1; d2++;
+				ret += ({match});
+				span = base_span;
+				continue nextmatch;
+			}
+		}
+		for (int i = 1; i < span && d2 + i < sizeof(arr2); ++i) {
+			if (mixed match = pred(arr1[d1], arr2[d2+i])) {
+				//That'll do!
+				if (debug) {
+					for (int j = 0; j < i; ++j) {
+						werror("%-20s %-20s ADVANCE\n", "", arr2[d2+j]->text);
+					}
+					werror("%-20s %-20s MATCH\n", arr1[d1]->text, arr2[d2+i]->text);
+				}
+				d1++; d2 += i + 1;
+				ret += ({match});
+				span = base_span;
+				continue nextmatch;
+			}
+		}
+		//No match in the next few? Skip one from arr2 and carry on.
+		if (debug) werror("%-20s %-20s SKIP\n", arr1[d1]->text, "");
+		if (debug) werror("%-20s %-20s SKIP\n", "", arr2[d2]->text);
+		d2++; d1++;
+		span += base_span;
+	}
+	if (debug) while (d1 < sizeof(arr1)) werror("%-20s %-20s ADVANCE\n", arr1[d1++]->text, "");
+	if (debug) while (d2 < sizeof(arr2)) werror("%-20s %-20s SKIP\n", "", arr2[d2++]->text);
+	if (debug) werror("Matched %d\n", sizeof(ret));
+	return ret;
+}
+
 mapping calculate_transition_score(mapping r, object grey, array|void transform) {
 	int last = -1, transition_count = 0;
 	if (!transform) transform = ({1, 0, 0, 0, 1, 0}); // identity matrix

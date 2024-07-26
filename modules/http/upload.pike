@@ -69,41 +69,6 @@ __async__ array pdf2png(string pdf) {
 	return pages;
 }
 
-array match_arrays(array arr1, array arr2, function pred) {
-	//Step through the arrays, finding those that match
-	//The predicate function should return a truthy value when they match, and these values
-	//will be collected into the result.
-	int d1, d2; //Denoters for the respective arrays
-	array ret = ({ });
-	nextmatch: while (d1 < sizeof(arr1) && d2 < sizeof(arr2)) {
-		if (mixed match = pred(arr1[d1], arr2[d2])) {
-			//Match!
-			d1++; d2++;
-			ret += ({match});
-			continue;
-		}
-		//Try to advance d1 until we get a match; not too many steps though.
-		//The limit is a tweakable - if resynchronization can happen after
-		//that many failures, it might be a phantom resync and not actually
-		//helpful. A lower number is also faster than a higher one.
-		for (int i = 1; i < 10 && d1 + i < sizeof(arr1); ++i) {
-			if (mixed match = pred(arr1[d1+i], arr2[d2])) {
-				//That'll do!
-				d1 += i + 1; d2++;
-				ret += ({match});
-				continue nextmatch;
-			}
-		}
-		//No match in the next few? Skip one from arr2 and carry on.
-		d2++;
-	}
-	return ret;
-}
-
-array centroid(array pos) {
-	return ({(pos[0] + pos[2]) / 2, (pos[1] + pos[3]) / 2});
-}
-
 
 __async__ string template(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("template upload %O\n", sizeof(req->body_raw));
@@ -363,7 +328,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		object python = Process.create_process(({"python3", "regress.py"}),
 			(["stdin": pythonstdin->pipe(Stdio.PROP_IPC | Stdio.PROP_REVERSE), "stdout": pythonstdout->pipe(Stdio.PROP_IPC)]));
 
-		array pairs = match_arrays(template_words, page_ocr) {[mapping o, mapping d] = __ARGS__;
+		array pairs = match_arrays(template_words, page_ocr, 0) {[mapping o, mapping d] = __ARGS__;
 			return o->text == d->text && (centroid(o->pos) + centroid(d->pos));
 		};
 
@@ -381,7 +346,6 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			VALUES
 				(:file_id, :seq_idx, :png_data, :template_id, :page_number, :ocr_result, :transform)",
 				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "template_id": template_id, "page_number": page_number, "ocr_result": Standards.JSON.encode(page_ocr), "transform": Standards.JSON.encode(matrix)]));
-		// Send back a message so we can fetch the annotated templates
 
 		if (!templates[template_id]) templates[template_id] = ([]);
 		if (!templates[template_id][page_number]) { // if not a duplicate
