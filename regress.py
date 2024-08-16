@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import sys
 
 def find_affine_transformation(points):
 	"""
@@ -24,7 +25,10 @@ def find_affine_transformation(points):
 		i += 1
 
 	# Solve for the affine transformation parameters
-	affine_params, _, _, _ = np.linalg.lstsq(A, B, rcond=None)
+	affine_params, residuals, rank, s = np.linalg.lstsq(A, B, rcond=None)
+	print("residuals: ", residuals, file=sys.stderr)
+	print("rank: ", rank, file=sys.stderr)
+	print("s: ", s, file=sys.stderr)
 	return affine_params
 
 try:
