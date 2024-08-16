@@ -25,6 +25,16 @@ export function render(state) {
 	stateSnapshot = state;
 	console.log("Rendering", state);
 	console.log("Local state", localState);
+	if (state.files) {
+		return replace_content("main", SECTION([
+			FORM({id: "file_submit"}, [
+				INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
+				localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
+			]),
+			H3("Uploaded Files"),
+			UL(state.files.map(file => LI([A({href: `/analysis?id=${file.id}`}, [(SPAN(file.filename)), " ", (SPAN((file.created)))])]))),
+		]));
+	}
 	replace_content("main", SECTION([
 		FORM({id: "file_submit"}, [
 			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
