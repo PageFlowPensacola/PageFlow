@@ -3,12 +3,13 @@ inherit http_websocket;
 constant markdown = "# Analysis\n\n";
 
 __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:mixed) msg){
+	werror("CONN SESSION %O\n", conn->session);
 	// @TODO actually create a group for this once we're actually saving something
 	int fileid = await(G->G->DB->run_pg_query(#"
 		INSERT INTO uploaded_files
-		(filename)
-		VALUES (:filename)
-		returning id", (["filename": msg->name])))[0]->id;
+		(filename, domain)
+		VALUES (:filename, :domain)
+		returning id", (["filename": msg->name, "domain": conn->session->domain])))[0]->id;
 
 	string upload_id = G->G->prepare_upload(
 		"contract", ([
