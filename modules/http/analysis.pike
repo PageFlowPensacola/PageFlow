@@ -92,12 +92,12 @@ array calc_transition_scores(Image.Image img, array(mapping) rects, array transf
 }
 
 __async__ mapping get_state(string|int group, string|void id, string|void type){
-	if (group == "" || stringp(group)) {
+	if (stringp(group)) {
 		// if group is a string, it's a domain eg 'com.pageflow.tagtech.'
 		array(mapping) files = await((G->G->DB->run_pg_query(#"
 			SELECT filename, page_count, id, created_at as created
 			FROM uploaded_files
-			-- WHERE domain = :domain", ([]))));
+			WHERE :domain LIKE domain || '%'", (["domain":group]))));
 		return (["files": files]);
 	}
 	// Must have an analysis set in mind
