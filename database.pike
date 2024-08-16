@@ -90,6 +90,7 @@ mapping tables = ([
 		"id SERIAL PRIMARY KEY",
 		"filename text NOT NULL",
 		"page_count smallint",
+		"domain text NOT NULL REFERENCES domains",
 		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
 		"pdf_data BYTEA",
 	}),
@@ -140,7 +141,6 @@ __async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void 
 	// eg: a process sequence change: 1,2,3,4: 1,2,4,3
 	// Currently only support in/decremental updates
 
-
 	object pending = query_pending;
 	object completion = query_pending = Concurrent.Promise();
 
@@ -156,10 +156,24 @@ __async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void 
 				else ret += ({parse_mysql_result(await(conn->promise_query(q, bindings))->get())});
 			}) break;
 		}
+		werror("Transaction result: %O\n", ret);
+
 		// TODO Something critically wrong. Failing to rollback after an exception.
 		//Ignore errors from rolling back - the exception that gets raised will have come from
 		//the actual query (or possibly the BEGIN), not from rolling back.
-		if (ex) catch {await(conn->promise_query("rollback"))->get();};
+		// NOTE run with `pike -DPG_DEBUG app.pike --exec=tables to debug`
+		if (ex) {
+			mixed ex2 = catch {
+				conn->resync();
+				object rollback = conn->promise_query("rollback");
+				werror("Exception: %O\n", rollback);
+				object query = await(rollback);
+				werror("Rollback: %O\n", query);
+				mixed rollback_result = query->get();
+				werror("Rollback result: %O\n", rollback_result);
+			};
+			werror("Rollback exception: %O\n", ex2);
+		}
 		//But for committing, things get trickier. Technically an exception here leaves the
 		//transaction in an uncertain state, but I'm going to just raise the error. It is
 		//possible that the transaction DID complete, but we can't be sure.
