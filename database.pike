@@ -1,10 +1,10 @@
 inherit annotated;
 
-Sql.Sql mysqlconn, pgsqlconn;
+object mysqlconn, pgsqlconn;
 Concurrent.Promise query_pending;
 
 Concurrent.Future run_my_query(string|array query, mapping|void bindings) {return run_query(mysqlconn, query, bindings);}
-Concurrent.Future run_pg_query(string|array query, mapping|void bindings) {return run_query(pgsqlconn, query, bindings);}
+//Concurrent.Future run_pg_query(string|array query, mapping|void bindings) {return run_query(pgsqlconn, query, bindings);}
 
 // Every domain and its children are visible to its owner
 // * Objects belong to a domain and all of its subdomains
@@ -128,7 +128,7 @@ array(mapping) parse_mysql_result(array(mapping) result) {
 	"update set seq = :new where id = :this"
 	})
 */
-__async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void bindings) {
+__async__ array(mapping) run_query(object conn, string|array sql, mapping|void bindings) {
 
 	// TODO: figure out why promise queries are failing with broken promise error
 	//write("Query result: %O\n", await(mysqlconn->promise_query(query))->get());
@@ -193,6 +193,21 @@ __async__ array(mapping) run_query(Sql.Sql conn, string|array sql, mapping|void 
 
 	return ret;
 
+}
+
+
+__async__ array run_pg_query(string|array sql, mapping|void bindings) {
+	if (arrayp(sql)) {
+		array ret = ({ });
+		await(pgsqlconn->transaction(__async__ lambda(function query) {
+			foreach (sql, string q) {
+				//A null entry in the array of queries is ignored, and will not have a null return value to correspond.
+				if (q) ret += ({await(query(q, bindings))});
+			}
+		}));
+		return ret;
+	}
+	else return await(pgsqlconn->query(sql, bindings));
 }
 
 __async__ array(mapping) get_templates_for_domain(string domain) {
@@ -343,7 +358,7 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 
 //Attempt to create all tables and alter them as needed to have all columns
 __async__ void create_tables(int confirm) {
-
+	werror("create_tables\n");
 	array cols = await(run_pg_query("select table_name, column_name from information_schema.columns where table_schema = 'public' order by table_name, ordinal_position"));
 	array stmts = ({ });
 	mapping(string:array(string)) havecols = ([]);
@@ -395,7 +410,8 @@ protected void create(string name) {
 	}
 	if (G->G->instance_config->pgsql_connection_string) {
 		werror("Postgres DB Connecting\n");
-		pgsqlconn = Sql.Sql(G->G->instance_config->pgsql_connection_string);
+		//pgsqlconn = Sql.Sql(G->G->instance_config->pgsql_connection_string);
+		pgsqlconn = SSLDatabase("localhost");
 		write("%O\n", pgsqlconn);
 	}
 

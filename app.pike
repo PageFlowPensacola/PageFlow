@@ -2,7 +2,7 @@
 
 */
 
-array(string) bootstrap_files = ({"globals.pike", "console.pike", "database.pike", "connection.pike", /*"window.pike",*/ "modules", "modules/http"});
+array(string) bootstrap_files = ({"globals.pike", "console.pike", "pgssl.pike", "database.pike", "connection.pike", /*"window.pike",*/ "modules", "modules/http"});
 array(string) restricted_update;
 mapping G = ([]);
 
@@ -67,7 +67,7 @@ int | Concurrent.Future main(int argc,array(string) argv)
 	foreach ("test audit_score compare_scores update_page_bounds help" / " ", string cmd) if (G->args[cmd]) G->args->exec = cmd;
 		if (string fn = G->args->exec) {
 			// pike app.pike --exec=somefunc
-			restricted_update = ({"globals.pike", "console.pike", "database.pike", "utils.pike"});
+			restricted_update = ({"globals.pike", "console.pike", "pgssl.pike", "database.pike", "utils.pike"});
 			bootstrap_all();
 			if (fn == 1)
 				if (sizeof(G->args[Arg.REST])) [fn, G->args[Arg.REST]] = Array.shift(G->args[Arg.REST]);
