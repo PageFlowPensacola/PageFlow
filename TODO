@@ -111,3 +111,7 @@ Previous analysis listing view
 Define and list unmatched documents
 	Train/Test Split on the matrix regression
 		if it fails the test then it is an unmatched document.
+
+## August 16
+Decide whether or not to stick with StilleBot pgssl.pike approach
+	and then decide how to manage json en/decoding.

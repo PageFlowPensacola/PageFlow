@@ -8,7 +8,7 @@ __async__ void test() {
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
 		FROM uploaded_file_pages
-		WHERE file_id = :id AND seq_idx = 2", (["id": 74]))));
+		WHERE file_id = :id AND seq_idx = 1", (["id": 81]))));
 
 	array(mapping) templates = await(G->G->DB->run_pg_query(#"
 			SELECT page_data, ocr_result
@@ -136,7 +136,7 @@ __async__ void audit_score() {
 
 @"Test the classifier":
 __async__ void ml() {
-	string domain = "com.pageflow.tagtech.dunder-mifflin.";
+	string domain = "com.pageflow.tagtech.";
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
 
 	werror("Result: %O\n", await(classipy(domain,
