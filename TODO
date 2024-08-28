@@ -115,3 +115,9 @@ Define and list unmatched documents
 ## August 16
 Decide whether or not to stick with StilleBot pgssl.pike approach
 	and then decide how to manage json en/decoding.
+
+## August 28
+Interface for flagging miscategorized templates
+Check for minimum word count on submission
+Check for minimum word match btwn matched template and submission
+Seed ML top level domain
