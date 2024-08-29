@@ -14,7 +14,17 @@ import json
 
 start = time.monotonic()
 model = compose.Pipeline(
-        ("tokenize", feature_extraction.BagOfWords(lowercase=False, ngram_range=(1, 2))),
+        ("tokenize", feature_extraction.BagOfWords(
+					lowercase=False,
+					stop_words= {
+						"a", "an", "and", "are", "as", "at", "be",
+						"but", "by", "for", "if", "in", "into",
+						"is", "it", "no", "not", "of", "on",
+						"or", "such", "that", "the", "their", "then", "there",
+						"these", "they", "this", "to", "was", "will", "with"
+					},
+					ngram_range=(1, 2),
+				)),
         ("nb", naive_bayes.ComplementNB(alpha=1))
     )
 # To seed the model with some data, uncomment the following code,
