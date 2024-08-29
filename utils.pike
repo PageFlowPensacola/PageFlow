@@ -3,7 +3,30 @@ protected void create (string name) {
 }
 
 @"Test":
-__async__ void test() {
+void test() {
+	werror("Test\n");
+}
+
+@"Reset Models":
+__async__ void reset_models() {
+	if (!G->G->args->confirm) {
+		werror("Delete all models and templates? \n Confirm with --confirm\n");
+		return;
+	}
+	werror("Clearing domain models.\n");
+	await(G->G->DB->run_pg_query("UPDATE domains SET ml_model = NULL"));
+	werror("Truncating upload pages and templates.\n");
+	await(G->G->DB->run_pg_query("truncate uploaded_file_pages cascade;"));
+	await(G->G->DB->run_pg_query("truncate uploaded_files cascade;"));
+	await(G->G->DB->run_pg_query("truncate templates cascade;"));
+	werror("Reseeding parent domain model.\n");
+	await(G->G->utils->seed());
+}
+
+@"Annotate":
+__async__ void annotate() {
+	if (sizeof(G->G->args[Arg.REST]) < 1) { werror("Usage: pike app --exec=annotate FILEID\n"); return; }
+
 	function regression = G->bootstrap("modules/regress.pike")->regression;
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
