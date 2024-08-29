@@ -280,23 +280,23 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				(:file_id, :seq_idx, :png_data, :ocr_result)",
 				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "ocr_result": Standards.JSON.encode(page_ocr)]));
 
-				/* upload->conn->sock->send_text(Standards.JSON.encode(
-					(["cmd": "upload_status",
-					"count": file_page_count,
-					"pages": ({(["number": i+1, "fields": ({})])}),
-					"current_page": i+1,
-					"step": sprintf("No document template found for file page %d", i+1),
-				]))); */
+			/* upload->conn->sock->send_text(Standards.JSON.encode(
+				(["cmd": "upload_status",
+				"count": file_page_count,
+				"pages": ({(["number": i+1, "fields": ({})])}),
+				"current_page": i+1,
+				"step": sprintf("No document template found for file page %d", i+1),
+			]))); */
 
-				file_page_details+=({(["error": "No document template found for page.",
-				"fields": ({}),
-				"file_page_no": i+1,
-				"img":"data:image/png;base64," + MIME.encode_base64(current_page),
-				"template_id": 1<<41,
-				"template_name": "No template found",
-				])});
-				timings["analyze page"] += tm->get();
-				continue;
+			file_page_details+=({(["error": "No document template found for page.",
+			"fields": ({}),
+			"file_page_no": i+1,
+			"img":"data:image/png;base64," + MIME.encode_base64(current_page),
+			"template_id": 1<<41,
+			"template_name": "No template found",
+			])});
+			timings["analyze page"] += tm->get();
+			continue;
 		}
 		//werror("Confidence level for page %d: %f\n", i+1, confidence);
 		array(mapping) matchingTemplates = await(G->G->DB->run_pg_query(#"
@@ -323,6 +323,29 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		array pairs = match_arrays(template_words, page_ocr, 0) {[mapping o, mapping d] = __ARGS__;
 			return o->text == d->text && (centroid(o->pos) + centroid(d->pos));
 		};
+
+		werror("Pairs %O\n", pairs);
+
+		if (sizeof(pairs) < 4) {
+			werror("Not enough matching words for page %d\n", i+1);
+
+			G->G->DB->run_pg_query(#"
+			INSERT INTO uploaded_file_pages
+				(file_id, seq_idx, png_data, ocr_result)
+			VALUES
+				(:file_id, :seq_idx, :png_data, :ocr_result)",
+				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "ocr_result": Standards.JSON.encode(page_ocr)]));
+
+			file_page_details+=({(["error": "No document template found for page.",
+			"fields": ({}),
+			"file_page_no": i+1,
+			"img":"data:image/png;base64," + MIME.encode_base64(current_page),
+			"template_id": 1<<41, // Stupidly high number so sorts to end.
+			"template_name": "No template found",
+			])});
+			timings["analyze page"] += tm->get();
+			continue;
+		}
 
 		//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
 		array matrix = await(regression(pairs));
