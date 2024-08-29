@@ -136,25 +136,36 @@ __async__ void audit_score() {
 
 @"Test the classifier":
 __async__ void ml() {
-	string domain = "com.pageflow.tagtech.";
+	string domain = "com.pageflow.";
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
-
+	array texts = ({
+		"Marathon to Waterloo",
+		"ODOMETER DISCLOSURE STATEMENT Federal law (and State law, if applicable) requires that you state the mileage upon transfer of ownership of a vehicle. Failure to complete an odometer disclosure statement or providing a false statement may result in fines and/or imprisonment. I state that the odometer (of the vehicle described below) now reads (no tenths) miles and to the best of my knowledge that it reflects the actual mileage of the vehicle described below, unless one of the following statements is checked. (1 (1)! hereby certify that to the best of my knowledge the odometer reading reflects the amount of mileage in excess of its mechanical limits. C1] (2)! hereby certify that the odometer reading is NOT the actual mileage. WARNING - ODOMETER DISCREPANCY. VEHICLE IDENTIFICATION BODY TYPE MODEL STOCK NUMBER TRANSFERORÃ¢\200\231S (SELLER) INFORMATION TRANSFEROR'S PRINTED NAME (SELLER) VEHICLE ID NUMBER TRANSFEROR'S STREET ADDRESS wor: we AUTHORIZED TRANSFEROR'S SIGNATURE (SELLER) SIGNATURE DATE STATEMENT SIGNED | PRINTED NAME OF PERSON SIGNING TRANSFEREEÃ¢\200\231S (BUYER) INFORMATION TRANSFEREE'S PRINTED NAME (BUYER) TRANSFEREE'S STREET ADDRESS RECEIPT OF COPY ACKNOWLEDGED BY TRANSFEREE (BUYER) TRANSFEREE'S SIGNATURE-BUYER DATE @IGNED PRINTED NAME OF PERSON SIGNING x Laer REORDER FROM: gallagher promotional products, inc. Ã\202Â¢ in Ortando (407) 788-0818 + Outside Orlando (800) 367-8458 Rev. 4497 hem #14460 Ady @, es",
+	});
 	werror("Result: %O\n", await(classipy(domain,
 	([
-		"cmd": "classify", // Odometer disclosure example
-		"text": "ODOMETER DISCLOSURE STATEMENT Federal law (and State law, if applicable) requires that you state the mileage upon transfer of ownership of a vehicle. Failure to complete an odometer disclosure statement or providing a false statement may result in fines and/or imprisonment. I state that the odometer (of the vehicle described below) now reads (no tenths) miles and to the best of my knowledge that it reflects the actual mileage of the vehicle described below, unless one of the following statements is checked. (1 (1)! hereby certify that to the best of my knowledge the odometer reading reflects the amount of mileage in excess of its mechanical limits. C1] (2)! hereby certify that the odometer reading is NOT the actual mileage. WARNING - ODOMETER DISCREPANCY. VEHICLE IDENTIFICATION BODY TYPE MODEL STOCK NUMBER TRANSFERORÃ¢\200\231S (SELLER) INFORMATION TRANSFEROR'S PRINTED NAME (SELLER) VEHICLE ID NUMBER TRANSFEROR'S STREET ADDRESS wor: we AUTHORIZED TRANSFEROR'S SIGNATURE (SELLER) SIGNATURE DATE STATEMENT SIGNED | PRINTED NAME OF PERSON SIGNING TRANSFEREEÃ¢\200\231S (BUYER) INFORMATION TRANSFEREE'S PRINTED NAME (BUYER) TRANSFEREE'S STREET ADDRESS RECEIPT OF COPY ACKNOWLEDGED BY TRANSFEREE (BUYER) TRANSFEREE'S SIGNATURE-BUYER DATE @IGNED PRINTED NAME OF PERSON SIGNING x Laer REORDER FROM: gallagher promotional products, inc. Ã\202Â¢ in Ortando (407) 788-0818 + Outside Orlando (800) 367-8458 Rev. 4497 hem #14460 Ady @, es",
+		"cmd": "classify",
+		"text": texts[1],
 	]))));
 }
 
 @"Seed parent domain model":
-/* __async__ void seed() {
+ __async__ void seed() {
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
 	werror("Seeding parent domain model\n");
-	await(classipy("com.pageflow.", ([
-		"cmd": "train",
-		"model": "com.pageflow.",
-	])));
-} */
+	int page = 0;
+	foreach (get_dir("seedcontent"), string fn) {
+		werror("Seeding %O\n", fn);
+		foreach (Stdio.read_file("seedcontent/"+fn) / "\f", string text) { // split on form feed
+			await(classipy("com.pageflow.", ([
+				"cmd": "train",
+				"text": text,
+				"pageref": "0:" + (++page),
+			])));
+			werror("Trained %O\n", page);
+		}
+	}
+}
 
 @"Update database schema":
 __async__ void tables() {

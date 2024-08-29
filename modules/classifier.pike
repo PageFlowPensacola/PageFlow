@@ -28,13 +28,21 @@ void pythonoutput(mapping proc, string data){
 }
 
 __async__ void load_model(string domain, mapping proc) {
+	// Called once for process launch.
 	array(mapping) model = await(G->G->DB->run_pg_query(#"
 				SELECT ml_model
 				FROM domains
 				WHERE name = :name", ([
 					"name": domain,
 			])));
-	proc->pythonstdin->write(Standards.JSON.encode((["cmd": "load", "msgid": "init", "model": model[0]->ml_model]), 1) + "\n");
+	if(model[0]->ml_model) {
+		proc->pythonstdin->write(Standards.JSON.encode((["cmd": "load", "msgid": "init", "model": model[0]->ml_model]), 1) + "\n");
+	} else {
+		if (domain != "com.pageflow.") {
+			werror("WARNING!!!!!!!!!!!!!!!! No model found for %O\n", domain);
+			return;
+		}
+	}
 	array queue = m_delete(proc, "queued_messages");
 	foreach(queue, mapping json){
 		proc->pythonstdin->write(Standards.JSON.encode(json, 1) + "\n");
