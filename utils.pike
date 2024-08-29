@@ -31,7 +31,7 @@ __async__ void annotate() {
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
 		FROM uploaded_file_pages
-		WHERE file_id = :id AND seq_idx = 1", (["id": 81]))));
+		WHERE file_id = :id AND seq_idx = 1", (["id": G->G->args[Arg.REST][0]]))));
 
 	array(mapping) templates = await(G->G->DB->run_pg_query(#"
 			SELECT page_data, ocr_result
