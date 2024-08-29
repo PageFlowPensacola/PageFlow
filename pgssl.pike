@@ -289,6 +289,9 @@ class SSLDatabase(string host, mapping|void cfg) {
 					if (cfg->notify_callback) cfg->notify_callback(this, pid, channel, payload);
 					break;
 				}
+				case 'N': { //NoticeResponse
+					break;
+				}
 				default: werror("Got unknown message [state %s]: %c %O\n", state, msgtype, msg);
 			}
 		}
