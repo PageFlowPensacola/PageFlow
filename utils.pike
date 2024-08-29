@@ -66,12 +66,15 @@ __async__ void annotate() {
 
 	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
 	array matrix = await(regression(trainpairs));
+	float error = 0.0;
 	foreach (testpairs, [int x1, int y1, int x2, int y2]) {
 		float x = matrix[0] * x1 + matrix[1] * y1 + matrix[2];
 		float y = matrix[3] * x1 + matrix[4] * y1 + matrix[5];
-		werror("Expected x: %f, Actual x: %d\n", x, x2);
-		werror("Expected y: %f, Actual y: %d\n", y, y2);
+		//werror("Expected x: %f, Actual x: %d\n", x, x2);
+		//werror("Expected y: %f, Actual y: %d\n", y, y2);
+		error += (x - x2) ** 2 + (y - y2) ** 2;
 	}
+	werror("Average error per point: %f\n", (error / sizeof(testpairs)) ** 0.5); //  ** 0.5 is square root
 	constant gutter = 10;
 	constant center = 1;
 	werror("Matrix: %O\n", matrix);
