@@ -174,6 +174,109 @@ __async__ string find_closest_domain_with_model(string domain) {
 	(["domain": domain])))[0]->name;
 }
 
+__async__ array parse_page(string current_page, string domain, int i) {
+
+	mapping img = Image.PNG._decode(current_page);
+	if (img->alpha) {
+		// Make a blank image of the same size as the original image
+		object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
+		// Paste original into it, fading based on alpha channel
+		img->image = blank->paste_mask(img->image, img->alpha);
+	}
+
+	/* upload->conn->sock->send_text(Standards.JSON.encode(
+		(["cmd": "upload_status",
+		"count": file_page_count,
+		"pages": ({(["number": i+1, "fields": ({})])}),
+		"current_page": i+1,
+		"step": "Analyzing page " + (i+1) + " of " + file_page_count + " pages.",
+		]))); */
+
+	array page_ocr = await(analyze_page(current_page, img->xsize, img->ysize));
+
+	/* upload->conn->sock->send_text(Standards.JSON.encode(
+		(["cmd": "upload_status",
+		"count": file_page_count,
+		"pages": ({(["number": i+1, "fields": ({})])}),
+		"current_page": i+1,
+		"step": "Classifying page " + (i+1) + " of " + file_page_count + " pages.",
+	]))); */
+
+	mapping classification = await(classipy(
+			domain,
+			([
+				"cmd": "classify",
+				"text": page_ocr->text * " ",
+			])));
+
+	string pageref; float confidence = 0.0;
+
+	array pagerefs = indices(classification->results);
+	array confs = values(classification->results);
+	sort(confs, pagerefs);
+	werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
+	foreach(classification->results; string pgref; float conf) {
+		if (conf > confidence) {
+			pageref = pgref;
+			confidence = conf;
+		}
+	}
+	string templateName = "Unknown";
+	if (! (int) pageref || confidence < 0.5) {
+		werror("No classification found for page %d %O \n", i+1, classification);
+		return ({page_ocr, 0, 0 ,0, templateName});
+	}
+	//werror("Confidence level for page %d: %f\n", i+1, confidence);
+	array(mapping) matchingTemplates = await(G->G->DB->run_pg_query(#"
+		SELECT name, page_count
+		FROM templates
+		WHERE id = :id", (["id": (int) pageref]))); // (int) will disregard colon and anything after it.
+
+	if (!sizeof(matchingTemplates)) {
+		werror("WARNING!!!!!!!: ML has template we don't have: %d. Fix the ML.\n", (int) pageref);
+		return ({page_ocr, 0, 0 ,0, templateName}); // Should never happen.
+	}
+	templateName = matchingTemplates[0]->name; // assume it has a name at this point
+
+	sscanf(pageref, "%d:%d", int template_id, int page_number);
+
+	array template_words = Standards.JSON.decode(await(G->G->DB->run_pg_query(#"
+		SELECT ocr_result
+		FROM template_pages
+		WHERE template_id = :template_id
+		AND page_number = :page_number",
+		(["template_id": template_id, "page_number": page_number])))[0]->ocr_result);
+
+	array pairs = match_arrays(template_words, page_ocr, 0) {[mapping o, mapping d] = __ARGS__;
+		return o->text == d->text && (centroid(o->pos) + centroid(d->pos));
+	};
+
+	if (sizeof(pairs) < 10) {
+		werror("Not enough matching words for page %d\n", i+1);
+		return ({page_ocr, 0, 0 ,0, templateName});
+	}
+	// mutate pairs
+	Array.shuffle(pairs);
+	array testpairs = pairs[..sizeof(pairs) / 10]; // 10% of the pairs
+	array trainpairs = pairs[(sizeof(pairs) / 10) + 1..]; // remaining 90% of the pairs
+
+	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
+	array matrix = await(regression(trainpairs));
+	float error = 0.0;
+	foreach (testpairs, [int x1, int y1, int x2, int y2]) {
+		float x = matrix[0] * x1 + matrix[1] * y1 + matrix[2];
+		float y = matrix[3] * x1 + matrix[4] * y1 + matrix[5];
+		error += (x - x2) ** 2 + (y - y2) ** 2;
+	}
+	if (error / sizeof(testpairs) > img->xsize / 10) {
+		// Could compare Pythagorean distance to image size, but this is close enough.
+		werror("Regression error too high for page %d\n", i+1);
+		return ({page_ocr, 0, 0 ,0, templateName});
+	}
+	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
+	return ({page_ocr, pairs, template_id, page_number, templateName}); // the matrix
+}
+
 __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("contract upload %O\n", upload);
 
@@ -221,58 +324,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	foreach(file_pages; int i; string current_page) {
 
 		analysis->send_updates_all(fileid);
-
-		mapping img = Image.PNG._decode(current_page);
-		if (img->alpha) {
-			// Make a blank image of the same size as the original image
-			object blank = Image.Image(img->xsize, img->ysize, 255, 255, 255);
-			// Paste original into it, fading based on alpha channel
-			img->image = blank->paste_mask(img->image, img->alpha);
-		}
-
-		/* upload->conn->sock->send_text(Standards.JSON.encode(
-			(["cmd": "upload_status",
-			"count": file_page_count,
-			"pages": ({(["number": i+1, "fields": ({})])}),
-			"current_page": i+1,
-			"step": "Analyzing page " + (i+1) + " of " + file_page_count + " pages.",
-			]))); */
-
-		array page_ocr = await(analyze_page(current_page, img->xsize, img->ysize));
-
-		timings["Tesseract"] += tm->get();
-
-		/* upload->conn->sock->send_text(Standards.JSON.encode(
-			(["cmd": "upload_status",
-			"count": file_page_count,
-			"pages": ({(["number": i+1, "fields": ({})])}),
-			"current_page": i+1,
-			"step": "Classifying page " + (i+1) + " of " + file_page_count + " pages.",
-		]))); */
-
-		mapping classification = await(classipy(
-				domain,
-				([
-					"cmd": "classify",
-					"text": page_ocr->text * " ",
-				])));
-		timings["classify_page"] += tm->get();
-
-		string pageref; float confidence = 0.0;
-
-		array pagerefs = indices(classification->results);
-		array confs = values(classification->results);
-		sort(confs, pagerefs);
-		werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
-		foreach(classification->results; string pgref; float conf) {
-			if (conf > confidence) {
-				pageref = pgref;
-				confidence = conf;
-			}
-		}
-		if (!pageref || confidence < 0.5) {
-			werror("No classification found for page %d %O \n", i+1, classification);
-
+		[array page_ocr, array|zero matrix, int template_id, int page_number, string templateName] = await(parse_page(current_page, domain, i+1));
+		if (!matrix) {
 			G->G->DB->run_pg_query(#"
 			INSERT INTO uploaded_file_pages
 				(file_id, seq_idx, png_data, ocr_result)
@@ -280,13 +333,13 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				(:file_id, :seq_idx, :png_data, :ocr_result)",
 				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "ocr_result": Standards.JSON.encode(page_ocr)]));
 
-			/* upload->conn->sock->send_text(Standards.JSON.encode(
-				(["cmd": "upload_status",
-				"count": file_page_count,
-				"pages": ({(["number": i+1, "fields": ({})])}),
-				"current_page": i+1,
-				"step": sprintf("No document template found for file page %d", i+1),
-			]))); */
+		/* upload->conn->sock->send_text(Standards.JSON.encode(
+			(["cmd": "upload_status",
+			"count": file_page_count,
+			"pages": ({(["number": i+1, "fields": ({})])}),
+			"current_page": i+1,
+			"step": sprintf("No document template found for file page %d", i+1),
+		]))); */
 
 			file_page_details+=({(["error": "No document template found for page.",
 			"fields": ({}),
@@ -295,60 +348,8 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			"template_id": 1<<41,
 			"template_name": "No template found",
 			])});
-			timings["analyze page"] += tm->get();
 			continue;
 		}
-		//werror("Confidence level for page %d: %f\n", i+1, confidence);
-		array(mapping) matchingTemplates = await(G->G->DB->run_pg_query(#"
-			SELECT name, page_count
-			FROM templates
-			WHERE id = :id", (["id": (int) pageref]))); // (int) will disregard colon and anything after it.
-
-		string templateName = "Unknown";
-
-		if(!sizeof(matchingTemplates)) {
-			continue;
-		}
-		templateName = matchingTemplates[0]->name; // assume it has a name at this point
-
-		sscanf(pageref, "%d:%d", int template_id, int page_number);
-
-		array template_words = Standards.JSON.decode(await(G->G->DB->run_pg_query(#"
-			SELECT ocr_result
-			FROM template_pages
-			WHERE template_id = :template_id
-			AND page_number = :page_number",
-			(["template_id": template_id, "page_number": page_number])))[0]->ocr_result);
-
-		array pairs = match_arrays(template_words, page_ocr, 0) {[mapping o, mapping d] = __ARGS__;
-			return o->text == d->text && (centroid(o->pos) + centroid(d->pos));
-		};
-
-		werror("Pairs %O\n", pairs);
-
-		if (sizeof(pairs) < 4) {
-			werror("Not enough matching words for page %d\n", i+1);
-
-			G->G->DB->run_pg_query(#"
-			INSERT INTO uploaded_file_pages
-				(file_id, seq_idx, png_data, ocr_result)
-			VALUES
-				(:file_id, :seq_idx, :png_data, :ocr_result)",
-				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "ocr_result": Standards.JSON.encode(page_ocr)]));
-
-			file_page_details+=({(["error": "No document template found for page.",
-			"fields": ({}),
-			"file_page_no": i+1,
-			"img":"data:image/png;base64," + MIME.encode_base64(current_page),
-			"template_id": 1<<41, // Stupidly high number so sorts to end.
-			"template_name": "No template found",
-			])});
-			timings["analyze page"] += tm->get();
-			continue;
-		}
-
-		//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
-		array matrix = await(regression(pairs));
 
 		// Since not awaiting, won't report errors!
 		G->G->DB->run_pg_query(#"
