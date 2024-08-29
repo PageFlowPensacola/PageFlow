@@ -55,8 +55,23 @@ __async__ void annotate() {
 		return sizeof(o->text) > 1 && o->text == d->text && (centroid(o->pos) + centroid(d->pos));
 	}); */
 
+	if (sizeof(pairs) < 10) {
+		werror("Not enough matches\n");
+		return;
+	}
+	// mutate pairs
+	Array.shuffle(pairs);
+	array testpairs = pairs[..sizeof(pairs) / 10]; // 10% of the pairs
+	array trainpairs = pairs[(sizeof(pairs) / 10) + 1..]; // remaining 90% of the pairs
+
 	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
-	array matrix = await(regression(pairs));
+	array matrix = await(regression(trainpairs));
+	foreach (testpairs, [int x1, int y1, int x2, int y2]) {
+		float x = matrix[0] * x1 + matrix[1] * y1 + matrix[2];
+		float y = matrix[3] * x1 + matrix[4] * y1 + matrix[5];
+		werror("Expected x: %f, Actual x: %d\n", x, x2);
+		werror("Expected y: %f, Actual y: %d\n", y, y2);
+	}
 	constant gutter = 10;
 	constant center = 1;
 	werror("Matrix: %O\n", matrix);
