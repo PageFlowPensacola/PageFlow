@@ -9,7 +9,12 @@ def find_affine_transformation(points):
 	points should be a sequence of 4-tuples with original and destination
 	coordinates.
 
-	Returns: affine_matrix of shape (2, 3)
+	Returns: affine_matrix of shape (2, 3) two rows and three columns.
+
+	It is a six element array [a, b, c, d, e, f] where the affine transformation matrix is:
+		| a b c | // x' = ax + by + c
+		| d e f | // y' = dx + ey + f
+		| 0 0 1 | // our constant, 1, irrelevant for 2D transformations
 	"""
 	n = len(points) * 2
 	A = np.zeros((n, 6))
