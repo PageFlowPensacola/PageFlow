@@ -274,7 +274,7 @@ __async__ array parse_page(string current_page, string domain, int i) {
 		return ({page_ocr, 0, 0 ,0, templateName});
 	}
 	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
-	return ({page_ocr, pairs, template_id, page_number, templateName}); // the matrix
+	return ({page_ocr, matrix, template_id, page_number, templateName}); // the matrix
 }
 
 __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
