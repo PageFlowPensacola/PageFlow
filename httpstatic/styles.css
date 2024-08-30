@@ -5,6 +5,11 @@
 	box-sizing: border-box;
 }
 
+:root {
+	--brand-primary: #007bff;
+	--error: #dc3545;
+}
+
 body {
 	display: flex;
 	flex-direction: column;
@@ -187,10 +192,9 @@ main ul {
 
 .delete {
 	cursor: pointer;
-	display: flex;
 	justify-content: center;
 	align-items: center;
-	background-color: red;
+	background-color: var(--error);
 	color: white;
 	border-radius: 50%;
 	border: 1px solid var(--brand-secondary-light);

@@ -1,6 +1,6 @@
 import {lindt, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {A, DIV, FORM, "svg:g": G, H3, IMG, INPUT, LI, P, "svg:path": PATH, SECTION, SPAN, "svg:svg": SVG, UL} = lindt; //autoimport
-import "./utils.js";
+const {A, BUTTON, DIV, FORM, "svg:g": G, H3, IMG, INPUT, LI, P, "svg:path": PATH, SECTION, SPAN, "svg:svg": SVG, UL} = lindt; //autoimport
+import { simpleconfirm } from "./utils.js";
 
 const localState = {};
 let submittedFile = null;
@@ -37,7 +37,10 @@ export function render(state) {
 				localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
 			]),
 			H3("Uploaded Files"),
-			UL(state.files.map(file => LI([A({href: `/analysis?id=${file.id}`}, [(SPAN(file.filename)), " ", (SPAN(dateTime.format(new Date(file.created))))])]))),
+			UL(state.files.map(file => LI([A({href: `/analysis?id=${file.id}`}, [
+				(SPAN(file.filename)), " ", (SPAN(dateTime.format(new Date(file.created))))
+			]), " ",
+				BUTTON({type: "button", class: "delete", "data-id": file.id}, "x")]))),
 		]));
 	}
 	replace_content("main", SECTION([
@@ -99,7 +102,12 @@ on("change", "#newFile", async (e) => {
 on("click", "#pagesinfo li", async (e) => {
 	localState.currentPage = e.match.dataset.page;
 	render(stateSnapshot);
- });
+});
+
+on("click", ".delete", simpleconfirm("Delete this analysis", async function (e) {
+	const id = e.match.dataset.id;
+	ws_sync.send({"cmd": "delete_analysis", "id": +id});
+}));
 
 export async function sockmsg_upload(msg) {
 	ws_sync.send({cmd: "chgrp", group: msg.group});

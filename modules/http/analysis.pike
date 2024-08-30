@@ -19,6 +19,14 @@ __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:m
 	conn->sock->send_text(Standards.JSON.encode((["cmd": "upload", "upload_id": upload_id, "group": fileid])));
 }
 
+void websocket_cmd_delete_analysis(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	// @TODO actually delete the analysis
+	G->G->DB->run_pg_query(#"
+		DELETE FROM uploaded_files
+		WHERE id = :id", (["id": msg->id]));
+	send_updates_all(conn->group);
+}
+
 // TODO maybe dedupe following two functions with the ones in templates.pike
 string|zero websocket_validate(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	if (!conn->session->domain) {
