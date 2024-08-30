@@ -55,6 +55,10 @@ export function render(state) {
 					H3(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
 						const page_details = details[0]; // for now not supporting duplicates (TODO)
 						return LI({"data-page": page_details.seq_idx}, [
+							BUTTON({class: "reanalyze", "data-id": page_details.id}, "Reanalyze"),
+							/* TODO this will be nicer with a proper icon
+							<svg viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <title>Reload</title> <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"> <g id="Reload"> <rect id="Rectangle" fill-rule="nonzero" x="0" y="0" width="24" height="24"> </rect> <path d="M4,13 C4,17.4183 7.58172,21 12,21 C16.4183,21 20,17.4183 20,13 C20,8.58172 16.4183,5 12,5 C10.4407,5 8.98566,5.44609 7.75543,6.21762" id="Path" stroke="#0C0310" stroke-width="2" stroke-linecap="round"> </path> <path d="M9.2384,1.89795 L7.49856,5.83917 C7.27552,6.34441 7.50429,6.9348 8.00954,7.15784 L11.9508,8.89768" id="Path" stroke="#0C0310" stroke-width="2" stroke-linecap="round"> </path> </g> </g> </g></svg>
+							*/
 							P({class: "doc_page"}, [page_no,
 							/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
 							DIV([page_details.scores?.map((field) => {
@@ -107,6 +111,11 @@ on("click", "#pagesinfo li", async (e) => {
 on("click", ".delete", simpleconfirm("Delete this analysis", async function (e) {
 	const id = e.match.dataset.id;
 	ws_sync.send({"cmd": "delete_analysis", "id": +id});
+}));
+
+on("click", ".reanalyze", simpleconfirm("Reanalyze this page", async function (e) {
+	const id = e.match.dataset.id;
+	ws_sync.send({"cmd": "reanalyze", "id": +id});
 }));
 
 export async function sockmsg_upload(msg) {
