@@ -124,3 +124,10 @@ Seed ML top level domain
 
 ## August 30
 Export templates (for reimport after database resets) maybe?
+Matrix numbers in parse page are nonsensical:
+```
+[5.81020938e+03 5.81020938e+03 2.61676057e+03 2.61676057e+03
+ 1.41833300e+00 1.41833300e+00]
+ ```
+ * Consider rescaling the 10% figure (img->width/10) by the X to X coordinate transform (matrix[0]) so we're working in template coordinates everywhere
+ * Potential issue: Is the regression Python script errantly retaining state across calls?
