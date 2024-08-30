@@ -10,7 +10,6 @@ mapping annotate_transition_scores(object img, array rects, array transform) {
 	array field_results = ({});
 	foreach (rects || ({}), mapping r) {
 		mapping box = calculate_transition_score(r, grey, transform);
-		werror("Box %O\n", box);
 
 		// This identifies the axis aligned box used for calculating the transition score
 		img->setcolor(@audit_rect_color, 0);
