@@ -9,6 +9,15 @@ Borrowing to the point of theft from https://github.com/Rosuav/StilleBot.
 - Image Magic (`brew install imagemagick`)
 – Tesseract
 
+## Database
+To initialize database run `pike app.pike --exec=tables`
+View `pike app.pike --exec=help` for utils to populate some required fields.
+Two initial insertions along the lines of:
+```sql
+insert into templates (id, name, domain) values (0, 'default', 'com.pageflow.');
+insert into template_signatories (id, name, template_id) values (0, 'Unspecified', 0)
+```
+
 ## Development
 
 There's an `.editorconfig` file to help with consistency between devs and environments.
