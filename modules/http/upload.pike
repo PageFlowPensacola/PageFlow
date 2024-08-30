@@ -271,6 +271,9 @@ __async__ array parse_page(string current_page, string domain, int i) {
 	if (error / sizeof(testpairs) > img->xsize / 10) {
 		// Could compare Pythagorean distance to image size, but this is close enough.
 		werror("Regression error too high for page %d\n", i+1);
+		werror("Error: %f\n", error / sizeof(testpairs));
+		werror("Image size: %d %d\n", img->xsize, img->ysize);
+
 		return ({page_ocr, 0, 0 ,0, templateName});
 	}
 	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
