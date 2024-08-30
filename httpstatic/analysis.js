@@ -6,6 +6,11 @@ const localState = {};
 let submittedFile = null;
 let stateSnapshot = {};
 
+const dateTime = new Intl.DateTimeFormat("en-US", {
+	year: "numeric", month: "short", day: "numeric",
+	hour: "numeric", minute: "numeric", second: "numeric"
+});
+
 const render_upload_status = (state) => {
 	console.log({"render_upload_status": state});
 	return DIV([
@@ -32,7 +37,7 @@ export function render(state) {
 				localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
 			]),
 			H3("Uploaded Files"),
-			UL(state.files.map(file => LI([A({href: `/analysis?id=${file.id}`}, [(SPAN(file.filename)), " ", (SPAN((file.created)))])]))),
+			UL(state.files.map(file => LI([A({href: `/analysis?id=${file.id}`}, [(SPAN(file.filename)), " ", (SPAN(dateTime.format(new Date(file.created))))])]))),
 		]));
 	}
 	replace_content("main", SECTION([
