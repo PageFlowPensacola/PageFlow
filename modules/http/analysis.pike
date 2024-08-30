@@ -161,7 +161,8 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		FROM templates
 		WHERE id IN (%{%s,%}0) ORDER BY name", indices(templates)))));
 	if (templates["9999999999"]) template_names += ({([ "id": 9999999999, "name": "No template matched" ])});
-	templates["0"] = ([1: ({([ "audit_rects": ([]), "scores": ([]), "seq_idx": 0 ])})]);
+
+	templates["0"] = (["1": ({([ "audit_rects": ([]), "scores": ({}), "seq_idx": 0 ])})]);
 	// TODO handle duplicate pages
 
 	return (["file":file[0], "templates":templates, "template_names": template_names, "signatories": signatory_map]);
