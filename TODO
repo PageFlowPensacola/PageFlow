@@ -121,3 +121,6 @@ Interface for flagging miscategorized templates
 Check for minimum word count on submission
 Check for minimum word match btwn matched template and submission
 Seed ML top level domain
+
+## August 30
+Export templates (for reimport after database resets) maybe?
