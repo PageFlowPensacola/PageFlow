@@ -40,7 +40,7 @@ export function render(state) {
 			UL(state.files.map(file => LI([A({href: `/analysis?id=${file.id}`}, [
 				(SPAN(file.filename)), " ", (SPAN(dateTime.format(new Date(file.created))))
 			]), " ",
-				BUTTON({type: "button", class: "delete", "data-id": file.id}, "x")]))),
+				BUTTON({type: "button", class: "delete", "data-id": file.id}, "❌")]))),
 		]));
 	}
 	replace_content("main", SECTION([

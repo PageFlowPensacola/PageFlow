@@ -174,7 +174,8 @@ main ul {
 
 .delete-rect,
 .delete-template,
-.delete-signatory {
+.delete-signatory,
+.delete {
 	background-color: #ccc;
 	border: none;
 	width: 1.5em;
@@ -190,15 +191,6 @@ main ul {
 	padding: 10px;
 }
 
-.delete {
-	cursor: pointer;
-	justify-content: center;
-	align-items: center;
-	background-color: var(--error);
-	color: white;
-	border-radius: 50%;
-	border: 1px solid var(--brand-secondary-light);
-}
 
 .delete:hover {
 	background-color: var(--white);
