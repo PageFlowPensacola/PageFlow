@@ -127,6 +127,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	// TODO can we move this into a function?
 	multiset signatories = (<>);
 	foreach(pages, mapping page){
+		werror("page template ID: %O\n", page->template_id);
 		string template_id = (string) (page->template_id || 9999999999);
 		if (!templates[template_id]) templates[template_id] = ([]);
 		string png = page->png_data;

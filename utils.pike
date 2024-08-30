@@ -25,20 +25,22 @@ __async__ void reset_models() {
 
 @"Annotate":
 __async__ void annotate() {
-	if (sizeof(G->G->args[Arg.REST]) < 1) { werror("Usage: pike app --exec=annotate FILEID\n"); return; }
+	if (sizeof(G->G->args[Arg.REST]) < 1) { werror("Usage: pike app --exec=annotate [--template ID, --page NUM] FILEID SEQIDX\n"); return; }
 
 	function regression = G->bootstrap("modules/regress.pike")->regression;
+	int seq_idx = 1;
+	if (sizeof(G->G->args[Arg.REST]) > 1) seq_idx = G->G->args[Arg.REST][1];
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
 		SELECT png_data, template_id, page_number, ocr_result, seq_idx
 		FROM uploaded_file_pages
-		WHERE file_id = :id AND seq_idx = 1", (["id": G->G->args[Arg.REST][0]]))));
+		WHERE file_id = :id AND seq_idx = :seq_idx", (["id": G->G->args[Arg.REST][0], "seq_idx": seq_idx]))));
 
 	array(mapping) templates = await(G->G->DB->run_pg_query(#"
 			SELECT page_data, ocr_result
 			FROM template_pages
 			WHERE template_id = :template_id
 			AND page_number = :page_number",
-		(["template_id": pages[0]->template_id, "page_number": pages[0]->page_number])));
+		(["template_id": G->G->args->template || pages[0]->template_id, "page_number": G->G->args->page || pages[0]->page_number])));
 	object template = Image.PNG.decode(templates[0]->page_data)->grey();
 	object page = Image.PNG.decode(pages[0]->png_data)->grey();
 
