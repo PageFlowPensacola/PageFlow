@@ -25,6 +25,7 @@ let submittedFile = null;
 const pageImage = new Image();
 // repaint canvas when image is loaded
 pageImage.onload = repaint;
+let scaleFactor = 1;
 
 let rect_start_x = 0;
 let rect_start_y = 0;
@@ -37,8 +38,8 @@ let hovering = -1;
 canvas.addEventListener('pointerdown', (e) => {
 	e.preventDefault();
 	currently_dragging = clicking = true;
-	rect_start_x = rect_end_x = e.offsetX;
-	rect_start_y = rect_end_y = e.offsetY;
+	rect_start_x = rect_end_x = e.offsetX / scaleFactor;
+	rect_start_y = rect_end_y = e.offsetY / scaleFactor;
 	e.target.setPointerCapture(e.pointerId);
 	repaint();
 });
@@ -47,8 +48,8 @@ canvas.addEventListener('pointermove', (e) => {
 	// TODO more nuance desired
 	clicking = false;
 	if (currently_dragging) {
-		rect_end_x = e.offsetX;
-		rect_end_y = e.offsetY;
+		rect_end_x = e.offsetX / scaleFactor;
+		rect_end_y = e.offsetY / scaleFactor;
 		repaint();
 	}
 });
@@ -109,10 +110,12 @@ canvas.addEventListener('pointerup', (e) => {
 });
 
 function repaint() {
-	canvas.width = pageImage.width;
-	canvas.height = pageImage.height;
+	scaleFactor = Math.min(1, 800 / pageImage.width, 1100 / pageImage.height);
+	canvas.width = pageImage.width * scaleFactor;
+	canvas.height = pageImage.height * scaleFactor;
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.scale(scaleFactor, scaleFactor);
 	ctx.drawImage(pageImage, 0, 0);
 	for (const rect of stateSnapshot.page_rects[localState.current_page - 1]) {
 		ctx.fillStyle = +hovering === rect.id ? "#ff88" : "#00f8";
