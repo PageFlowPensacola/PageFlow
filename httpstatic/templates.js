@@ -80,12 +80,12 @@ canvas.addEventListener('pointerup', (e) => {
 	} // end if clicking
 
 	// Clamp rectangle to canvas/image bounds
-	rect_start_x = Math.min(Math.max(rect_start_x, 0), canvas.width);
+	rect_start_x = Math.min(Math.max(rect_start_x, 0), pageImage.width);
 	// Here rect_start_x is the closest place _within_ the canvas to
 	// where the user started dragging.
-	rect_start_y = Math.min(Math.max(rect_start_y, 0), canvas.height);
-	rect_end_x = Math.min(Math.max(rect_end_x, 0), canvas.width);
-	rect_end_y = Math.min(Math.max(rect_end_y, 0), canvas.height);
+	rect_start_y = Math.min(Math.max(rect_start_y, 0), pageImage.height);
+	rect_end_x = Math.min(Math.max(rect_end_x, 0), pageImage.width);
+	rect_end_y = Math.min(Math.max(rect_end_y, 0), pageImage.height);
 
 	// Normalize the rectangle since we don't know
 	// which direction the user dragged in.
