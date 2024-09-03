@@ -110,7 +110,6 @@ on("change", "#newFile", async (e) => {
 });
 
 function imgLoaded(e) {
-	console.log("ImgLoaded", e.currentTarget.closest(".loadable"));
 	e.currentTarget.closest(".loadable").classList.remove("pending");
 }
 
