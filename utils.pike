@@ -204,17 +204,25 @@ __async__ void audit_score() {
 
 @"Test the classifier":
 __async__ void ml() {
-	string domain = "com.pageflow.";
+	/*
+	Add or modify text collection and array index to test various inputs
+	*/
+	string domain = "com.pageflow.tagtech.";
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
 	array texts = ({
 		"Marathon to Waterloo",
+		" STATE OF FLORIDA DEPARTMENT OF HIGHWAY SAFETY AND MOTOR VEHICLES - DIVISION OF MOTOR VEHICLES NEN. KIRKMAN BUILDING - TALLAHASSEE. FL 32399-0610 APPLICATION FOR CERTIFICATE OF TITLE WITH/WITHOUT REGISTRATION TRANSFER VEHICLE Type; (C] oFF-sicHway venicte [[] motor venice [_] mosite Home [] vessec ano NOTE: When joint ownership, please indicate if â\200\234orâ\200\235 or â\200\234andâ\200\235 to be shown on title when issued. if neither box Is checked, the will be with â\200\234and.â\200\235 W applicable: [_] Lite Estate/Remainder Person [_] Tenancy By the Entiraty â\200\224 [_] With Rights of Survivorship Owneâ\200\231s County of Residence: 00 Commercial Sponge C Commercial Shrimp Recip. [] Commercial Charter [] Commercial Other (1 Commercial Shrimp Non-Recip. Commercial Oyster Federally Documented Vessel, Attach Copy of Coast Guard Release From Documentation Form; or Applicable Boxe: | | | | [J Di # and Sex and Date of Birth [_] DMV Account # ELT customer [_] If Lienholder authorizes the Department to send the motor vehide or mobile home title to the owner, check box and countersign: (Does not apply to vessels). if box is not checked, title will be mailed to the first lienholder. (Signature of Lienhoider's Representative) | if OWNERSHIP HAS TRANSFERRED, HOW AND WHEN WAS THE VEHICLE, MOBILE HOME, OR VESSEL ACQUIRED? WARNING: Federal and State law requires that you state the mileage in connection with an application for a Certificate of Title, Failure to co OF providing a false statement may resuit in fines or imprisonment. | STATE ",
 		"ODOMETER DISCLOSURE STATEMENT Federal law (and State law, if applicable) requires that you state the mileage upon transfer of ownership of a vehicle. Failure to complete an odometer disclosure statement or providing a false statement may result in fines and/or imprisonment. I state that the odometer (of the vehicle described below) now reads (no tenths) miles and to the best of my knowledge that it reflects the actual mileage of the vehicle described below, unless one of the following statements is checked. (1 (1)! hereby certify that to the best of my knowledge the odometer reading reflects the amount of mileage in excess of its mechanical limits. C1] (2)! hereby certify that the odometer reading is NOT the actual mileage. WARNING - ODOMETER DISCREPANCY. VEHICLE IDENTIFICATION BODY TYPE MODEL STOCK NUMBER TRANSFERORÃ¢\200\231S (SELLER) INFORMATION TRANSFEROR'S PRINTED NAME (SELLER) VEHICLE ID NUMBER TRANSFEROR'S STREET ADDRESS wor: we AUTHORIZED TRANSFEROR'S SIGNATURE (SELLER) SIGNATURE DATE STATEMENT SIGNED | PRINTED NAME OF PERSON SIGNING TRANSFEREEÃ¢\200\231S (BUYER) INFORMATION TRANSFEREE'S PRINTED NAME (BUYER) TRANSFEREE'S STREET ADDRESS RECEIPT OF COPY ACKNOWLEDGED BY TRANSFEREE (BUYER) TRANSFEREE'S SIGNATURE-BUYER DATE @IGNED PRINTED NAME OF PERSON SIGNING x Laer REORDER FROM: gallagher promotional products, inc. Ã\202Â¢ in Ortando (407) 788-0818 + Outside Orlando (800) 367-8458 Rev. 4497 hem #14460 Ady @, es",
 	});
-	werror("Result: %O\n", await(classipy(domain,
+	mapping classification = await(classipy(domain,
 	([
 		"cmd": "classify",
 		"text": texts[1],
-	]))));
+	])));
+	array pagerefs = indices(classification->results);
+	array confs = values(classification->results);
+	sort(confs, pagerefs);
+	werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
 }
 
 @"Seed parent domain model":
