@@ -109,17 +109,20 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 			WHERE :domain LIKE domain || '%'", (["domain":group]))));
 		return (["files": files]);
 	}
-	// Must have an analysis set in mind
+	// Must be analyzing or have an analysis set in mind
 	array(mapping) file = await((G->G->DB->run_pg_query(#"
 		SELECT filename, page_count, id, created_at as created
 		FROM uploaded_files
 		WHERE id = :id", (["id": group]))));
+
+	if (!sizeof(file)) return 0;
+
 	array(mapping) pages = await((G->G->DB->run_pg_query(#"
 		SELECT png_data, template_id, page_number, seq_idx, transform
 		FROM uploaded_file_pages
 		WHERE file_id = :id", (["id": group]))));
-	if (!sizeof(file) || !sizeof(pages)) {
-		return 0;
+	if (!sizeof(pages)) {
+		return (["file":file[0], "templates":([]), "template_names": ({}), "signatories": ([])]);;
 	}
 	// This will store template pages (rects, etc)
 	mapping templates = ([]);
