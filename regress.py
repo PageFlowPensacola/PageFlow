@@ -31,7 +31,7 @@ def find_affine_transformation(points):
 
 	# Solve for the affine transformation parameters
 	affine_params, residuals, rank, s = np.linalg.lstsq(A, B, rcond=None)
-	print("Orientation Details: \n residuals: ", residuals, file=sys.stderr)
+	print("Affine Transformation Orientation Details: \n residuals: ", residuals, file=sys.stderr)
 	print("rank: ", rank, file=sys.stderr)
 	print("s: ", s, file=sys.stderr)
 	return affine_params

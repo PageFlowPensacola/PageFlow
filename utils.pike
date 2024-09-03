@@ -23,6 +23,31 @@ __async__ void reset_models() {
 	await(G->G->utils->seed());
 }
 
+@"Match HOCR words":
+__async__ void matchhocr() {
+	/*
+	Can also redirect stderr to stdout then pipe into less:
+	pike app.pike --exec=matchhocr --file=107 --seqidx=3 --template=156 --page=1 2>&1 | less
+	*/
+	array(mapping) templates = await(G->G->DB->run_pg_query(#"
+		SELECT ocr_result
+		FROM template_pages
+		WHERE template_id = :template_id
+		AND page_number = :page_number",
+		(["template_id": G->G->args->template, "page_number": G->G->args->page])));
+	array(mapping) pages = await(G->G->DB->run_pg_query(#"
+		SELECT ocr_result
+		FROM uploaded_file_pages
+		WHERE file_id = :file_id
+		AND seq_idx = :seq_idx",
+		(["file_id": G->G->args->file, "seq_idx": G->G->args->seqidx])));
+	array pages_ocr = Standards.JSON.decode(pages[0]->ocr_result);
+	array pairs = match_arrays(Standards.JSON.decode(templates[0]->ocr_result), pages_ocr, 1) {[mapping o, mapping d] = __ARGS__;
+		return o->text == d->text && o->text;
+	};
+	werror("Pairs: %O\n", pairs);
+}
+
 @"Annotate":
 __async__ void annotate() {
 	if (sizeof(G->G->args[Arg.REST]) < 1) { werror("Usage: pike app --exec=annotate [--template ID, --page NUM] FILEID SEQIDX\n"); return; }
