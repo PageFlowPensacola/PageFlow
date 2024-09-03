@@ -223,7 +223,7 @@ __async__ array parse_page(string current_page, string domain, int i) {
 	}
 	string templateName = "Unknown";
 	if (! (int) pageref || confidence < 0.5) {
-		werror("No classification found for page %d %O \n", i+1, classification);
+		werror("No classification found for page %d %O \n", i, classification);
 		return ({page_ocr, 0, 0 ,0, templateName});
 	}
 	//werror("Confidence level for page %d: %f\n", i+1, confidence);
@@ -252,7 +252,7 @@ __async__ array parse_page(string current_page, string domain, int i) {
 	};
 
 	if (sizeof(pairs) < 10) {
-		werror("Not enough matching words for page %d\n", i+1);
+		werror("Not enough matching words for page %d\n", i);
 		return ({page_ocr, 0, 0 ,0, templateName});
 	}
 	// mutate pairs
@@ -266,11 +266,12 @@ __async__ array parse_page(string current_page, string domain, int i) {
 	foreach (testpairs, [int x1, int y1, int x2, int y2]) {
 		float x = matrix[0] * x1 + matrix[1] * y1 + matrix[2];
 		float y = matrix[3] * x1 + matrix[4] * y1 + matrix[5];
+		//werror("%4d,%4d -> %4d,%4d or %4.0f,%4.0f err %O\n", x1, y1, x2, y2, x, y, (x - x2) ** 2 + (y - y2) ** 2);
 		error += (x - x2) ** 2 + (y - y2) ** 2;
 	}
-	if (error / sizeof(testpairs) > img->xsize / 10) {
+	if (error / sizeof(testpairs) > img->xsize * img->ysize / 100) {
 		// Could compare Pythagorean distance to image size, but this is close enough.
-		werror("Regression error too high for page %d\n", i+1);
+		werror("Regression error too high for page %d\n", i);
 		werror("Error: %f\n", error / sizeof(testpairs));
 		werror("Image size: %d %d\n", img->xsize, img->ysize);
 
