@@ -1,6 +1,8 @@
 inherit http_websocket;
 
-constant markdown = "# Analysis\n\n";
+constant markdown = #"# Analysis\n\n
+<span class=loading>Loading...</span>
+";
 
 __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:mixed) msg){
 	werror("CONN SESSION %O\n", conn->session);

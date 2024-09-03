@@ -58,6 +58,22 @@ figure img {
 	content: "...";
 }
 
+.loadable.pending .loading {
+	display: block;
+}
+
+.loadable {
+	position: relative;
+}
+
+
+.loadable .loading {
+	display: none;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+}
+
 dialog::backdrop {
 	background-color: #666D;
 }

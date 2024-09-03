@@ -6,6 +6,8 @@ const localState = {};
 let submittedFile = null;
 let stateSnapshot = {};
 
+
+
 const dateTime = new Intl.DateTimeFormat("en-US", {
 	year: "numeric", month: "short", day: "numeric",
 	hour: "numeric", minute: "numeric", second: "numeric"
@@ -79,13 +81,19 @@ export function render(state) {
 					]);
 				})
 			})]) */,
-			DIV({class: "thumbnail"}, [
-				localState.currentPage
-					? A({href: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`}, IMG({src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate&width=400`}))
-					: DIV("Click item in list to the left to load page view."),
-			])
+				localState.currentPage ?
+				DIV({class: "thumbnail loadable"}, [
+					A(
+						{href: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`},
+						IMG({onload: imgLoaded, src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate&width=400`})
+					),
+					DIV({class: 'loading'}, "Loading..."),
+				]) : DIV("Click item in list to the left to load page view.")
 		]),
 	]));
+	document.querySelectorAll(".loadable").forEach(elem => elem.classList.toggle(
+		"pending", !elem.querySelector("img").complete
+	));
 }
 
 on("change", "#newFile", async (e) => {
@@ -100,6 +108,12 @@ on("change", "#newFile", async (e) => {
 	console.log("Clearing local state", stateSnapshot);
 	render(stateSnapshot);
 });
+
+function imgLoaded(e) {
+	console.log("ImgLoaded", e.currentTarget.closest(".loadable"));
+	e.currentTarget.closest(".loadable").classList.remove("pending");
+}
+
 
 on("click", "#pagesinfo li", async (e) => {
 	localState.currentPage = e.match.dataset.page;
