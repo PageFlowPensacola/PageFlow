@@ -44,10 +44,8 @@ export function render(state) {
 		]));
 	}
 	replace_content("main", SECTION([
-		FORM({id: "file_submit"}, [
-			INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
-			localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
-		]),
+
+		submittedFile ? H3("Analyzing " + submittedFile.name) : H3("Analysis Results " + state.file.filename + " " + dateTime.format(new Date(state.file.created))),
 		//(typeof (localState.template_names) !== "undefined") && H4("Fields checked: " + localState.rects.length),
 		DIV({id: "analysis-results"}, [
 			state.templates && state.template_names && UL({id: "pagesinfo"}, [
@@ -93,6 +91,7 @@ export function render(state) {
 on("change", "#newFile", async (e) => {
 	e.preventDefault();
 	submittedFile = DOM("#newFile").files[0];
+	DOM("#newFile").style.display = "none";
 	ws_sync.send({
 		"cmd": "upload",
 		"name": submittedFile.name,
