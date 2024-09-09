@@ -281,6 +281,8 @@ main ul {
 /*animated progress span*/
 #analysis-results__progress span {
 	animation: progress 2s linear infinite;
+	transition: all 2s ease-in;
+	/* TODO make this work, maybe. */
 }
 
 #analysis-results {
