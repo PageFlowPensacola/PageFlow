@@ -250,7 +250,7 @@ main ul {
 
 #analysis-results__progress {
 	display: flex;
-	border: 2px solid pink;
+	margin-bottom: 1em;
 }
 
 #analysis-results__progress span {
@@ -259,12 +259,28 @@ main ul {
 
 #analysis-results__progress span:first-child {
 	flex: 1;
-	background: var(--brand-primary);
+	background: var(--success);
 }
 
 #analysis-results__progress span:last-child {
 	flex: 1;
-	background: yellow;
+	background: repeating-linear-gradient(-45deg, var(--warning) 0px, var(--warning) 40px, var(--brand-primary-light) 45px, var(--warning) 50px);
+	background-size: 50px 50px;
+}
+
+@keyframes progress {
+	0% {
+		background-position-x: 0;
+	}
+
+	100% {
+		background-position-x: 100px;
+	}
+}
+
+/*animated progress span*/
+#analysis-results__progress span {
+	animation: progress 2s linear infinite;
 }
 
 #analysis-results {

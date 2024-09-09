@@ -54,7 +54,7 @@ export function render(state) {
 				DIV({id: "analysis-meta"}, [
 					H4(`${templateCount} of ${state.file.page_count} pages analyzed`),
 					DIV({id: "analysis-results__progress"}, [
-						SPAN({style: `flex-grow: ${templateCount}`}), SPAN({style: `flex-grow: ${state.file.page_count - templateCount}`}),
+						SPAN({style: `flex-grow: ${templateCount - 3}`}), SPAN({style: `flex-grow: ${state.file.page_count - templateCount + 3}`}),
 					]),
 				]),
 				DIV({id: "analysis-results__listing"}, [
