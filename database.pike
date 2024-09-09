@@ -146,43 +146,56 @@ __async__ array(mapping) run_query(object conn, string|array sql, mapping|void b
 
 	if (pending) await(pending->future()); //If there's a queue, put us at the end of it.
 	mixed ret, ex;
-	if (arrayp(sql)) {
-		ret = ({ });
-		ex = catch {await(conn->promise_query("begin"))->get();};
-		if (!ex) foreach (sql, string|function q) {
-			//A null entry in the array of queries is ignored, and will not have a null return value to correspond.
-			if (ex = q && catch {
-				if (functionp(q)) q(ret, bindings); //q is allowed to mutate its bindings.
-				else ret += ({parse_mysql_result(await(conn->promise_query(q, bindings))->get())});
-			}) break;
-		}
-		werror("Transaction result: %O\n", ret);
+	while (1) {
+		if (arrayp(sql)) {
+			ret = ({ });
+			ex = catch {await(conn->promise_query("begin"))->get();};
+			if (!ex) foreach (sql, string|function q) {
+				//A null entry in the array of queries is ignored, and will not have a null return value to correspond.
+				if (ex = q && catch {
+					if (functionp(q)) q(ret, bindings); //q is allowed to mutate its bindings.
+					else ret += ({parse_mysql_result(await(conn->promise_query(q, bindings))->get())});
+				}) break;
+			}
+			werror("Transaction result: %O\n", ret);
 
-		// TODO Something critically wrong. Failing to rollback after an exception.
-		//Ignore errors from rolling back - the exception that gets raised will have come from
-		//the actual query (or possibly the BEGIN), not from rolling back.
-		// NOTE run with `pike -DPG_DEBUG app.pike --exec=tables to debug`
-		if (ex) {
-			mixed ex2 = catch {
-				conn->resync();
-				object rollback = conn->promise_query("rollback");
-				werror("Exception: %O\n", rollback);
-				object query = await(rollback);
-				werror("Rollback: %O\n", query);
-				mixed rollback_result = query->get();
-				werror("Rollback result: %O\n", rollback_result);
-			};
-			werror("Rollback exception: %O\n", ex2);
+			// TODO Something critically wrong. Failing to rollback after an exception.
+			//Ignore errors from rolling back - the exception that gets raised will have come from
+			//the actual query (or possibly the BEGIN), not from rolling back.
+			// NOTE run with `pike -DPG_DEBUG app.pike --exec=tables to debug`
+			if (ex) {
+				mixed ex2 = catch {
+					conn->resync();
+					object rollback = conn->promise_query("rollback");
+					werror("Exception: %O\n", rollback);
+					object query = await(rollback);
+					werror("Rollback: %O\n", query);
+					mixed rollback_result = query->get();
+					werror("Rollback result: %O\n", rollback_result);
+				};
+				werror("Rollback exception: %O\n", ex2);
+			}
+			//But for committing, things get trickier. Technically an exception here leaves the
+			//transaction in an uncertain state, but I'm going to just raise the error. It is
+			//possible that the transaction DID complete, but we can't be sure.
+			else ex = catch {await(conn->promise_query("commit"))->get();};
 		}
-		//But for committing, things get trickier. Technically an exception here leaves the
-		//transaction in an uncertain state, but I'm going to just raise the error. It is
-		//possible that the transaction DID complete, but we can't be sure.
-		else ex = catch {await(conn->promise_query("commit"))->get();};
-	}
-	else {
-		//Implicit transaction is fine here; this is also suitable for transactionless
-		//queries (of which there are VERY few).
-		ex = catch {ret = parse_mysql_result(await(conn->promise_query(sql, bindings))->get());};
+		else {
+			//Implicit transaction is fine here; this is also suitable for transactionless
+			//queries (of which there are VERY few).
+			ex = catch {ret = parse_mysql_result(await(conn->promise_query(sql, bindings))->get());};
+		}
+		// Trying to diagnose the server gone away errors.
+		// Once one occurrs note the type and see if we can catch that
+		// specifically. It does not seem to be an array.
+		// Once detected, these can be handled by reconnecting
+		// and retrying (continue rather than break).
+		// Also, if the error is not an array and not "server gone away",
+		// it may be worth wrapping it so backtraces can be retrieved.
+		if (ex) {
+			werror("Mysql error %t %<O\n", ex);
+		}
+		break;
 	}
 
 	//write("------passed catch block\n");
@@ -411,6 +424,7 @@ protected void create(string name) {
 	if (G->G->instance_config->pgsql_connection_string) {
 		werror("Postgres DB Connecting\n");
 		//pgsqlconn = Sql.Sql(G->G->instance_config->pgsql_connection_string);
+		// ATM using the Stillebot connection approach.
 		pgsqlconn = SSLDatabase("localhost");
 		write("%O\n", pgsqlconn);
 	}
