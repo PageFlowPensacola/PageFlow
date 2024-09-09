@@ -1,5 +1,5 @@
 import {lindt, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {DETAILS, DIV, SUMMARY} = lindt; //autoimport
+const {DETAILS, DIV, H1, SUMMARY} = lindt; //autoimport
 
 let testAnalysisState = {
 	"cmd": "update",
@@ -298,8 +298,8 @@ let state = [
 	},
 ];
 replace_content("main", [
-	DIV("h1", "Test Analysis State"),
-	DIV({style: "display:flex;flex-wrap:wrap; flex-direction: column; height: 80vh; max-width: 90vh;"},state.map((item) => {
-		return DETAILS([SUMMARY(`${item.summary}`), DIV({style: "height: 500px; width: 300px; border: 1px solid #777"},item.detail)]);
+	DIV(H1("Test Analysis State")),
+	DIV({style: "border: 1px solid red;display:flex;flex-wrap:wrap; flex-direction: column; height: 80vh; width: 90vw; overflow: scroll"},state.map((item) => {
+		return DETAILS([SUMMARY(`${item.summary}`), DIV({style: "height: 300px; width: 300px; border: 1px solid #777; overflow: scroll"},item.detail)]);
 	})),
 ]);
