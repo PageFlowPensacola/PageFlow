@@ -131,3 +131,14 @@ Matrix numbers in parse page are nonsensical:
  ```
  * Consider rescaling the 10% figure (img->width/10) by the X to X coordinate transform (matrix[0]) so we're working in template coordinates everywhere
  * Potential issue: Is the regression Python script errantly retaining state across calls?
+
+## September 9
+Analysis:
+	* BUG: display clears leaving blank screen at end of last page
+	* return pagecount and display it
+	* wrap each template and contents in a summary details
+		- summary should have, page count and green, yellow or red error level
+	* move "reanalyze" button to below thumbnail
+	* layout of page analysis results
+	* "click list item to the left..." display
+	* filter out error-free template docs
