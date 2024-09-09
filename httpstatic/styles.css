@@ -6,8 +6,19 @@
 }
 
 :root {
-	--brand-primary: #007bff;
-	--error: #dc3545;
+	--brand-primary: #526C69;
+	--brand-primary-dark: #425b5d;
+	--brand-primary-ultra-dark: #223542;
+	--brand-primary-light: #94a691;
+	--brand-primary-ultra-light: #CBCCAD;
+	--brand-secondary: #D89646;
+	--brand-secondary-dark: #5b3c1f;
+	--brand-secondary-light: #f6e9c8;
+	--success: #328A4E;
+	--warning: #D89646;
+	--error: #D85946;
+	--black: #010101;
+	--white: #F7F9FB;
 }
 
 body {
