@@ -44,7 +44,7 @@ export function render(state) {
 				BUTTON({type: "button", class: "delete", "data-id": file.id}, "❌")]))),
 		]));
 	}
-	const templateCount = Object.keys(state.templates || {}).length - 1;
+
 	replace_content("main", SECTION([
 		submittedFile ? H3("Analyzing " + submittedFile.name) : H3("Analysis Results " + state.file.filename + " " + dateTime.format(new Date(state.file.created))),
 		//(typeof (localState.template_names) !== "undefined") && [
@@ -52,11 +52,11 @@ export function render(state) {
 		DIV({id: "analysis-results"}, [
 			state.templates && state.template_names && [
 				DIV({id: "analysis-meta"}, [
-					(templateCount && state.file.page_count) ?
-						H4(`${templateCount} of ${state.file.page_count} pages analyzed`)
+					(state.analyzedcount && state.file.page_count) ?
+						H4(`${state.analyzedcount} of ${state.file.page_count} pages analyzed`)
 						: H4({class: "loading"}, "File submitted, awaiting analysis"),
 					DIV({id: "analysis-results__progress"}, [
-						SPAN({style: `flex-grow: ${templateCount}`}), SPAN({style: `flex-grow: ${state.file.page_count - templateCount}`}),
+						SPAN({style: `flex-grow: ${state.analyzedcount}`}), SPAN({style: `flex-grow: ${state.file.page_count - state.analyzedcount}`}),
 					]),
 				]),
 				DIV({id: "analysis-results__listing"}, [

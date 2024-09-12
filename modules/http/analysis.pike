@@ -171,5 +171,5 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	templates["0"] = (["1": ({([ "audit_rects": ([]), "scores": ({}), "seq_idx": 0 ])})]);
 	// TODO handle duplicate pages
 
-	return (["file":file[0], "templates":templates, "template_names": template_names, "signatories": signatory_map]);
+	return (["file":file[0], "templates":templates, "template_names": template_names, "signatories": signatory_map, "analyzedcount": sizeof(pages)]);
 }

@@ -337,14 +337,6 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				(:file_id, :seq_idx, :png_data, :ocr_result)",
 				(["file_id": fileid, "seq_idx": i+1, "png_data": current_page, "ocr_result": Standards.JSON.encode(page_ocr)]));
 
-		/* upload->conn->sock->send_text(Standards.JSON.encode(
-			(["cmd": "upload_status",
-			"count": file_page_count,
-			"pages": ({(["number": i+1, "fields": ({})])}),
-			"current_page": i+1,
-			"step": sprintf("No document template found for file page %d", i+1),
-		]))); */
-
 			file_page_details+=({(["error": "No document template found for page.",
 			"fields": ({}),
 			"file_page_no": i+1,
