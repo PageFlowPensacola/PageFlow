@@ -7,6 +7,8 @@ __async__ void test() {
 	werror("Test\n");
 	mixed ex = catch { await(G->G->DB->run_my_query("SELECT 1+")); };
 	werror("Caught: %s\n", describe_backtrace(ex));
+	werror("ERRNO: %O\n", G->G->DB->mysqlconn->errno());
+	werror("SQL State: %O\n", G->G->DB->mysqlconn->sqlstate());
 }
 
 @"Reset Models":

@@ -192,10 +192,10 @@ __async__ array(mapping) run_query(object conn, string|array sql, mapping|void b
 		// and retrying (continue rather than break).
 		// Also, if the error is not an array and not "server gone away",
 		// it may be worth wrapping it so backtraces can be retrieved.
-		if (ex) {
-			werror("Mysql error %t %<O\n", ex);
-		}
-		break;
+		if (ex && mysqlconn->errno() == 2006) { // "MySQL server has gone away"
+			werror("Mysql DB Reconnecting\n");
+			mysqlconn = conn = Sql.Sql(G->G->instance_config->mysql_connection_string);
+		} else break;
 	}
 
 	//write("------passed catch block\n");
