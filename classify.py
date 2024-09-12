@@ -62,8 +62,10 @@ try:
 			print(json.dumps({"status": "ok", "msgid": msg["msgid"],
 				"pagerefs": list(model.steps['nb'].class_counts)}))
 		elif msg["cmd"] == "classify":
+			start = time.monotonic()
 			res = model.predict_proba_one(msg["text"])
-			print(json.dumps({"results": res, "msgid": msg["msgid"]}))
+			end = time.monotonic()
+			print(json.dumps({"results": res, "msgid": msg["msgid"], "elapsed": end - start}))
 		elif msg["cmd"] == "load":
 			model = pickle.loads(base64.b64decode(msg["model"]))
 			print(json.dumps({"status": "ok", "msgid": msg["msgid"]}))

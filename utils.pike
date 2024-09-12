@@ -232,11 +232,20 @@ __async__ void ml() {
 		(["file_id": G->G->args->file, "seq_idx": G->G->args->seqidx])));
 		text = Standards.JSON.decode(pages[0]->ocr_result)->text * " ";
 	}
+	// warm the proc
+	await(classipy(domain,
+		([
+			"cmd": "classify",
+			"text": "",
+		])));
+	System.Timer tm = System.Timer();
 	mapping classification = await(classipy(domain,
 	([
 		"cmd": "classify",
 		"text": text,
 	])));
+	float overhead = tm->get() - classification->elapsed;
+	werror("Classification took %f seconds. \n Overhead: %f\n", classification->elapsed, overhead);
 	array pagerefs = indices(classification->results);
 	array confs = values(classification->results);
 	sort(confs, pagerefs);
