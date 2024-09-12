@@ -201,7 +201,7 @@ __async__ array(mapping) run_query(object conn, string|array sql, mapping|void b
 	//write("------passed catch block\n");
 	completion->success(1);
 	if (query_pending == completion) query_pending = 0;
-
+	if (objectp(ex) && ex->status_command_complete) throw(ex->status_command_complete);
 	if (ex) throw(ex);
 
 	return ret;

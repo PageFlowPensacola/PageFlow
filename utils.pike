@@ -3,8 +3,10 @@ protected void create (string name) {
 }
 
 @"Test":
-void test() {
+__async__ void test() {
 	werror("Test\n");
+	mixed ex = catch { await(G->G->DB->run_my_query("SELECT 1+")); };
+	werror("Caught: %s\n", describe_backtrace(ex));
 }
 
 @"Reset Models":
