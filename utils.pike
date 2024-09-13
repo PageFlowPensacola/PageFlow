@@ -238,6 +238,19 @@ __async__ void ml() {
 			"cmd": "classify",
 			"text": "",
 		])));
+
+	array(mapping) templates = await(G->G->DB->run_pg_query(#"
+		SELECT ocr_result FROM template_pages
+		JOIN templates ON template_pages.template_id = templates.id
+		WHERE :domain LIKE domain || '%'
+		AND page_count IS NOT NULL",
+		(["domain": domain])));
+
+	multiset domain_template_words = (multiset) Array.uniq((Standards.JSON.decode(templates->ocr_result[*]) * ({}))->text);
+	werror(sizeof(text / " ") + " words\n");
+	text = filter(text / " ", domain_template_words) * " ";
+	werror(sizeof(text / " ") + " words\n");
+
 	System.Timer tm = System.Timer();
 	mapping classification = await(classipy(domain,
 	([
@@ -279,6 +292,7 @@ __async__ void tables() {
 @"Load a ml_model":
 __async__ void load_model() {
 	[string domain] = G->G->args[Arg.REST];
+
 	werror("Loading model\n");
 	array(mapping) model = await(G->G->DB->run_pg_query(#"
 		SELECT ml_model FROM domains WHERE name = :domain",
@@ -291,7 +305,9 @@ __async__ void load_model() {
 		werror("No model found for %O\n", domain);
 		return;
 	}
-	Process.exec("python", "-i", "-c", "import pickle, base64, river; model=pickle.loads(base64.b64decode('" + model[0]->ml_model + "'))");
+	werror("Model found%O\n", sizeof(model[0]->ml_model));
+	Stdio.write_file("/tmp/model", model[0]->ml_model);
+	Process.exec("python", "-i", "-c", "import pickle, base64, river; model=pickle.loads(base64.b64decode(open('/tmp/model').read()));");
 }
 
 @"Cleanup pagerefs for a model":
