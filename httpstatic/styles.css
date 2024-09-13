@@ -296,6 +296,7 @@ main ul {
 	justify-content: center;
 	padding: 2em;
 	gap: 1em;
+	overflow: scroll;
 }
 
 #analysis-results__listing ul,
@@ -365,6 +366,7 @@ main ul {
 #pagesinfo details {
 	margin: 0 1em;
 	padding: 0 0.5em;
+	/* transition: all 2.5s; not working because ignores contents */
 }
 
 #pagesinfo details[open] {

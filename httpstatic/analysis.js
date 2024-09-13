@@ -132,6 +132,16 @@ on("click", ".reanalyze", simpleconfirm("Reanalyze this page", async function (e
 	ws_sync.send({"cmd": "reanalyze", "id": +id});
 }));
 
+on("toggle", "details", function (e) {
+	console.log(e);
+	if (!e.match.open) return;
+	e.match.scrollIntoView({behavior: "smooth", block: "center"});
+	document.querySelectorAll("details").forEach(elem => {
+		console.log(elem, e.match);
+		if (elem !== e.match) elem.open = false;
+	});
+}, {capture: true});
+
 export async function sockmsg_upload(msg) {
 	ws_sync.send({cmd: "chgrp", group: msg.group});
 	history.replaceState(null, "", `/analysis?id=${msg.group}`);
