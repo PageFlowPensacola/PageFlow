@@ -56,7 +56,9 @@ export function render(state) {
 						H4(`${state.analyzedcount} of ${state.file.page_count} pages analyzed`)
 						: H4({class: "loading"}, "File submitted, awaiting analysis"),
 					DIV({id: "analysis-results__progress"}, [
-						SPAN({style: `flex-grow: ${state.analyzedcount}`}), SPAN({style: `flex-grow: ${state.file.page_count - state.analyzedcount}`}),
+						(state.file.page_count && state.analyzedcount)
+							? [SPAN({style: `flex-grow: ${state.analyzedcount}`}), SPAN({style: `flex-grow: ${(state.file.page_count - state.analyzedcount)}`})]
+							: [SPAN({style: `flex-grow: ${0}`}), SPAN({style: `flex-grow: ${1}`})]
 					]),
 				]),
 				DIV({id: "analysis-results__listing"}, [
