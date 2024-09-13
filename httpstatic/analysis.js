@@ -2,7 +2,7 @@ import {lindt, on, DOM, replace_content} from "https://rosuav.github.io/choc/fac
 const {A, BUTTON, DETAILS, DIV, FORM, "svg:g": G, H3, H4, IMG, INPUT, LI, P, "svg:path": PATH, SECTION, SPAN, SUMMARY, "svg:svg": SVG, UL} = lindt; //autoimport
 import { simpleconfirm } from "./utils.js";
 
-const localState = {};
+const localState = {currentPage: 1};
 let submittedFile = null;
 let stateSnapshot = {};
 
@@ -30,12 +30,10 @@ const questionmark = SVG({viewBox: "0 0 15 15", style: "vertical-align: middle;"
 
 export function render(state) {
 	stateSnapshot = state;
-	console.log("Local state", localState);
 	if (state.files) {
 		return replace_content("main", SECTION([
 			FORM({id: "file_submit"}, [
 				INPUT({id: "newFile", type: "file", accept: "image/pdf"}),
-				localState.uploading && P({class: "loading", style: "display:inline"}, "Uploading")
 			]),
 			H3("Uploaded Files"),
 			UL(state.files.map(file => LI([A({href: `/analysis?id=${file.id}`}, [
@@ -47,7 +45,6 @@ export function render(state) {
 
 	replace_content("main", SECTION([
 		submittedFile ? H3("Analyzing " + submittedFile.name) : H3("Analysis Results " + state.file.filename + " " + dateTime.format(new Date(state.file.created))),
-		//(typeof (localState.template_names) !== "undefined") && [
 			localState.rects && ("Fields checked: " + localState.rects.length),
 		DIV({id: "analysis-results"}, [
 			state.templates && state.template_names && [
@@ -62,7 +59,7 @@ export function render(state) {
 					]),
 				]),
 				DIV({id: "analysis-results__listing"}, [
-					UL({id: "pagesinfo"}, [
+					Object.keys(state.templates).length && UL({id: "pagesinfo"}, [
 						state.template_names.map((document) => [
 							DETAILS([
 								SUMMARY(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
@@ -95,14 +92,13 @@ export function render(state) {
 							]);
 						})
 					})]) */
-					localState.currentPage ?
 						DIV({class: "thumbnail loadable"}, [
 							A(
 								{href: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`},
 								IMG({onload: imgLoaded, src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate&width=400`})
 							),
-							DIV({class: 'loading'}, "Loading..."),
-						]) : DIV({class: "thumbnail"}, "Click item in list to the left to load page view.")
+							DIV({class: 'loading'}, "Loading"),
+						]),
 				]),
 			] // end of analysis-results__listing
 		]), // end of analysis-results
@@ -121,8 +117,6 @@ on("change", "#newFile", async (e) => {
 		"cmd": "upload",
 		"name": submittedFile.name,
 	});
-	localState.step = "Uploading";
-	console.log("Clearing local state", stateSnapshot);
 	render(stateSnapshot);
 });
 
@@ -153,13 +147,9 @@ export async function sockmsg_upload(msg) {
 		method: "POST",
 		body: submittedFile,
 	});
-	localState.uploading ? localState.uploading-- : 0;
-	localState.currentPage = 0;
 	render({}); // Clear the page
 };
 
 export function sockmsg_upload_status(msg) {
-	//localState.rects = msg.rects;
-	localState.uploading = 1;
 	render(stateSnapshot);
 }

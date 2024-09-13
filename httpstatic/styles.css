@@ -295,6 +295,7 @@ main ul {
 	border: 1px solid tan;
 	justify-content: center;
 	padding: 2em;
+	gap: 1em;
 }
 
 #analysis-results__listing ul,
