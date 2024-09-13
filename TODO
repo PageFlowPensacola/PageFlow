@@ -150,6 +150,9 @@ Analysis:
   - Domain-specific dictionary for words like VIN
 	- This could be dynamic based on Template words
 	- Exclude non-alphanumeric maybe
+	- Cost seems to come from number of distinct words in a template
+		but RARE words are probably the most interesting
+	- We are not disabling accent stripping
 ```pike
 array words = Standards.JSON.decode(Stdio.read_file("ocr_data1.json"));
 multiset dict = (multiset)(Stdio.read_file("/usr/share/dict/words") / "\n" - ({""}));
