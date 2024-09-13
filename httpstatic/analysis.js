@@ -1,5 +1,5 @@
 import {lindt, on, DOM, replace_content} from "https://rosuav.github.io/choc/factory.js";
-const {A, BUTTON, DETAILS, DIV, FORM, "svg:g": G, H3, H4, IMG, INPUT, LI, P, "svg:path": PATH, SECTION, SPAN, SUMMARY, "svg:svg": SVG, UL} = lindt; //autoimport
+const {A, BUTTON, DETAILS, DIV, FIGCAPTION, FIGURE, FORM, "svg:g": G, H3, H4, IMG, INPUT, LI, P, "svg:path": PATH, SECTION, SPAN, SUMMARY, "svg:svg": SVG, UL} = lindt; //autoimport
 import { simpleconfirm } from "./utils.js";
 
 const localState = {currentPage: 1};
@@ -22,6 +22,7 @@ const questionmark = SVG({viewBox: "0 0 15 15", style: "vertical-align: middle;"
 
 export function render(state) {
 	stateSnapshot = state;
+	console.log("Rendering analysis page", localState, state);
 	if (state.files) {
 		return replace_content("main", SECTION([
 			FORM({id: "file_submit"}, [
@@ -38,8 +39,8 @@ export function render(state) {
 	replace_content("main", SECTION([
 		submittedFile ? H3("Analyzing " + submittedFile.name) : H3("Analysis Results " + state.file.filename + " " + dateTime.format(new Date(state.file.created))),
 			localState.rects && ("Fields checked: " + localState.rects.length),
-		DIV({id: "analysis-results"}, [
-			state.templates && state.template_names && [
+			state.templates && state.template_names && DIV({id: "analysis-results"}, [
+				[
 				DIV({id: "analysis-meta"}, [
 					(state.analyzedcount && state.file.page_count) ?
 						H4(`${state.analyzedcount} of ${state.file.page_count} pages analyzed`)
@@ -52,43 +53,35 @@ export function render(state) {
 				]),
 				DIV({id: "analysis-results__listing"}, [
 					Object.keys(state.templates).length && UL({id: "pagesinfo"}, [
-						state.template_names.map((document) => [
-							DETAILS([
-								SUMMARY(document.name), Object.entries(state.templates[document.id]).map(([page_no, details]) => {
-									return details.map(page_details => LI({"data-page": page_details.seq_idx}, [
-										BUTTON({class: "reanalyze", "data-id": page_details.id}, "Reanalyze"),
+						state.template_names.map((doc) => [
+							DETAILS(Object.values(state.templates[doc.id]).filter((t) => t.find( p => p.seq_idx === +localState.currentPage)).length ? {open: true} : {}, [
+								SUMMARY(doc.name), Object.entries(state.templates[doc.id]).map(([page_no, details]) => {
+									return details.map(page_details => LI({
+										"data-page": page_details.seq_idx,
+										class: page_details.seq_idx === +localState.currentPage ? "current" : "",
+									}, [
 										/* TODO this will be nicer with a proper icon
 										<svg viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <title>Reload</title> <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"> <g id="Reload"> <rect id="Rectangle" fill-rule="nonzero" x="0" y="0" width="24" height="24"> </rect> <path d="M4,13 C4,17.4183 7.58172,21 12,21 C16.4183,21 20,17.4183 20,13 C20,8.58172 16.4183,5 12,5 C10.4407,5 8.98566,5.44609 7.75543,6.21762" id="Path" stroke="#0C0310" stroke-width="2" stroke-linecap="round"> </path> <path d="M9.2384,1.89795 L7.49856,5.83917 C7.27552,6.34441 7.50429,6.9348 8.00954,7.15784 L11.9508,8.89768" id="Path" stroke="#0C0310" stroke-width="2" stroke-linecap="round"> </path> </g> </g> </g></svg>
 										*/
-										P({class: "doc_page"}, [document.id === 9999999999 ? "File page " + page_details.seq_idx : page_no,
+										P({class: "doc_page"}, [doc.id === 9999999999 ? "File page " + page_details.seq_idx : page_no,
 										/*SPAN({class: "file_page_no"}, "File Page " + page.file_page_no)*/]),
 										DIV([page_details.scores?.map((field) => {
 											const status = field.status === "Signed" ? checkmark : field.status === "Unsigned" ? crossmark : questionmark;
 											const signatoryName = state.signatories[field.signatory];
 											return SPAN([signatoryName + ": ", status, " "]);
 										})]),
+										DIV(page_details.seq_idx === +localState.currentPage && ">"),
 									]));
 								})
 							])]),
 					]),
-					/* DIV({class: "thumbnails"}, [localState.templateDocuments && Object.values(localState.templateDocuments).map((document) => {
-						return document.map((page, idx) => {
-							return page.annotated_img && FIGURE({class: "thumbnail"}, [
-								IMG({src: page.annotated_img}),
-								CAPTION(UL([
-									LI("Page " + page.file_page_no),
-									LI("Page Transition Score " + page.page_transition_score),
-									LI("Calculated " + page.page_calculated_transition_score),
-									page.error && LI("ERROR " + page.error),
-								])),
-							]);
-						})
-					})]) */
-						DIV({class: "thumbnail loadable"}, [
+						DIV({class: "thumbnail__wrapper loadable"}, [
 							A(
 								{href: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`},
-								IMG({onload: imgLoaded, src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate&width=400`})
-							),
+								FIGURE({class: "thumbnail"}, [
+									IMG({onload: imgLoaded, src: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate&width=400`}),
+									FIGCAPTION(BUTTON({class: "reanalyze", "data-id": localState.currentPage}, "Reanalyze"),),
+						])),
 							DIV({class: 'loading'}, "Loading"),
 						]),
 				]),
@@ -133,11 +126,9 @@ on("click", ".reanalyze", simpleconfirm("Reanalyze this page", async function (e
 }));
 
 on("toggle", "details", function (e) {
-	console.log(e);
 	if (!e.match.open) return;
 	e.match.scrollIntoView({behavior: "smooth", block: "center"});
 	document.querySelectorAll("details").forEach(elem => {
-		console.log(elem, e.match);
 		if (elem !== e.match) elem.open = false;
 	});
 }, {capture: true});
