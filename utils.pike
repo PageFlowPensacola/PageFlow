@@ -544,6 +544,7 @@ __async__ void model_audit() {
 			])));
 		foreach(result->pagerefs, string pageref) {
 			sscanf(pageref, "%d:%d", int template, int page);
+			if (!template) continue;
 			mapping t = templates[template];
 			if (!t) {
 				werror("\t\e[1;31m%s: Template not found\e[0m\n", pageref);
