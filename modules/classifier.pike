@@ -11,10 +11,7 @@ void pythonoutput(mapping proc, string data){
 	while (sscanf(proc->pythondata, "%s\n%s", string line, proc->pythondata)){
 		mapping msg = Standards.JSON.decode(line);
 		object|zero prom = m_delete(proc->pending_messages, msg->msgid);
-		if (prom){
-			prom->success(msg);
-			// TODO consider checking for error in Python response.
-		}
+
 		if (msg->model && proc->domain != "") {
 			G->G->DB->run_pg_query(#"
 				UPDATE domains
@@ -23,6 +20,10 @@ void pythonoutput(mapping proc, string data){
 					"name": proc->domain,
 					"model": msg->model
 			]));
+		}
+		if (prom){
+			prom->success(msg);
+			// TODO consider checking for error in Python response.
 		}
 	}
 }

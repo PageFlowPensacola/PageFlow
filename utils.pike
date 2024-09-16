@@ -424,7 +424,7 @@ __async__ void mltk() {
 	multiset domains = (<"com.pageflow.">);
 
 	// TODO this in one big transaction
-
+	//await(G->G->DB->run_pg_query("BEGIN"));
 	foreach(templates, mapping template) {
 		if (!domains[template->domain]) {
 			werror("Seeding %O\n", template->domain);
@@ -439,18 +439,19 @@ __async__ void mltk() {
 				ORDER BY LENGTH(name) DESC LIMIT 1)
 			WHERE name = :domain",
 			(["domain": template->domain])));
-			werror("Classifying for %s\n", template->domain);
-			await(classipy(
-				template->domain,
-				([
-					"cmd": "train",
-					"text": Standards.JSON.decode(template->ocr_result)->text * " ",
-					"pageref": template->template_id + ":" + template->page_number,
-				])));
 		}
+		werror("Classifying for %s %d %d\n", template->domain, template->template_id, template->page_number);
+		await(classipy(
+			template->domain,
+			([
+				"cmd": "train",
+				"text": Standards.JSON.decode(template->ocr_result)->text * " ",
+				"pageref": template->template_id + ":" + template->page_number,
+			])));
 	}
+	// Arbitrary query awaited to ensure PSQL is done with all fire and forget queries.
+	await(G->G->DB->run_pg_query("COMMIT"));
 	werror("Congratulations, you have rebuilt the models\n");
-
 }
 
 @"Update database schema":
