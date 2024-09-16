@@ -380,9 +380,20 @@ __async__ void mltk() {
 	werror("Regression error: %O\n", error);
 }
 
-@"Seed parent domain model":
- __async__ void seed() {
+@"Rebuild Models":
+ __async__ void rebuild_models() {
+	/*
+	It is entirely possible that retraining as it retrains in a different
+	order than the original training, that the models will be different.
+	*/
+	if (!G->G->args->confirm) {
+		werror("Rebuild all models? \n Confirm with --confirm\n");
+		return;
+	}
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
+	werror("Clearing domain models\n");
+	await(G->G->DB->run_pg_query("UPDATE domains SET ml_model = NULL"));
+
 	werror("Seeding parent domain model\n");
 	int page = 0;
 	foreach (get_dir("seedcontent"), string fn) {
@@ -396,6 +407,50 @@ __async__ void mltk() {
 			werror("Trained %O\n", page);
 		}
 	}
+
+	werror("Fetching template pages\n");
+	array(mapping) templates = await(G->G->DB->run_pg_query(#"
+		SELECT ocr_result, template_id, page_number, name, domain FROM template_pages
+		JOIN templates ON template_pages.template_id = templates.id
+		WHERE domain LIKE 'com.pageflow.%'
+		AND page_count IS NOT NULL
+		ORDER BY length(domain) - length(replace(domain, '.', '')), page_number, template_id"));
+	/*
+	Deliberately illogical ordering above to:
+		1. Always train a parent model before its children
+		2. Train different models at the same time to (eventually) effectively parallelize
+		The idea will be that we are interspersing at this stage.
+	*/
+	multiset domains = (<"com.pageflow.">);
+
+	// TODO this in one big transaction
+
+	foreach(templates, mapping template) {
+		if (!domains[template->domain]) {
+			werror("Seeding %O\n", template->domain);
+			domains[template->domain] = 1;
+			// replicate the parent model down.
+			await(G->G->DB->run_pg_query(#"
+			UPDATE domains SET ml_model =
+				(SELECT ml_model
+				FROM domains
+				WHERE :domain LIKE name || '%'
+				AND ml_model IS NOT NULL
+				ORDER BY LENGTH(name) DESC LIMIT 1)
+			WHERE name = :domain",
+			(["domain": template->domain])));
+			werror("Classifying for %s\n", template->domain);
+			await(classipy(
+				template->domain,
+				([
+					"cmd": "train",
+					"text": Standards.JSON.decode(template->ocr_result)->text * " ",
+					"pageref": template->template_id + ":" + template->page_number,
+				])));
+		}
+	}
+	werror("Congratulations, you have rebuilt the models\n");
+
 }
 
 @"Update database schema":
