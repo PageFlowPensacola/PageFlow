@@ -222,7 +222,7 @@ __async__ array parse_page(string current_page, string domain, int i) {
 		}
 	}
 	string templateName = "Unknown";
-	if (! (int) pageref || confidence < 0.5) {
+	if (!(int) pageref || confidence < 0.5) {
 		werror("No classification found for page %d %O \n", i, classification);
 		return ({page_ocr, 0, 0 ,0, templateName});
 	}
