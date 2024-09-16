@@ -265,6 +265,121 @@ __async__ void ml() {
 	werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
 }
 
+@"ML Tire Kick":
+__async__ void mltk() {
+	/*
+
+	*/
+	if (!G->G->args->file || !G->G->args->seqidx) {
+		werror("Usage: pike app --exec=mltk --file=FILEID --seqidx=SEQIDX\n"); return;
+	}
+
+	string domain = "com.pageflow.tagtech.";
+	function classipy = G->bootstrap("modules/classifier.pike")->classipy;
+	function regression = G->bootstrap("modules/regress.pike")->regression;
+
+	string text;
+
+	array(mapping) pages = await(G->G->DB->run_pg_query(#"
+	SELECT ocr_result
+	FROM uploaded_file_pages
+	WHERE file_id = :file_id
+	AND seq_idx = :seq_idx",
+	(["file_id": G->G->args->file, "seq_idx": G->G->args->seqidx])));
+	text = Standards.JSON.decode(pages[0]->ocr_result)->text * " ";
+
+	System.Timer tm = System.Timer();
+
+	int page = 0;
+	foreach (get_dir("seedcontent"), string fn) {
+		werror("Peek at Seeding %O %f\n", fn, tm->peek());
+		foreach (Stdio.read_file("seedcontent/"+fn) / "\f", string text) { // split on form feed
+			await(classipy("", ([
+				"cmd": "train",
+				"text": Stdio.read_file("seedcontent/shining.txt"),
+				"pageref": "0:" + (++page),
+			])));
+			werror("Trained %O\n", page);
+			//break;
+		}
+		//break;
+	}
+
+	array(mapping) templates = await(G->G->DB->run_pg_query(#"
+		SELECT ocr_result, template_id, page_number FROM template_pages
+		JOIN templates ON template_pages.template_id = templates.id
+		WHERE :domain LIKE domain || '%'
+		AND page_count IS NOT NULL",
+		(["domain": domain])));
+
+	foreach(templates, mapping template) {
+		werror("Peek at %O %f\n", template->template_id, tm->peek());
+		string doc = Standards.JSON.decode(template->ocr_result)->text * " ";
+		await(classipy("",
+			([
+				"cmd": "train",
+				"text": doc,
+				"pageref": sprintf("%d:%d", template->template_id, template->page_number),
+			])));
+	}
+	werror("Training took %f seconds\n", tm->get());
+
+	mapping classification = await(classipy("",
+	([
+		"cmd": "classify",
+		"text": text,
+	])));
+
+	float overhead = tm->get() - classification->elapsed;
+	werror("Classification took %f seconds. \n Overhead: %f\n", classification->elapsed, overhead);
+
+	array pagerefs = indices(classification->results);
+	array confs = values(classification->results);
+
+	sort(confs, pagerefs);
+
+	werror("%{%8s: %.2f\n%}", Array.transpose(({pagerefs, confs})));
+	if (confs[-1] < 0.8) {
+		werror("No match\n");
+		return;
+	}
+	sscanf(pagerefs[-1], "%d:%d", int template_id, int page_number);
+
+	array template_words = Standards.JSON.decode(await(G->G->DB->run_pg_query(#"
+		SELECT ocr_result
+		FROM template_pages
+		WHERE template_id = :template_id
+		AND page_number = :page_number",
+		(["template_id": template_id, "page_number": page_number])))[0]->ocr_result);
+
+
+	array pairs = match_arrays(template_words, Standards.JSON.decode(pages[0]->ocr_result), 0) {[mapping o, mapping d] = __ARGS__;
+		return o->text == d->text && (centroid(o->pos) + centroid(d->pos));
+	};
+
+	werror("Pairs: %O\n", pairs);
+
+	if (sizeof(pairs) < 10) {
+		werror("Not enough matching words for page %d\n");
+		return;
+	}
+	// mutate pairs
+	Array.shuffle(pairs);
+	array testpairs = pairs[..sizeof(pairs) / 10]; // 10% of the pairs
+	array trainpairs = pairs[(sizeof(pairs) / 10) + 1..]; // remaining 90% of the pairs
+
+	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
+	array matrix = await(regression(trainpairs));
+	float error = 0.0;
+	foreach (testpairs, [int x1, int y1, int x2, int y2]) {
+		float x = matrix[0] * x1 + matrix[1] * y1 + matrix[2];
+		float y = matrix[3] * x1 + matrix[4] * y1 + matrix[5];
+		//werror("%4d,%4d -> %4d,%4d or %4.0f,%4.0f err %O\n", x1, y1, x2, y2, x, y, (x - x2) ** 2 + (y - y2) ** 2);
+		error += (x - x2) ** 2 + (y - y2) ** 2;
+	}
+	werror("Regression error: %O\n", error);
+}
+
 @"Seed parent domain model":
  __async__ void seed() {
 	function classipy = G->bootstrap("modules/classifier.pike")->classipy;

@@ -15,7 +15,7 @@ void pythonoutput(mapping proc, string data){
 			prom->success(msg);
 			// TODO consider checking for error in Python response.
 		}
-		if (msg->model) {
+		if (msg->model && proc->domain != "") {
 			G->G->DB->run_pg_query(#"
 				UPDATE domains
 				SET ml_model = :model
@@ -85,7 +85,8 @@ Concurrent.Future classipy(string domain, mapping json){
 			]));
 		pythonstdout->set_id(proc);
 		werror("process created for %O\n", domain);
-		load_model(domain, proc);
+		if (domain != "") load_model(domain, proc);
+		else m_delete(proc, "queued_messages");
 	}
 	proc->idle_count = 0;
 	if (proc->queued_messages) proc->queued_messages += ({json});
