@@ -158,3 +158,12 @@ array words = Standards.JSON.decode(Stdio.read_file("ocr_data1.json"));
 multiset dict = (multiset)(Stdio.read_file("/usr/share/dict/words") / "\n" - ({""}));
 gauge {werror("Words: %O\n", sizeof(filter(words) {return dict[__ARGS__[0]->text];}));};
 ```
+
+## Sept 17
+### Possible changes to the feature selection for consideration in the future
+- Any word that contains a mix of letters and digits gets the digits folded to letters
+  Would reduce feature count by fixing OCR issues
+- Increase ngram count (even to 5) if performance permits
+- Add positional information by mapping the word to its ordinal as well as its count
+- Stem the words (remove prefixes/suffixes). Would need some language recognition; start
+  with a dictionary and turn it into a replaceset.
