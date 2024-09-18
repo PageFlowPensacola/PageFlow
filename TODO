@@ -165,5 +165,6 @@ gauge {werror("Words: %O\n", sizeof(filter(words) {return dict[__ARGS__[0]->text
   Would reduce feature count by fixing OCR issues
 - Increase ngram count (even to 5) if performance permits
 - Add positional information by mapping the word to its ordinal as well as its count
+	* This might involve giving River a dict as opposed to BagOfWords
 - Stem the words (remove prefixes/suffixes). Would need some language recognition; start
   with a dictionary and turn it into a replaceset.
