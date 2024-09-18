@@ -5,6 +5,10 @@
 	box-sizing: border-box;
 }
 
+/* Eventually
+	https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/color-mix
+	(baseline 2023)
+*/
 :root {
 	--brand-primary: #526C69;
 	--brand-primary-dark: #425b5d;
