@@ -96,6 +96,7 @@ mapping tables = ([
 		"x2 smallint NOT NULL",
 		"y2 smallint NOT NULL",
 		"name varchar DEFAULT NULL",
+		"optional boolean NOT NULL DEFAULT FALSE",
 		"transition_score int NOT NULL DEFAULT -1", // to compare against signature
 		"template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE"
 	}),
