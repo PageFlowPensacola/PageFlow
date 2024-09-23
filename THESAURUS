@@ -2,8 +2,9 @@
 *Audit Rectangle (Audit Rect)*: A user-specified area within a template page which is by default required to have content.
 *Document*: One or more uploaded file pages that make up a specific piece of legally binding paperwork. eg: Odometer Disclosure Statement
 *Domain*: @TODO
+*Expression*: Component of a rule which has a value as opposed to simple pass/fail as with a rule. Expressions get evaluated. Rules are assessed.
 *File*: A set of uploaded pages that represent one or more documents, considered as a document package to be compared against a Template Package.
 *Document Package*: The set of page data produced by an initial file upload (and potentially subsequent uploads) to be analyazed against a template package.
-*Rule*: A single programmatic or user-defined audit requirement, which may take into account audit rectangles and/or document pages.
+*Rule*: A single programmatic or user-defined audit requirement, which may take into account audit rectangles and/or document pages. Rules get assessed. Expressions get evaluated.
 *Template*: A blank version of a document used to train the ML and define rules. eg required fields
 *Template Package*: A ruleset which includes one or more templates for analysis comparison.
