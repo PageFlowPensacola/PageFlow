@@ -172,3 +172,30 @@ gauge {werror("Words: %O\n", sizeof(filter(words) {return dict[__ARGS__[0]->text
 ## Sept 18
 ### Possible useful API for parsing PDFs
 https://www.cambioml.com
+
+## Sept 23
+Template Package concept to require specific documents to be present,
+	potentially based on parameters within other documents.
+	eg: any pre-1972 home sold requires a "lead paint disclosure"
+	 1. Upload Template of the document (proforma)
+	 2. Define audit rects
+	 3. Upload a file for verification
+	  Default to assuming all audit rects are mandatory
+		Can add new ruleset, but each Template has a
+			default ruleset.
+		Ruleset is a database concept.
+
+ * Define a rule by how it gets evaluated.
+	- define a set of possible things we can check for
+	eg:
+		-- comparison gt, lt, eq, etc...;
+		-- set completion (split gives two different rules: optional and mandatory set completion);
+		-- require - an aspect of the rule that says require xyz.
+		---- borrow a thing from EU4 checks and exes making their way down the tree
+ * Also define a rule by how it gets edited.
+ * Everything else will take care of itself (grammar parser)
+
+ Start with a rule executor which will get more and more powerful, stored as json but represented in various ways to the user.
+
+Store rule in jsonb so will need to manually code out parsing of rule validation as can't use db for it.
+Copy/Clone and modify template packages.

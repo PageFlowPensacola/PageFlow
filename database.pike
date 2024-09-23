@@ -45,6 +45,23 @@ mapping tables = ([
 		"domain text NOT NULL REFERENCES domains ON DELETE RESTRICT",
 		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
 	}),
+	"template_packages": ({
+		"id SERIAL PRIMARY KEY",
+		"name text NOT NULL",
+		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
+		"domain text NOT NULL REFERENCES domains ON DELETE RESTRICT",
+	}),
+	"rules": ({
+		"id SERIAL PRIMARY KEY",
+		"name text NOT NULL",
+		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
+		"rule jsonb NOT NULL",
+	}),
+	"package_rules": ({
+		"package_id int NOT NULL REFERENCES template_packages ON DELETE CASCADE",
+		"rule_id int NOT NULL REFERENCES rules ON DELETE CASCADE",
+		" PRIMARY KEY (package_id, rule_id)",
+	}),
 	// "user_credentials": ({TODO: Implement this}),
 	"templates": ({
 		"id SERIAL PRIMARY KEY",
