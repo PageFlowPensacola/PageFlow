@@ -98,7 +98,7 @@ mapping tables = ([
 		"name varchar DEFAULT NULL",
 		"optional boolean NOT NULL DEFAULT FALSE",
 		"transition_score int NOT NULL DEFAULT -1", // to compare against signature
-		"template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE"
+		"template_signatory_id int REFERENCES template_signatories ON DELETE CASCADE",
 	}),
 	// Exact uploaded file to be analyzed (digital dignatures will be lost in PNGs)
 	// For each page we need the pageref it was detected as eg: 102:1, 102:2, etc...

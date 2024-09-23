@@ -199,3 +199,5 @@ Template Package concept to require specific documents to be present,
 
 Store rule in jsonb so will need to manually code out parsing of rule validation as can't use db for it.
 Copy/Clone and modify template packages.
+
+Add checkbox for audit_rect to make optional

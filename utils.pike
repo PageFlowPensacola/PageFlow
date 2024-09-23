@@ -565,6 +565,17 @@ __async__ void model_audit() {
 
 }
 
+@"Document Package":
+__async__ void docpac() {
+	if (!G->G->args->id) {
+		werror("Supply id of an uploaded file.\n");
+		return;
+	}
+	function fetch_doc_package = G->bootstrap("modules/executor.pike")->fetch_doc_package;
+	mixed result = await(fetch_doc_package((int)G->G->args->id));
+	werror("Result %O\n", result);
+}
+
 @"This help information":
 void help() {
 	write("\nUSAGE: pike app --exec=ACTION\nwhere ACTION is one of the following:\n");

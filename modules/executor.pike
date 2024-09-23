@@ -67,3 +67,31 @@ value eval(expression expr) {
 	}
 
 }
+
+__async__ mapping|zero fetch_doc_package(int id) {
+	array(mapping) file_rects = await(G->G->DB->run_pg_query(#"
+		SELECT audit_rects.id as audit_rect_id, template_id, page_number, file_id, seq_idx, audit_type, name, optional
+		FROM uploaded_file_pages
+		LEFT JOIN audit_rects USING (template_id, page_number)
+		WHERE file_id = :id
+		AND template_id IS NOT NULL
+		ORDER BY file_id, seq_idx, audit_rects.id
+		", (["id": id])));
+	werror("File pages %O\n", file_rects);
+	mapping statuses = ([]);
+	foreach(file_rects, mapping rect) {
+		statuses[rect->template_id+":"+rect->page_number] = 1; // this one we indeed have
+		// is there rect content?
+		// for now cheat with fm (something magic bofh (bastard operator from hell) term)
+		// testing for rect content is potentially costly so for now set to 1
+		if (rect->audit_rect_id) {
+			int signed = 1; // @TODO
+			if (!signed && !rect->optional) {
+				// TODO
+			}
+			statuses[rect->audit_rect_id] = signed;
+		}
+	}
+	return statuses;
+
+}
