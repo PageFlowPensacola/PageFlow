@@ -435,7 +435,7 @@ class websocket_handler {
 		}
 		werror("SESSION: %O\n", req->misc->session);
 
-		if(req->misc->session->user_id) {
+		if(req->misc->session->email) {
 			replacements->userform = req->misc->session->email + " <button class='logout delete' data-verb='Logout' href='/logout'>x</a>";
 		} else {
 			replacements->userform = #"<form method=post action='/login'>

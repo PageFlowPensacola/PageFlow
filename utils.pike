@@ -11,22 +11,6 @@ __async__ void test() {
 	werror("SQL State: %O\n", G->G->DB->mysqlconn->sqlstate());
 }
 
-@"Reset Models":
-__async__ void reset_models() {
-	if (!G->G->args->confirm) {
-		werror("Delete all models and templates? \n Confirm with --confirm\n");
-		return;
-	}
-	werror("Clearing domain models.\n");
-	await(G->G->DB->run_pg_query("UPDATE domains SET ml_model = NULL"));
-	werror("Truncating upload pages and templates.\n");
-	await(G->G->DB->run_pg_query("truncate uploaded_file_pages cascade;"));
-	await(G->G->DB->run_pg_query("truncate uploaded_files cascade;"));
-	await(G->G->DB->run_pg_query("truncate templates cascade;"));
-	werror("Reseeding parent domain model.\n");
-	await(G->G->utils->seed());
-}
-
 @"Match HOCR words":
 __async__ void matchhocr() {
 	/*
@@ -166,6 +150,20 @@ __async__ void userfind() {
 		WHERE email = :email",
 		(["email": email])));
 	write("Result: %O\n", result);
+}
+
+@"Seed Domain Import":
+__async__ void seed_domains() {
+	if (!G->G->args->confirm) {
+		werror("Seed all domains? \n Confirm with --confirm\n");
+		return;
+	}
+ 	werror("Creating top-level domain of com.pageflow.\n");
+
+	await(G->G->DB->run_pg_query(#"
+		insert into domains values('com.pageflow.', null, null, 'Pageflow'), ('com.pageflow.tagtech.', null, 1, 'Tag Tech')
+	"));
+	await(rebuild_models());
 }
 
 @"Domain import":

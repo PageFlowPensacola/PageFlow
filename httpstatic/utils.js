@@ -12,7 +12,7 @@ on("submit", "#loginform", async function (evt) {
 	const credentials = { email: form.email.value, password: form.password.value };
 	const resp = await fetch("/login", { method: "POST", body: JSON.stringify(credentials) });
 	if (resp.ok) {
-		window.location.reload();
+		//window.location.reload();
 	} else {
 		alert((await resp.json()).data);
 	}

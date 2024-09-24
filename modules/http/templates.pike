@@ -93,7 +93,7 @@ __async__ void websocket_cmd_delete_signatory(mapping(string:mixed) conn, mappin
 }
 
 __async__ mapping(string:mixed)|string|zero http_request(Protocols.HTTP.Server.Request req) {
-	if (!req->misc->session->user_id) {
+	if (!req->misc->session->email)  {
 		return render_template("login.md", (["msg": "You must be logged in to access templates."]));
 	}
 	werror("templates: %O\n", req->misc->session->domain);

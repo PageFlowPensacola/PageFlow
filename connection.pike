@@ -5,6 +5,7 @@ __async__ void http_handler(Protocols.HTTP.Server.Request req)
 
 	write("incoming http request: %O\n", req->not_query);
 
+	werror("Sessions: %O\n", G->G->http_sessions);
 	req->misc->session = G->G->http_sessions[req->cookies->session] || ([]);
 
 	catch {req->misc->json = Standards.JSON.decode_utf8(req->body_raw);};
