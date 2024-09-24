@@ -201,3 +201,7 @@ Store rule in jsonb so will need to manually code out parsing of rule validation
 Copy/Clone and modify template packages.
 
 Add checkbox for audit_rect to make optional
+
+## Sept 24
+Progress/feedback on Template upload screen.
+ImageMagick for John: https://github.com/ImageMagick/ImageMagick/discussions/7054

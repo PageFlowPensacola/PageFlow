@@ -26,6 +26,9 @@ View methods by calling `pike app --help` (or `pike app --exec=help`).
 
 ## Required Steps on Initial Setup
 
+### Dependencies
+* imagemagick (`brew install imagemagic`, `apt install imagemagic`)
+
 ### Python requirements
 * `$ pip install -r requirements.txt` (Install Python pip if necessary).
 
