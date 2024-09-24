@@ -181,6 +181,7 @@ __async__ void domain_import() {
 		SELECT * from domains where legacy_org_id is not null"));
 	mapping domains = mkmapping(dom->legacy_org_id, dom);
 	write("Domains: %O\n", domains);
+
 	foreach (orgs, mapping org) {
 		if (mapping par = !domains[org->org_id] && domains[org->parent_org_id]) {
 			write("Parent name %O display name %O\n", par->name, par->display_name);
