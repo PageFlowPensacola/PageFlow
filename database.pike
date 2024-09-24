@@ -443,7 +443,7 @@ protected void create(string name) {
 		werror("Postgres DB Connecting\n");
 		//pgsqlconn = Sql.Sql(G->G->instance_config->pgsql_connection_string);
 		// ATM using the Stillebot connection approach.
-		pgsqlconn = SSLDatabase("localhost");
+		pgsqlconn = SSLDatabase(G->G->instance_config->pgsql_connection_string);
 		write("%O\n", pgsqlconn);
 	}
 

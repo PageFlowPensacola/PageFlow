@@ -163,7 +163,7 @@ class PromiseResult(array data) {
 	array get() {return data;}
 }
 
-class SSLDatabase(string host, mapping|void cfg) {
+class SSLDatabase(string|mapping connect_to, mapping|void cfg) {
 	Stdio.File|SSL.File sock;
 	Stdio.Buffer in, out;
 	string state;
@@ -175,6 +175,7 @@ class SSLDatabase(string host, mapping|void cfg) {
 	array(string) preparing_statements = ({ });
 	int(1bit) in_transaction = 0; //If true, we're in a transaction, and autocommitted queries have to wait.
 	Concurrent.Promise|zero transaction_pending = 0;
+	mapping connect_params = (["user": System.get_user() || "postgres"]);
 
 	protected void create() {
 		if (!cfg) cfg = ([]);
@@ -182,6 +183,17 @@ class SSLDatabase(string host, mapping|void cfg) {
 		sock = Stdio.File();
 		sock->open_socket();
 		sock->set_nonblocking(0, rawwrite, sockclosed);
+		if (mappingp(connect_to)) {
+			connect_params = connect_to;
+			connect_to = m_delete(connect_params, "host");
+		}
+		if (has_value(connect_to, "://")) {
+			object uri = Standards.URI(connect_to);
+			connect_to = uri->host;
+			connect_params->user = uri->user;
+			connect_params->database = uri->path[1..];
+		}
+		// Not actually using the hostname here. which upstream uses like sock->connect(connect_to, 5432);
 		sock->connect_unix("/tmp/.s.PGSQL.5432"); // find path with `psql -U postgres -c 'show unix_socket_directories'`
 		state = "connect";
 	}
@@ -191,7 +203,7 @@ class SSLDatabase(string host, mapping|void cfg) {
 		sock->set_nonblocking(sockread, sockwrite, sockclosed);
 		out = Stdio.Buffer(); //Not actually using buffer mode for output
 		sock->set_buffer_mode(in = Stdio.Buffer(), 0);
-		out->add_hstring("\0\3\0\0user\0mikekilmer\0database\0pageflow\0\0", 4, 4); // Hollorith string
+		out->add_hstring(sprintf("\0\3\0\0%{%s\0%s\0%}\0", (array)connect_params), 4, 4); // Hollorith string
 		write();
 		state = "auth";
 		if (!sizeof(typcategory)) {
@@ -228,7 +240,13 @@ class SSLDatabase(string host, mapping|void cfg) {
 							backtrace(),
 						}));
 					}
-					else if (state == "auth") state = "authfailed";
+					else if (state == "auth") {
+						//We can't really throw an error here as it all happens asynchronously,
+						//but we can at least dump something to the console. TODO: Support
+						//password-based authentication methods??
+						state = "authfailed";
+						werror("Database authentication failure:\n%s\n", fields->M);
+					}
 					else werror("Database error, unknown cause: %O\n", fields);
 					break;
 				}
@@ -472,51 +490,6 @@ class SSLDatabase(string host, mapping|void cfg) {
 	}
 }
 
-#if !constant(G)
-//Stand-alone testing
-class SSLContext {
-	inherit SSL.Context;
-	array|zero find_cert_issuer(array(string) ders) {
-		if (sizeof(cert_chains_issuer)) return values(cert_chains_issuer)[0]; //Return the first available cert
-		return ::find_cert_issuer(ders);
-	}
-}
-
-int main() {
-	string key = Stdio.read_file("privkey.pem");
-	string cert = Stdio.read_file("certificate.pem");
-	object ctx = SSLContext();
-	array(string) root = Standards.PEM.Messages(Stdio.read_file("/etc/ssl/certs/ISRG_Root_X1.pem"))->get_certificates();
-	ctx->add_cert(Standards.PEM.simple_decode(key), Standards.PEM.Messages(cert)->get_certificates() + root);
-	object sql = SSLDatabase("sikorsky.mustardmine.com", (["ctx": ctx]));
-	sql->query("select 1+2+3, current_user")->then() {werror("Simple query: %O\n", __ARGS__[0]);};
-	sql->query("select * from stillebot.commands where twitchid = :twitchid and cmdname = :cmd",
-		(["twitchid": "49497888", "cmd": "tz"]))->then() {
-			werror("Command lookup: %O\n", __ARGS__[0]);
-		};
-	sql->query("select * from stillebot.commands where id = :id",
-		(["id": "3b482366-b032-48db-8572-d4ffa56e7bb4"]))->then() {
-			werror("Command lookup: %O\n", __ARGS__[0]);
-		};
-	sql->query("insert into stillebot.commands (twitchid, cmdname, active, content) values (:twitchid, :cmdname, true, :content)",
-		(["twitchid": "49497888", "cmdname": "tz", "content": "test"]))->then() {
-			werror("Command insertion: %O\n", __ARGS__[0]);
-		};
-	sql->query("LISTEN testing");
-	sql->query("NOTIFY testing, 'hello'");
-	sql->query("select table_schema, count(*) from information_schema.columns group by table_schema")->then() {
-		werror("Schema column counts: %O\n", mkmapping(__ARGS__[0]->table_schema, __ARGS__[0]->count));
-	};
-	//Now let's do the same thing less efficiently, to stress-test the fetching.
-	sql->query("select * from information_schema.columns")->then() {
-		mapping counts = ([]);
-		foreach (__ARGS__[0], array row) counts[row->table_schema]++;
-		werror("Schema column counts: %O\n", counts);
-	};
-	return -1;
-}
-#else
 protected void create(string name) {
 	add_constant("SSLDatabase", SSLDatabase);
 }
-#endif
