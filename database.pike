@@ -122,6 +122,14 @@ mapping tables = ([
 		"ocr_result jsonb",
 		" PRIMARY KEY (file_id, seq_idx)",
 	}),
+	"page_rects": ({
+		"file_id int NOT NULL REFERENCES uploaded_files ON DELETE CASCADE",
+		"seq_idx smallint NOT NULL",
+		"audit_rect_id int NOT NULL REFERENCES audit_rects ON DELETE CASCADE",
+		"difference int NOT NULL DEFAULT 0",
+		"content text NOT NULL DEFAULT ''", // not currently in use
+		" PRIMARY KEY (file_id, seq_idx, audit_rect_id)",
+	}),
 ]);
 
 array(mapping) parse_mysql_result(array(mapping) result) {

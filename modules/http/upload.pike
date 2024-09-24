@@ -224,7 +224,7 @@ __async__ array parse_page(string current_page, string domain, int i) {
 	string templateName = "Unknown";
 	if (!(int) pageref || confidence < 0.5) {
 		werror("No classification found for page %d %O \n", i, classification);
-		return ({page_ocr, 0, 0 ,0, templateName});
+		return ({page_ocr, 0, 0 ,0, templateName, img});
 	}
 	//werror("Confidence level for page %d: %f\n", i+1, confidence);
 	array(mapping) matchingTemplates = await(G->G->DB->run_pg_query(#"
@@ -234,7 +234,7 @@ __async__ array parse_page(string current_page, string domain, int i) {
 
 	if (!sizeof(matchingTemplates)) {
 		werror("WARNING!!!!!!!: ML has template we don't have: %d. Fix the ML.\n", (int) pageref);
-		return ({page_ocr, 0, 0 ,0, templateName}); // Should never happen.
+		return ({page_ocr, 0, 0 ,0, templateName, img}); // Should never happen.
 	}
 	templateName = matchingTemplates[0]->name; // assume it has a name at this point
 
@@ -253,7 +253,7 @@ __async__ array parse_page(string current_page, string domain, int i) {
 
 	if (sizeof(pairs) < 10) {
 		werror("Not enough matching words for page %d\n", i);
-		return ({page_ocr, 0, 0 ,0, templateName});
+		return ({page_ocr, 0, 0 ,0, templateName, img});
 	}
 	// mutate pairs
 	Array.shuffle(pairs);
@@ -275,17 +275,16 @@ __async__ array parse_page(string current_page, string domain, int i) {
 		werror("Error: %f\n", error / sizeof(testpairs));
 		werror("Image size: %d %d\n", img->xsize, img->ysize);
 
-		return ({page_ocr, 0, 0 ,0, templateName});
+		return ({page_ocr, 0, 0 ,0, templateName, img});
 	}
 	//Least-squares linear regression. Currently done in Python+Numpy, would it be worth doing in Pike instead?
-	return ({page_ocr, matrix, template_id, page_number, templateName}); // the matrix
+	return ({page_ocr, matrix, template_id, page_number, templateName, img});
 }
 
 __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	werror("contract upload %O\n", upload);
 
 	object analysis = G->G->websocket_types->analysis;
-
 
 	object tm = System.Timer();
 
@@ -328,7 +327,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 	foreach(file_pages; int i; string current_page) {
 
 		analysis->send_updates_all(fileid);
-		[array page_ocr, array|zero matrix, int template_id, int page_number, string templateName] = await(parse_page(current_page, domain, i+1));
+		[array page_ocr, array|zero matrix, int template_id, int page_number, string templateName, Image.Image img] = await(parse_page(current_page, domain, i+1));
 		if (!matrix) {
 			G->G->DB->run_pg_query(#"
 			INSERT INTO uploaded_file_pages
@@ -359,7 +358,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 		if (!templates[template_id][page_number]) { // if not a duplicate
 			// TODO stop getting template name here as getting separately anyway.
 			rects += templates[template_id][page_number] = await(G->G->DB->run_pg_query(#"
-				SELECT x1, y1, x2, y2, template_signatory_id, transition_score, ts.name as name, t.name as Template
+				SELECT x1, y1, x2, y2, r.id, template_signatory_id, transition_score, ts.name as name, t.name as Template
 				FROM audit_rects r
 				JOIN template_signatories ts ON ts.id = r.template_signatory_id
 				JOIN templates t ON t.id = ts.template_id
@@ -380,6 +379,16 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 			])});
 			timings["analyze page"] += tm->get();
 			continue;
+		}
+
+		object grey = img->image->grey();
+		foreach(templates[template_id][page_number], mapping r) {
+			mapping box = calculate_transition_score(r, grey, matrix);
+			await(G->G->DB->run_pg_query(#"
+				INSERT INTO page_rects
+					(file_id, seq_idx, audit_rect_id, difference)
+					VALUES (:file_id, :seq_idx, :audit_rect_id, :difference)",
+				(["file_id": fileid, "seq_idx": i+1, "audit_rect_id": r->id, "difference": (box->score - r->transition_score)])));
 		}
 
 		timings["analyze page"] += tm->get();
