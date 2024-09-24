@@ -388,7 +388,7 @@ __async__ mapping contract(Protocols.HTTP.Server.Request req, mapping upload) {
 				INSERT INTO page_rects
 					(file_id, seq_idx, audit_rect_id, difference)
 					VALUES (:file_id, :seq_idx, :audit_rect_id, :difference)",
-				(["file_id": fileid, "seq_idx": i+1, "audit_rect_id": r->id, "difference": (box->score - r->transition_score)])));
+				(["file_id": fileid, "seq_idx": i+1, "audit_rect_id": r->id, "difference": max(box->score - r->transition_score, 0)])));
 		}
 
 		timings["analyze page"] += tm->get();

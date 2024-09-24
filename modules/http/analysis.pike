@@ -137,22 +137,27 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 		if (!templates[template_id]) templates[template_id] = ([]);
 		string png = page->png_data;
 		array(mapping) audit_rects = await((G->G->DB->run_pg_query(#"
-			SELECT x1, y1, x2, y2, template_signatory_id, transition_score
+			SELECT x1, y1, x2, y2, template_signatory_id as signatory, difference
 			FROM audit_rects
-			WHERE template_id = :id AND page_number = :page", (["id": page->template_id, "page": page->page_number]))));
+			JOIN page_rects ON audit_rects.id = audit_rect_id
+			WHERE template_id = :id AND page_number = :page AND file_id = :file AND seq_idx = :seq_idx", (
+			(["id": page->template_id,
+			"page": page->page_number,
+			"file": group,
+			"seq_idx": page->seq_idx])))));
+
+		foreach (audit_rects, mapping r) {
+			r->status = (r->difference >= 100) ? "Signed" : (r->difference >= 25) ? "Unclear" : "Unsigned";
+		}
 
 		templates[template_id][ (string) (page->page_number || 1)] += ({
 			([
 				"audit_rects": audit_rects,
-				"scores": calc_transition_scores(
-						Image.PNG.decode(png),
-						audit_rects,
-						Standards.JSON.decode(page->transform),
-					),
+				"scores": audit_rects,
 				"seq_idx": page->seq_idx,
 			])
 		});
-		signatories |= (multiset) audit_rects->template_signatory_id;
+		signatories |= (multiset) audit_rects->signatory;
 	}
 
 	// fetch signatory names from template_signatories
