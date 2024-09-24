@@ -27,11 +27,11 @@ View methods by calling `pike app --help` (or `pike app --exec=help`).
 ## Required Steps on Initial Setup
 
 ### Python requirements
-* `$ pip install -r requirements.txt` (Install Python pip if necessary). (`river` should be at least `version 0.18.x` which may require a version of Python at least 3.11.)
+* `$ pip install -r requirements.txt` (Install Python pip if necessary).
 
 ### Seed the database
 * `$ pike app --exec=seed_domains {--confirm}`
-* `$ pike app --exec=domain_import {--confirm}`
+* `$ pike app --exec=domain_import {--confirm}` // for now
 
 ### Run the app
 * `pike app`
