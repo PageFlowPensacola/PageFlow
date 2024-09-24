@@ -18,6 +18,24 @@ insert into templates (id, name, domain) values (0, 'default', 'com.pageflow.');
 insert into template_signatories (id, name, template_id) values (0, 'Unspecified', 0)
 ```
 
+## Helpful Command Line Utilities
+
+There are methods in `utils.pike` which can be called with the syntax `pike app --exec={some_utility} {--named or positional params }
+
+View methods by calling `pike app --help` (or `pike app --exec=help`).
+
+## Required Steps on Initial Setup
+
+### Python requirements
+* `$ pip install -r requirements.txt` (Install Python pip if necessary). (`river` should be at least `version 0.18.x` which may require a version of Python at least 3.11.)
+
+### Seed the database
+* `$ pike app --exec=seed_domains {--confirm}`
+* `$ pike app --exec=domain_import {--confirm}`
+
+### Run the app
+* `pike app`
+
 ## Development
 
 There's an `.editorconfig` file to help with consistency between devs and environments.
