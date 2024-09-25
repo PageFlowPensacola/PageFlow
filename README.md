@@ -4,10 +4,23 @@ Borrowing to the point of theft from https://github.com/Rosuav/StilleBot.
 
 ## Dependencies
 
-- gtk2 (`brew install gtk+`)
+- gtk2 (`brew install gtk+`)  (Is this still a dependency?)
 - Pike 9+
 - Image Magic (`brew install imagemagick`)
 – Tesseract
+
+## Required Steps on Initial Setup
+
+### Python requirements
+* `$ pip install -r requirements.txt` (Install Python pip if necessary).
+
+### Seed the database
+* `$ pike app --exec=seed_domains {--confirm}`
+* `$ pike app --exec=domain_import {--confirm}` // for now
+
+### Run the app
+* `pike app`
+
 
 ## Database
 To initialize database run `pike app.pike --exec=tables`
@@ -23,21 +36,6 @@ insert into template_signatories (id, name, template_id) values (0, 'Unspecified
 There are methods in `utils.pike` which can be called with the syntax `pike app --exec={some_utility} {--named or positional params }
 
 View methods by calling `pike app --help` (or `pike app --exec=help`).
-
-## Required Steps on Initial Setup
-
-### Dependencies
-* imagemagick (`brew install imagemagic`, `apt install imagemagic`)
-
-### Python requirements
-* `$ pip install -r requirements.txt` (Install Python pip if necessary).
-
-### Seed the database
-* `$ pike app --exec=seed_domains {--confirm}`
-* `$ pike app --exec=domain_import {--confirm}` // for now
-
-### Run the app
-* `pike app`
 
 ## Development
 
