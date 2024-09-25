@@ -11,6 +11,10 @@ protected void create(string n)
 
 array(int) bbox_color = ({180, 180, 0});
 array(int) audit_rect_color = ({0, 192, 0});
+typedef mapping(string: mixed)|array(_rule)|zero _rule;
+typedef _rule executable_rule;
+typedef string|int|float value;
+typedef value|mapping(string: mixed) expression;
 
 __async__ mixed asyncify(mixed gen) {
 	return objectp(gen) && gen->on_await ? await(gen) : gen;

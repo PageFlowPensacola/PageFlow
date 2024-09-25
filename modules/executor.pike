@@ -1,8 +1,5 @@
 
-typedef mapping(string: mixed)|array(_rule)|zero _rule;
-typedef _rule executable_rule;
-typedef string|int|float value;
-typedef value|mapping(string: mixed) expression;
+
 
 int(1bit) truthy(value val) {
 	if (val == "") return 0;
@@ -19,11 +16,15 @@ value func_all(array(value) args) {
 	return 1;
 }
 
-int(1bit) assess(executable_rule rule) {
+value func_set_complete(array(value) args) {
+	return func_all(args) && func_any(args);
+}
+
+int(1bit) assess(executable_rule rule, mapping pkg) {
 	if (!rule) return 1;
 	if (arrayp(rule)) {
 		foreach(rule, executable_rule subrule) {
-			if (!assess(subrule)) {
+			if (!assess(subrule, pkg)) {
 				return 0;
 			}
 		}
@@ -31,39 +32,33 @@ int(1bit) assess(executable_rule rule) {
 	}
 	if (!mappingp(rule)) error("Invalid ruletype %O\n", rule);
 	// must be a mapping
-	if (rule->condition && !truthy(eval(rule->condition))) {
+	if (rule->condition && !truthy(eval(rule->condition, pkg))) {
 		// Rule is effectively optional and check didn't happen
 		// so effectively the rule has passed.
 		return 1;
 	}
-	if (rule->require && !truthy(eval(rule->require))) {
+	if (rule->require && !truthy(eval(rule->require, pkg))) {
 		return 0;
 	}
-	if (rule->children) return assess(rule->children);
+	if (rule->children) return assess(rule->children, pkg);
 	return 1;
 }
 
-value eval(expression expr) {
+value eval(expression expr, mapping pkg) {
 	if (stringp(expr) || floatp(expr) || intp(expr)) {
 		return expr;
 	}
 	if (!mappingp(expr)) {
 		error("Invalid expression type %O\n", expr);
 	}
-	/*
-	pageref evaulates to a page object or null (as below)
-	any(#101:1, #101:2, #101:3)
-	all(#101:1, #101:2, #101:3)
-	set_complete(#101:1, #101:2, #101:3) <=> any(*args) && all(*args)
-	*/
 	if (expr->call) {
-		array args = eval(expr->args[*]);
+		array args = eval(expr->args[*], pkg);
 		function func = this["func_"+expr->call];
 		if (!func) error("Unknown function %O\n", expr->call); //shouldn't happen
 			return func(args);
 	}
-	if (expr->pageref) {
-		// get id:page return null or the page object
+	if (expr->exists) {
+		return pkg[expr->exists];
 	}
 
 }
@@ -84,11 +79,10 @@ __async__ mapping|zero fetch_doc_package(int id) {
 	foreach(file_rects, mapping rect) {
 		statuses[rect->template_id+":"+rect->page_number] = 1; // this one we indeed have
 		// is there rect content?
-		werror("Rect %3d Seq Idx %d Audit Rect Id %O\n", rect->difference || -1, rect->seq_idx, rect->audit_rect_id);
 		if (rect->audit_rect_id) {
 			int signed = rect->difference >= 100 ;
 			if (!signed && !rect->optional) {
-				// TODO
+				// TODO raise an error
 			}
 			statuses[rect->audit_rect_id] = signed;
 		}

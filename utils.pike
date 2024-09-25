@@ -570,8 +570,10 @@ __async__ void docpac() {
 		werror("Supply id of an uploaded file.\n");
 		return;
 	}
-	function fetch_doc_package = G->bootstrap("modules/executor.pike")->fetch_doc_package;
-	mixed result = await(fetch_doc_package((int)G->G->args->id));
+	object executor = G->bootstrap("modules/executor.pike");
+	mixed pkg = await(executor->fetch_doc_package((int)G->G->args->id));
+	executable_rule example_rule = (["call": "set_complete", "args": ({(["exists": "156:1"]), (["exists": "156:2"])})]);
+	int result = executor->assess(example_rule, pkg);
 	werror("Result %O\n", result);
 }
 
