@@ -8,5 +8,6 @@
 		"region":"us-east-2",
 		"key_id":"AK...98",
 		"secret":"P...7"
-	}
+	},
+	"python_interpreter": "python3"
 }

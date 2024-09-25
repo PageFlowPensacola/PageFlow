@@ -79,7 +79,7 @@ Concurrent.Future classipy(string domain, mapping json){
 		pythonstdout->set_close_callback(pythondone);
 		// TODO use a Buffer
 		Process.create_process(
-			({"python", "classify.py"}),
+			({G->G->instance_config->python_interpreter, "classify.py"}),
 			([
 				"stdin": proc->pythonstdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE),
 				"stdout": pythonstdout->pipe(Stdio.PROP_IPC),

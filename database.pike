@@ -357,7 +357,7 @@ __async__ void recalculate_transition_scores(int template_id, int page_number) {
 	// If template_id is 0, all templates are considered
 	// If page_number is 0, all pages are considered
 
-	array(mapping) rects = await(G->G->DB->run_pg_query(#"
+	array(mapping) rects = await(run_pg_query(#"
 			SELECT template_id, x1, y1, x2, y2,
 				page_number,
 				audit_type,
@@ -435,6 +435,16 @@ __async__ void create_tables(int confirm) {
 		}
 	}
 
+	/**************************
+	*  DML Stuff
+	*/
+
+	// insert the null signatory, which is used on audit rect creation before a signatory is actually selected
+	await(run_pg_query(#"
+	INSERT INTO template_signatories (id, name)
+		VALUES(0, 'None Selected')
+	ON CONFLICT DO NOTHING"
+	));
 }
 
 protected void create(string name) {

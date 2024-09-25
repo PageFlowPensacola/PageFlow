@@ -475,9 +475,9 @@ __async__ void load_model() {
 		werror("No model found for %O\n", domain);
 		return;
 	}
-	werror("Model found%O\n", sizeof(model[0]->ml_model));
+	werror("Model found, %O bytes\n", sizeof(model[0]->ml_model));
 	Stdio.write_file("/tmp/model", model[0]->ml_model);
-	Process.exec("python", "-i", "-c", "import pickle, base64, river; model=pickle.loads(base64.b64decode(open('/tmp/model').read()));");
+	Process.exec(G->G->instance_config->python_interpreter, "-i", "-c", "import pickle, base64, river; model=pickle.loads(base64.b64decode(open('/tmp/model').read()));");
 }
 
 @"Cleanup pagerefs for a model":

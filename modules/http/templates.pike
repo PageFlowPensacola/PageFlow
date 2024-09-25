@@ -134,7 +134,7 @@ __async__ void websocket_cmd_add_rect(mapping(string:mixed) conn, mapping(string
 			"y2": msg->rect->bottom,
 			"page_number": page,
 			"audit_type": "rect",
-			"signatory_id": msg->signatory_id
+			"signatory_id": msg->signatory_id || Val.null
 		]))
 	);
 	send_updates_all(conn->group);

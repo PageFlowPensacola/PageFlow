@@ -35,7 +35,7 @@ Concurrent.Future regression(array pairs) {
 		regression_status->pythondata = "";
 		// TODO use a Buffer
 		Process.create_process(
-			({"python", "regress.py"}),
+			({G->G->instance_config->python_interpreter, "regress.py"}),
 			([
 				"stdin": regression_status->pythonstdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE),
 				"stdout": regression_status->pythonstdout->pipe(Stdio.PROP_IPC),
