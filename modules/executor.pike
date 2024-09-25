@@ -74,7 +74,7 @@ __async__ mapping|zero fetch_doc_package(int id) {
 		SELECT ar.id as audit_rect_id, difference, template_id, page_number, ufp.file_id, ufp.seq_idx, audit_type, name, optional
 		FROM uploaded_file_pages ufp
 		LEFT JOIN audit_rects ar USING (template_id, page_number)
-		LEFT JOIN page_rects pr ON pr.file_id = ufp.file_id AND pr.seq_idx = ufp.seq_idx AND pr.audit_rect_id = audit_rect_id
+		LEFT JOIN page_rects pr ON pr.file_id = ufp.file_id AND pr.seq_idx = ufp.seq_idx AND pr.audit_rect_id = ar.id
 		WHERE ufp.file_id = :id
 		AND template_id IS NOT NULL
 		ORDER BY ufp.file_id, ufp.seq_idx, ar.id
@@ -84,10 +84,9 @@ __async__ mapping|zero fetch_doc_package(int id) {
 	foreach(file_rects, mapping rect) {
 		statuses[rect->template_id+":"+rect->page_number] = 1; // this one we indeed have
 		// is there rect content?
-		// for now cheat with fm (something magic bofh (bastard operator from hell) term)
-		// testing for rect content is potentially costly so for now set to 1
+		werror("Rect %3d Seq Idx %d Audit Rect Id %O\n", rect->difference || -1, rect->seq_idx, rect->audit_rect_id);
 		if (rect->audit_rect_id) {
-			int signed = 1; // @TODO
+			int signed = rect->difference >= 100 ;
 			if (!signed && !rect->optional) {
 				// TODO
 			}
