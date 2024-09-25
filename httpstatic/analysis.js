@@ -84,7 +84,7 @@ export function render(state) {
 								SUMMARY([doc.name, " ", statuses[worstStatus]()]), analysis
 							])}),
 					]),
-						DIV({class: "thumbnail__wrapper loadable"}, [
+				Object.keys(state.templates).length && DIV({class: "thumbnail__wrapper loadable"}, [
 							A(
 								{href: `/showpage?id=${state.file.id}&page=${localState.currentPage}&annotate`},
 								FIGURE({class: "thumbnail"}, [

@@ -572,9 +572,13 @@ __async__ void docpac() {
 	}
 	object executor = G->bootstrap("modules/executor.pike");
 	mixed pkg = await(executor->fetch_doc_package((int)G->G->args->id));
-	executable_rule example_rule = (["call": "set_complete", "args": ({(["exists": "156:1"]), (["exists": "156:2"])})]);
+	executable_rule example_rule = ({
+		(["require": (["call": "set_complete", "args": ({(["exists": "156:1"]), (["exists": "156:2"])})])]),
+		(["condition": (["exists": "154:1"]), "children": (["require": (["exists": "156:1"])])])
+	});
+
 	int result = executor->assess(example_rule, pkg);
-	werror("Result %O\n", result);
+	werror("Pkg %O, \nResult %O\n", pkg, result);
 }
 
 @"This help information":

@@ -205,3 +205,9 @@ Add checkbox for audit_rect to make optional
 ## Sept 24
 Progress/feedback on Template upload screen.
 ImageMagick for John: https://github.com/ImageMagick/ImageMagick/discussions/7054
+
+## Sept 25
+Potential additional rule primitives:
+* Complete set of template_id (equivalent to set_complete(#templateid:1, #templateid:2, ...) for all page numbers)
+
+* Complete set of template signatories (equivalent to set_complete(#rectid, #rectid, ...) for all audit_rects using that signatory id)

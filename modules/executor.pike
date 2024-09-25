@@ -60,7 +60,7 @@ value eval(expression expr, mapping pkg) {
 	if (expr->exists) {
 		return pkg[expr->exists];
 	}
-
+	error("Unknown expression %O\n", expr);
 }
 
 __async__ mapping|zero fetch_doc_package(int id) {
@@ -74,7 +74,6 @@ __async__ mapping|zero fetch_doc_package(int id) {
 		AND template_id IS NOT NULL
 		ORDER BY ufp.file_id, ufp.seq_idx, ar.id
 		", (["id": id])));
-	werror("File pages %O\n", file_rects);
 	mapping statuses = ([]);
 	foreach(file_rects, mapping rect) {
 		statuses[rect->template_id+":"+rect->page_number] = 1; // this one we indeed have
