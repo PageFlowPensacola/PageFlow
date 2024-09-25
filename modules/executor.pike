@@ -69,13 +69,15 @@ value eval(expression expr) {
 }
 
 __async__ mapping|zero fetch_doc_package(int id) {
+	// ar.id will be the same as pr.audit_rect_id unless pr.audit_rect_id is null
 	array(mapping) file_rects = await(G->G->DB->run_pg_query(#"
-		SELECT audit_rects.id as audit_rect_id, template_id, page_number, file_id, seq_idx, audit_type, name, optional
-		FROM uploaded_file_pages
-		LEFT JOIN audit_rects USING (template_id, page_number)
-		WHERE file_id = :id
+		SELECT ar.id as audit_rect_id, difference, template_id, page_number, ufp.file_id, ufp.seq_idx, audit_type, name, optional
+		FROM uploaded_file_pages ufp
+		LEFT JOIN audit_rects ar USING (template_id, page_number)
+		LEFT JOIN page_rects pr ON pr.file_id = ufp.file_id AND pr.seq_idx = ufp.seq_idx AND pr.audit_rect_id = audit_rect_id
+		WHERE ufp.file_id = :id
 		AND template_id IS NOT NULL
-		ORDER BY file_id, seq_idx, audit_rects.id
+		ORDER BY ufp.file_id, ufp.seq_idx, ar.id
 		", (["id": id])));
 	werror("File pages %O\n", file_rects);
 	mapping statuses = ([]);
