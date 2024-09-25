@@ -154,6 +154,8 @@ foreach(pages; int i; string current_page) {
 	Stdio.write_file(sprintf("ocr_data%d.json", i+1), Standards.JSON.encode(ocr_data, 6));
 	} // end iterate over pages
 
+	G->G->websocket_types->templates->send_updates_all(document_domain);
+
 	// Update the template record with the number of pages
 	await(G->G->DB->run_pg_query(#"
 		UPDATE templates
