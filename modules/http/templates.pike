@@ -169,7 +169,10 @@ __async__ void websocket_cmd_set_rect_signatory(mapping(string:mixed) conn, mapp
 __async__ mapping get_state(string|int group, string|void id, string|void type){
 	werror("get_state: %O %O %O\n", group, id, type);
 	if (stringp(group)){
-		array(mapping) templates = await(G->G->DB->get_templates_for_domain(group));
+		array(mapping) templates = await(G->G->DB->run_pg_query(#"
+		SELECT id, name, page_count, domain FROM templates
+		WHERE :domain LIKE domain || '%'
+		AND id != 0", (["domain":group])));
 		return (["templates":templates]);
 	}
 

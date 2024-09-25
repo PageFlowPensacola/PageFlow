@@ -249,20 +249,6 @@ __async__ array run_pg_query(string|array sql, mapping|void bindings) {
 	else return await(pgsqlconn->query(sql, bindings));
 }
 
-__async__ array(mapping) get_templates_for_domain(string domain) {
-
-	string query = #"
-		SELECT id, name, page_count, domain FROM templates
-		WHERE :domain LIKE domain || '%'
-		AND page_count IS NOT NULL
-	";
-
-	mapping bindings = (["domain":domain]);
-
-	return await(run_pg_query(query, bindings));
-
-}
-
 __async__ mapping|zero insert_template_page(int page_type_id, string name, string url, int org_id) {
 
 	string query = #"
