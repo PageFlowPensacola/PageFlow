@@ -233,9 +233,11 @@ export function render(state) {
 	if (state.templates) {
 			set_content("main", SECTION([
 				FORM({id: "template_submit"}, [
-					INPUT({value: "", id: "newTemplateName"}),
-					INPUT({id: "newTemplateFile", type: "file", accept: "image/pdf"}),
-					localState.uploading && P({style: "display:inline"}, "Uploading... "),
+					SPAN([
+						INPUT({value: "", id: "newTemplateName"}),
+						INPUT({id: "newTemplateFile", type: "file", accept: "image/pdf"})
+					]),
+					SPAN({style: "width:25%", class: localState.uploading && "loading"}, localState.uploading && "Uploading"),
 					INPUT({type: "submit", value: "Upload"}),
 				]),
 				UL(

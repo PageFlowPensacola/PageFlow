@@ -197,6 +197,14 @@ main ul {
 	list-style-type: none;
 }
 
+#template_submit {
+	display: flex;
+	justify-content: flex-start;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	padding: 1em;
+}
+
 #template_thumbnails {
 	display: flex;
 	flex-wrap: wrap;

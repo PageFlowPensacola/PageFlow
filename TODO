@@ -211,3 +211,6 @@ Potential additional rule primitives:
 * Complete set of template_id (equivalent to set_complete(#templateid:1, #templateid:2, ...) for all page numbers)
 
 * Complete set of template signatories (equivalent to set_complete(#rectid, #rectid, ...) for all audit_rects using that signatory id)
+
+## Sept 26
+UX needs feedback when try to delete a template which has analyses restricting it.
