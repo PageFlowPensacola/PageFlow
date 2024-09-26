@@ -151,7 +151,7 @@ foreach(pages; int i; string current_page) {
 			// To be replaced when using Rosuav imgmap code
 			"left": left, "right": right, "top": top, "bottom": bottom
 			])));
-	Stdio.write_file(sprintf("ocr_data%d.json", i+1), Standards.JSON.encode(ocr_data, 6));
+	//Stdio.write_file(sprintf("ocr_data%d.json", i+1), Standards.JSON.encode(ocr_data, 6));
 	} // end iterate over pages
 
 	G->G->websocket_types->templates->send_updates_all(document_domain);
