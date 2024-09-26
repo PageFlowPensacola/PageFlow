@@ -248,23 +248,25 @@ __async__ void websocket_cmd_delete_template(mapping(string:mixed) conn, mapping
 		AND :domain LIKE domain || '%'
 		RETURNING page_count", (["domain": conn->group, "template":msg->id])));
 
-	if (!sizeof(pagecounts) || !pagecounts[0]->page_count) return;
+	if (sizeof(pagecounts) && pagecounts[0]->page_count) {
+		array(mapping) domains = await(G->G->DB->run_pg_query(#"
+			SELECT name
+			FROM domains
+			WHERE name LIKE :domain || '%' AND ml_model IS NOT NULL", (["domain": conn->group])));
 
-	array(mapping) domains = await(G->G->DB->run_pg_query(#"
-		SELECT name
-		FROM domains
-		WHERE name LIKE :domain || '%' AND ml_model IS NOT NULL", (["domain": conn->group])));
-
-	foreach(domains, mapping domain) {
-		for (int i = 1; i <= pagecounts[0]->page_count; i++) {
-			werror("Clearing page %O for %s and template %O\n", i, domain->name, msg->id);
-			classipy(domain->name,
-					([
-						"cmd": "untrain",
-						"pageref_prefix": sprintf("%d:", msg->id),
-					]));
+		foreach(domains, mapping domain) {
+			for (int i = 1; i <= pagecounts[0]->page_count; i++) {
+				werror("Clearing page %O for %s and template %O\n", i, domain->name, msg->id);
+				classipy(domain->name,
+						([
+							"cmd": "untrain",
+							"pageref_prefix": sprintf("%d:", msg->id),
+						]));
+			}
 		}
 	}
+
+
 
 
 	send_updates_all(msg->id);

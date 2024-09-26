@@ -420,17 +420,6 @@ __async__ void create_tables(int confirm) {
 			werror("Run with --confirm to apply changes.\n");
 		}
 	}
-
-	/**************************
-	*  DML Stuff
-	*/
-
-	// insert the null signatory, which is used on audit rect creation before a signatory is actually selected
-	await(run_pg_query(#"
-	INSERT INTO template_signatories (id, name)
-		VALUES(0, 'None Selected')
-	ON CONFLICT DO NOTHING"
-	));
 }
 
 protected void create(string name) {
