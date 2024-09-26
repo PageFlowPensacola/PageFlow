@@ -75,7 +75,7 @@ __async__ void 	fetch_template_domain(mapping conn, int group) {
 }
 
 mapping(string:mixed)|string|Concurrent.Future http_request(Protocols.HTTP.Server.Request req) {
-	if (!req->misc->session->user_id) {
+	if (!req->misc->session->email) {
 		return render_template("login.md", (["msg": "You must be logged in to analyze files."]));
 	}
 	int fileid = (int) req->variables->id;
