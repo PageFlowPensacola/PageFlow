@@ -238,7 +238,7 @@ export function render(state) {
 						INPUT({id: "newTemplateFile", type: "file", accept: "image/pdf"})
 					]),
 					SPAN({style: "width:25%", class: localState.uploading && "loading"}, localState.uploading && "Uploading"),
-					INPUT({type: "submit", value: "Upload"}),
+					INPUT({class: "btn", type: "submit", value: "Upload"}),
 				]),
 				UL(
 					state.templates.map((template) => LI({class: 'template-item'},

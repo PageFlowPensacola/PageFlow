@@ -226,6 +226,24 @@ main ul {
 
 /** Buttons **/
 
+.btn,
+input[type="file"]::file-selector-button {
+	background-color: var(--brand-primary);
+	color: var(--white);
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+	padding: 0.5em 1em;
+}
+
+input[type="file"]::file-selector-button {
+	margin-left: 0.5em;
+}
+
+.btn:hover {
+	background-color: var(--brand-primary-ultra-dark);
+}
+
 .delete-rect,
 .delete-template,
 .delete-signatory,
