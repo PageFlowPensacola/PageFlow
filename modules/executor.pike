@@ -94,9 +94,9 @@ __async__ mapping|zero fetch_doc_package(int id) {
 		statuses[rect->template_id+":"+rect->page_number] = 1; // this one we indeed have
 		// is there rect content?
 		if (rect->audit_rect_id) {
-			int signed = rect->difference >= 100 ;
+			int signed = rect->difference || 0 >= 100 ;
 			if (!signed && !rect->optional) {
-				statuses->missing += ({rect->audit_rect_id});
+				// statuses->missing += ({rect->audit_rect_id});
 			}
 			statuses[rect->audit_rect_id] = signed;
 		}
