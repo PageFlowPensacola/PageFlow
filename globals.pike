@@ -212,14 +212,23 @@ Concurrent.Future run_promise(string|array(string) cmd, mapping modifiers = ([])
 
 __async__ array analyze_page(string page_data, int imgwidth, int imgheight) {
 	// Could minimize storage by just storing word centroids rather than full bounding boxes.
-	mapping hocr = await(run_promise(({"tesseract", "-", "-", "hocr"}), (["stdin": page_data])));
+	// parse raw page data xml to skip tesseract
+	mapping hocr = page_data[0] == '<'
+		? (["stdout": page_data])
+		: await(run_promise(({"tesseract", "-", "-", "hocr"}), (["stdin": page_data])));
 	array data = Parser.XML.Simple()->parse(hocr->stdout){
 		[string type, string name, mapping(string:string) attr, mixed data, mixed loc] = __ARGS__;
 		switch(type) {
 			case "": data = String.trim(data); return data != "" && data;
 			case "<>": case ">":
 				if (arrayp(data) && sizeof(data) == 1 && stringp(data[0])) {
+
 					//Parse out the bounding box (eg "bbox 100 100 400 200")
+					if (!attr->title) {
+						if(arrayp(data) && sizeof(data) == 1) return data[0];
+						return data;
+					}
+
 					array pos;
 					foreach (attr->title / "; ", string thing)
 						if (has_prefix(thing, "bbox ")) pos = (array(int))(thing / " ")[1..];

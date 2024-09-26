@@ -590,3 +590,10 @@ void help() {
 		foreach (annot || (<>); mixed anno;)
 			if (stringp(anno)) write("%-20s: %s\n", names[i], anno);
 }
+
+@"";
+__async__ void test_hocr() {
+	[string filename] = G->G->args[Arg.REST];
+	array words = await(analyze_page(Stdio.read_file(filename), 0, 0));
+	werror("Words: %O\n", words);
+}
