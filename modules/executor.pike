@@ -1,4 +1,4 @@
-
+inherit annotated;
 
 
 int(1bit) truthy(value val) {
@@ -20,9 +20,11 @@ value func_set_complete(array(value) args) {
 	return func_all(args) && func_any(args);
 }
 
-int(1bit) assess(executable_rule rule, mapping pkg) {
+@export:
+int(1bit)|array|mapping assess(executable_rule rule, mapping pkg, int|void verbose) {
 	if (!rule) return 1;
 	if (arrayp(rule)) {
+		if (verbose) return assess(rule[*], pkg, verbose);
 		foreach(rule, executable_rule subrule) {
 			if (!assess(subrule, pkg)) {
 				return 0;
@@ -32,6 +34,12 @@ int(1bit) assess(executable_rule rule, mapping pkg) {
 	}
 	if (!mappingp(rule)) error("Invalid ruletype %O\n", rule);
 	// must be a mapping
+	if (verbose) {
+		mapping ret = ([]);
+		mapping handler = (["condition": eval, "require": eval, "children": assess]);
+		foreach (rule; string key; mixed val) if (function f = handler[key]) ret[key] =  f(val, pkg, verbose);
+		return ret;
+	}
 	if (rule->condition && !truthy(eval(rule->condition, pkg))) {
 		// Rule is effectively optional and check didn't happen
 		// so effectively the rule has passed.
@@ -63,6 +71,7 @@ value eval(expression expr, mapping pkg) {
 	error("Unknown expression %O\n", expr);
 }
 
+@export:
 __async__ mapping|zero fetch_doc_package(int id) {
 	// ar.id will be the same as pr.audit_rect_id unless pr.audit_rect_id is null
 	array(mapping) file_rects = await(G->G->DB->run_pg_query(#"
@@ -81,7 +90,7 @@ __async__ mapping|zero fetch_doc_package(int id) {
 		if (rect->audit_rect_id) {
 			int signed = rect->difference >= 100 ;
 			if (!signed && !rect->optional) {
-				// TODO raise an error
+				statuses->missing += ({rect->audit_rect_id});
 			}
 			statuses[rect->audit_rect_id] = signed;
 		}

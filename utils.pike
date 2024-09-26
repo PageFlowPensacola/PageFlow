@@ -577,7 +577,7 @@ __async__ void docpac() {
 		(["condition": (["exists": "154:1"]), "children": (["require": (["exists": "156:1"])])])
 	});
 
-	int result = executor->assess(example_rule, pkg);
+	int result = executor->assess(example_rule, pkg, 1);
 	werror("Pkg %O, \nResult %O\n", pkg, result);
 }
 

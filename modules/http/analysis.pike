@@ -176,5 +176,14 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	templates["0"] = (["1": ({([ "audit_rects": ([]), "scores": ({}), "seq_idx": 0 ])})]);
 	// TODO handle duplicate pages
 
-	return (["file":file[0], "templates":templates, "template_names": template_names, "signatories": signatory_map, "analyzedcount": sizeof(pages)]);
+	mixed pkg = await(fetch_doc_package((int)group));
+
+	executable_rule example_rule = ({
+		(["require": (["call": "set_complete", "args": ({(["exists": "156:1"]), (["exists": "156:2"])})])]),
+		(["condition": (["exists": "154:1"]), "children": (["require": (["exists": "156:1"])])])
+	});
+
+	mapping statuses = pkg->missing ? (["missing": pkg->missing]) : assess(example_rule, pkg, 1);
+
+	return (["ruleset": example_rule, "statuses": statuses, "file":file[0], "templates":templates, "template_names": template_names, "signatories": signatory_map, "analyzedcount": sizeof(pages)]);
 }
