@@ -11,11 +11,11 @@ function render_expr(rule_condition, status_condition) {
 	console.log("render_expr", rule_condition, status_condition);
 	if (typeof rule_condition !== 'object') return rule_condition;
 	if (rule_condition.call) return UL([
-		LI(rule_condition.call),
+		LI([status_condition.result ? checkmark() : crossmark(), SPAN({style: "font-weight: bold;text-transform: capitalize"},rule_condition.call.split('_').join(' ') + ":")]),
 		LI(UL(rule_condition.args.map((arg, idx) => LI(render_expr(arg, status_condition.args[idx]))))),
 		LI(render_expr(rule_condition.result, status_condition.result)),
 	]);
-	if (rule_condition.exists) return SPAN(["Exists: ", rule_condition.exists, status_condition.exists ? checkmark() : crossmark()]);
+	if (rule_condition.exists) return SPAN(["Exists: ", rule_condition.exists + " ", status_condition.result ? checkmark() : crossmark()]);
 }
 
 function render_statuses(ruleset, statuses) {
@@ -23,11 +23,11 @@ function render_statuses(ruleset, statuses) {
 	if (!ruleset) return null;
 	if (Array.isArray(ruleset)) return UL(ruleset.map((rule, idx) => LI(render_statuses(rule, statuses[idx]))));
 	if (ruleset.condition) return UL([
-		LI(render_expr(ruleset.condition, statuses.condition)),
+		LI([statuses.result ? " " : checkmark(), render_expr(ruleset.condition, statuses.condition)]),
 		LI(render_statuses(ruleset.children, statuses.children)),
 	]);
 	if (ruleset.require) return UL([
-		LI(render_expr(ruleset.require, statuses.require)),
+		LI([statuses.result ? checkmark() : crossmark(), render_expr(ruleset.require, statuses.require)]),
 		LI(render_statuses(ruleset.children, statuses.children)),
 	]);
 	if (ruleset.children) return render_statuses(ruleset.children, statuses.children);
@@ -86,8 +86,8 @@ export function render(state) {
 				]),
 				DIV({id: "analysis-results__listing"}, [
 					Object.keys(state.templates).length && UL({id: "pagesinfo"}, [
-						state.statuses && DETAILS({open: true}, [
-							SUMMARY("Statuses"),
+						state.statuses && DETAILS({/* open: false */}, [
+							SUMMARY("Rule Checks"),
 							render_statuses(state.ruleset, state.statuses),
 						]),
 						state.template_names.map((doc) => {

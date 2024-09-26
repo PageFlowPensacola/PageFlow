@@ -349,6 +349,11 @@ input[type="file"]::file-selector-button {
 	width: calc(50% - 1em);
 }
 
+#analysis-results__listing details ul {
+	width: 100%;
+	padding-left: 0;
+}
+
 .thumbnail__wrapper {
 	display: flex;
 	justify-content: center;
