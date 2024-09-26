@@ -6,7 +6,33 @@ const localState = {currentPage: 1};
 let submittedFile = null;
 let stateSnapshot = {};
 
+function render_expr(rule_condition, status_condition) {
+	if (!rule_condition) return 0;
+	console.log("render_expr", rule_condition, status_condition);
+	if (typeof rule_condition !== 'object') return rule_condition;
+	if (rule_condition.call) return UL([
+		LI(rule_condition.call),
+		LI(UL(rule_condition.args.map((arg, idx) => LI(render_expr(arg, status_condition.args[idx]))))),
+		LI(render_expr(rule_condition.result, status_condition.result)),
+	]);
+	if (rule_condition.exists) return SPAN(["Exists: ", rule_condition.exists, status_condition.exists ? checkmark() : crossmark()]);
+}
 
+function render_statuses(ruleset, statuses) {
+	console.log("Rendering render_statuses", ruleset, statuses);
+	if (!ruleset) return null;
+	if (Array.isArray(ruleset)) return UL(ruleset.map((rule, idx) => LI(render_statuses(rule, statuses[idx]))));
+	if (ruleset.condition) return UL([
+		LI(render_expr(ruleset.condition, statuses.condition)),
+		LI(render_statuses(ruleset.children, statuses.children)),
+	]);
+	if (ruleset.require) return UL([
+		LI(render_expr(ruleset.require, statuses.require)),
+		LI(render_statuses(ruleset.children, statuses.children)),
+	]);
+	if (ruleset.children) return render_statuses(ruleset.children, statuses.children);
+	return null;
+}
 
 const dateTime = new Intl.DateTimeFormat("en-US", {
 	year: "numeric", month: "short", day: "numeric",
@@ -42,6 +68,7 @@ export function render(state) {
 		]));
 	}
 
+
 	replace_content("main", SECTION([
 		submittedFile ? H3("Analyzing " + submittedFile.name) : H3("Analysis Results " + state.file.filename + " " + dateTime.format(new Date(state.file.created))),
 			localState.rects && ("Fields checked: " + localState.rects.length),
@@ -59,6 +86,10 @@ export function render(state) {
 				]),
 				DIV({id: "analysis-results__listing"}, [
 					Object.keys(state.templates).length && UL({id: "pagesinfo"}, [
+						state.statuses && DETAILS({open: true}, [
+							SUMMARY("Statuses"),
+							render_statuses(state.ruleset, state.statuses),
+						]),
 						state.template_names.map((doc) => {
 							let worstStatus = 0;
 							const analysis = Object.entries(state.templates[doc.id]).map(([page_no, details]) => {
