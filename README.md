@@ -122,6 +122,8 @@ We use Tesseract to generate a text bounding box on template and submitted files
 Tesseract's `makebox` param generates `w 92 708 100 73 0` for each line where
 the five columns are the found letter, the four coordinates and the page number.
 
+[HOCR Specs https://kba.github.io/hocr-spec/1.2/](https://kba.github.io/hocr-spec/1.2/)
+
 ### Audit Rectangles
 
 For each page template, a number of audit rectangles are stored.
