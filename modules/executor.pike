@@ -52,7 +52,7 @@ int(1bit)|array|mapping assess(executable_rule rule, mapping pkg, int|void verbo
 	return 1;
 }
 
-value eval(expression expr, mapping pkg) {
+value|mapping eval(expression expr, mapping pkg, int|void verbose) {
 	if (stringp(expr) || floatp(expr) || intp(expr)) {
 		return expr;
 	}
@@ -60,12 +60,18 @@ value eval(expression expr, mapping pkg) {
 		error("Invalid expression type %O\n", expr);
 	}
 	if (expr->call) {
-		array args = eval(expr->args[*], pkg);
+		array args = eval(expr->args[*], pkg, verbose);
 		function func = this["func_"+expr->call];
 		if (!func) error("Unknown function %O\n", expr->call); //shouldn't happen
-			return func(args);
+		if (verbose) {
+			// So we only need to eval the args once
+			array clean_args = map(args) {return mappingp(__ARGS__[0]) ? __ARGS__[0]->result : __ARGS__[0];};
+			return (["call": expr->call, "args": args, "result": func(clean_args)]);
+		}
+		return func(args);
 	}
 	if (expr->exists) {
+		if (verbose) return (["exists": expr->exists, "result": pkg[expr->exists]]);
 		return pkg[expr->exists];
 	}
 	error("Unknown expression %O\n", expr);
