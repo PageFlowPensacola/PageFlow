@@ -86,9 +86,9 @@ export function render(state) {
 				]),
 				DIV({ id: "analysis-results__listing" }, [
 					Object.keys(state.templates).length && UL({ id: "pagesinfo" }, [
-						state.statuses && DETAILS({/* open: false */ }, [
+						state.statuses && DETAILS({/* open: false  */}, [
 							SUMMARY("Rule Checks"),
-							render_statuses(state.ruleset, state.statuses),
+							state.statuses.missing ? SPAN([SPAN({style:"color: var(--error)"}, "Missing required signatures: "), state.statuses.missing.map(miss => SPAN(miss))]) : render_statuses(state.ruleset, state.statuses),
 						]),
 						state.template_names.map((doc) => {
 							let worstStatus = 0;

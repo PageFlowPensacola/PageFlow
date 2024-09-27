@@ -96,7 +96,7 @@ __async__ mapping|zero fetch_doc_package(int id) {
 		if (rect->audit_rect_id) {
 			int signed = rect->difference || 0 >= 100 ;
 			if (!signed && !rect->optional) {
-				// statuses->missing += ({rect->audit_rect_id});
+				statuses->missing += ({rect->audit_rect_id});
 			}
 			statuses[rect->audit_rect_id] = signed;
 		}
