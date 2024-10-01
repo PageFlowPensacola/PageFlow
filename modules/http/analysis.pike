@@ -179,8 +179,8 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	mixed pkg = await(fetch_doc_package((int)group));
 
 	executable_rule example_rule = ({
-		(["require": (["call": "set_complete", "args": ({(["exists": "156:1"]), (["exists": "156:2"])})])]),
-		(["condition": (["exists": "154:1"]), "children": (["require": (["exists": "156:1"])])])
+		(["require": (["call": "set_complete", "args": ({(["exists": "76:1"]), (["exists": "76:2"])})])]),
+		(["condition": (["exists": "78:1"]), "children": (["require": (["exists": "76:1"])])])
 	});
 
 	mapping statuses = pkg->missing ? (["missing": pkg->missing]) : assess(example_rule, pkg, 1);

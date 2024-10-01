@@ -28,4 +28,12 @@ __async__ mapping|zero fetch_doc_package(int id) {
 
 }
 
-
+protected void foo(string name) {
+			::create(name);
+			foreach (Array.transpose(({indices(this), annotations(this)})), [string key, mixed ann]) {
+				if (ann)
+					foreach (indices(ann), mixed anno) {
+						if (functionp(anno)) anno(this, name, key);
+					}
+			}
+}
