@@ -37,6 +37,13 @@ There are methods in `utils.pike` which can be called with the syntax `pike app 
 
 View methods by calling `pike app --help` (or `pike app --exec=help`).
 
+### GNU_Debugger
+https://en.wikipedia.org/wiki/GNU_Debugger
+For codesigning on OSX see https://stackoverflow.com/a/25678528/2223106
+(On Mojave there is [this](https://timnash.co.uk/getting-gdb-to-semi-reliably-work-on-mojave-macos/))
+
+Run with `gdb /usr/local/bin/pike/bin/pike app.pike`, then `r`.
+
 ## Development
 
 There's an `.editorconfig` file to help with consistency between devs and environments.
