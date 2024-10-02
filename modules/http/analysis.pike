@@ -29,7 +29,7 @@ __async__ void websocket_cmd_delete_analysis(mapping(string:mixed) conn, mapping
 	send_updates_all(conn->group);
 }
 
-void websocket_cmd_select_template_package(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+__async__ void websocket_cmd_select_template_package(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	await(G->G->DB->run_pg_query(#"
 		UPDATE uploaded_files
 		SET template_package_id = :id
