@@ -1,23 +1,20 @@
-/* Http server
 
-*/
+string executor_test = #"
+inherit annotated;
+@37:
+__async__ void fetch_doc_package() {}";
 
-
-mapping G = ([]);
-
-
-object bootstrap(string c) // c is the code file to compile
-{
-	return compile_file(c)(c);
+class annotated {
+	protected void create() {
+	}
 }
 
-int | Concurrent.Future main(int argc,array(string) argv)
+void main()
 {
-	add_constant("G", this);
-	bootstrap("globalstest.pike");
+	add_constant("annotated", annotated);
 
 	while(1) {
-		bootstrap("modules/executortest.pike");
+		compile_string(executor_test)();
 		werror("Bootstrapped.\n");
 	}
 }
