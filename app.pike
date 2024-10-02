@@ -30,11 +30,10 @@ object bootstrap(string c) // c is the code file to compile
 	//mixed ex = catch {compiled = compile_file(c, handler);};
 	//if (ex) {if (!handler->reported) werror("Exception in compile!\n%s\n", ex->describe()); return 0;}
 	mixed ex = catch {compiled = compile_file(c, handler);}; // try is implicit.
+	if (handler->reported) return 0;
 	if (ex) {
-		if (!handler->reported) {
-			werror("Exception in compile!\n");
-			werror(ex->describe()+"\n");
-		}
+		werror("Exception in compile!\n");
+		werror(ex->describe()+"\n");
 		return 0;
 	}
 	if (!compiled) werror("Compilation failed for "+c+"\n");
