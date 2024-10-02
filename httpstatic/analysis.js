@@ -1,5 +1,5 @@
 import { lindt, on, DOM, replace_content } from "https://rosuav.github.io/choc/factory.js";
-const { A, BUTTON, DETAILS, DIV, FIGCAPTION, FIGURE, FORM, "svg:g": G, H3, H4, IMG, INPUT, LI, P, "svg:path": PATH, SECTION, SPAN, SUMMARY, "svg:svg": SVG, UL } = lindt; //autoimport
+const {A, BUTTON, DETAILS, DIV, FIGCAPTION, FIGURE, FORM, "svg:g": G, H3, H4, IMG, INPUT, LI, OPTION, P, "svg:path": PATH, SECTION, SELECT, SPAN, SUMMARY, "svg:svg": SVG, UL} = lindt; //autoimport
 import { simpleconfirm } from "./utils.js";
 
 const localState = { currentPage: 1 };
@@ -85,7 +85,8 @@ export function render(state) {
 					]),
 				]),
 				DIV({ id: "analysis-results__listing" }, [
-					Object.keys(state.templates).length && UL({ id: "pagesinfo" }, [
+					Object.keys(state.templates).length && UL({id: "pagesinfo"}, [
+						SELECT({id: "template_package", value: state.selected_template_package || ""}, [OPTION({value: ""}, "Select Template Package"), state.template_packages.map(tp => OPTION({value: tp.id}, tp.name))]),
 						state.statuses && DETAILS({/* open: false  */}, [
 							SUMMARY("Rule Checks"),
 							state.statuses.missing ? SPAN([SPAN({style:"color: var(--error)"}, "Missing required signatures: "), state.statuses.missing.map(miss => SPAN(miss))]) : render_statuses(state.ruleset, state.statuses),
@@ -172,7 +173,12 @@ on("toggle", "details", function (e) {
 	document.querySelectorAll("details").forEach(elem => {
 		if (elem !== e.match) elem.open = false;
 	});
-}, { capture: true });
+}, {capture: true});
+
+on("change", "#template_package", function (e) {
+	if (!e.match.value) return;
+	ws_sync.send({ "cmd": "select_template_package", "id": +e.match.value });
+});
 
 export async function sockmsg_upload(msg) {
 	ws_sync.send({ cmd: "chgrp", group: msg.group });

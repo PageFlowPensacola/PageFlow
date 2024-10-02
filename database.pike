@@ -111,6 +111,7 @@ mapping tables = ([
 		"domain text NOT NULL REFERENCES domains",
 		"created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()",
 		"pdf_data BYTEA",
+		"template_package_id int REFERENCES template_packages ON DELETE RESTRICT",
 	}),
 	"uploaded_file_pages": ({
 		"file_id int NOT NULL REFERENCES uploaded_files ON DELETE CASCADE",

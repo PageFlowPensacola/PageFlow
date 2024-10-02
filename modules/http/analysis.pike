@@ -21,11 +21,19 @@ __async__ void websocket_cmd_upload(mapping(string:mixed) conn, mapping(string:m
 	conn->sock->send_text(Standards.JSON.encode((["cmd": "upload", "upload_id": upload_id, "group": fileid])));
 }
 
-void websocket_cmd_delete_analysis(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+__async__ void websocket_cmd_delete_analysis(mapping(string:mixed) conn, mapping(string:mixed) msg) {
 	// @TODO actually delete the analysis
-	G->G->DB->run_pg_query(#"
+	await(G->G->DB->run_pg_query(#"
 		DELETE FROM uploaded_files
-		WHERE id = :id", (["id": msg->id]));
+		WHERE id = :id", (["id": msg->id])));
+	send_updates_all(conn->group);
+}
+
+__async__ void websocket_cmd_select_template_package(mapping(string:mixed) conn, mapping(string:mixed) msg) {
+	await(G->G->DB->run_pg_query(#"
+		UPDATE uploaded_files
+		SET template_package_id = :id
+		WHERE id = :fileid", (["id": msg->id, "fileid": conn->group])));
 	send_updates_all(conn->group);
 }
 
@@ -113,7 +121,7 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 	}
 	// Must be analyzing or have an analysis set in mind
 	array(mapping) file = await((G->G->DB->run_pg_query(#"
-		SELECT filename, page_count, id, created_at as created
+		SELECT filename, domain, template_package_id, page_count, id, created_at as created
 		FROM uploaded_files
 		WHERE id = :id", (["id": group]))));
 
@@ -178,12 +186,26 @@ __async__ mapping get_state(string|int group, string|void id, string|void type){
 
 	mixed pkg = await(fetch_doc_package((int)group));
 
-	executable_rule example_rule = ({
-		(["require": (["call": "set_complete", "args": ({(["exists": "76:1"]), (["exists": "76:2"])})])]),
-		(["condition": (["exists": "78:1"]), "children": (["require": (["exists": "76:1"])])])
-	});
+	array(mapping) template_packages = await((G->G->DB->run_pg_query(#"
+		SELECT id, name FROM template_packages
+		WHERE domain = :domain", (["domain": file[0]->domain]))));
+
+	executable_rule example_rule = Standards.JSON.decode(await(G->G->DB->run_pg_query(#"
+		SELECT rule
+		FROM rules
+		WHERE id = 1"))[0]->rule);
 
 	mapping statuses = pkg->missing ? (["missing": pkg->missing]) : assess(example_rule, pkg, 1);
-
-	return (["ruleset": example_rule, "statuses": statuses, "file":file[0], "templates":templates, "template_names": template_names, "signatories": signatory_map, "analyzedcount": sizeof(pages)]);
+	werror("GRP: %O\n", group);
+	return ([
+		"ruleset": example_rule,
+		"statuses": statuses,
+		"file":file[0],
+		"templates":templates,
+		"template_names": template_names,
+		"signatories": signatory_map,
+		"analyzedcount": sizeof(pages),
+		"template_packages": template_packages,
+		"selected_template_package": file[0]->template_package_id,
+	]);
 }
