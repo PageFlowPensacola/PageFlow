@@ -12,7 +12,14 @@ class CompilerErrors {
 		reported = 1;
 		werror("\e[1;31m%s:%d\e[0m: %s\n", filename, line, msg); // ansi color codes
 	}
+
+
+	void compile_warning(string filename, int line, string msg) {
+		reported = 1;
+		werror("\e[1;33m%s:%d\e[0m: %s\n", filename, line, msg); // ansi color codes
+	}
 }
+
 
 object bootstrap(string c) // c is the code file to compile
 {
