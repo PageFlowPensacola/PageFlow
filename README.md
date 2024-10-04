@@ -143,11 +143,6 @@ rectangle is rescaled proportionally to the page bounds, with
 corresponding margins adjusted to match the saved page rect (which
 does not take into account page text bounds).
 
-### Some Python ML/NLP Resources that may be useful
-
-* Lankchain - chat-focused
-* Giskrd - library for evaluating bias of models
-
 ### Alternative Rosuav Signature Recognition Algorithm July 2024
 
 * Maintain a previous row and a previous cell (in current row). Initially all zeroes.
@@ -166,3 +161,11 @@ does not take into account page text bounds).
 * One large black area and one large white area implies a splodge, probably not a signature
 * One large white and no black implies blank
 * One large black and no white implies a scanning problem
+
+### Resources
+https://github.com/googlefonts/noto-emoji
+
+#### Some Python ML/NLP Resources that may be useful
+
+* Lankchain - chat-focused
+* Giskrd - library for evaluating bias of models
