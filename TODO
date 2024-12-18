@@ -214,3 +214,43 @@ Potential additional rule primitives:
 
 ## Sept 26
 UX needs feedback when try to delete a template which has analyses restricting it.
+
+## Dec 18 Rosuav
+* Convert the four corners into document coordinates.
+* Assume that the corners are still in their relative positions
+(top-left is still top-left), and that the slopes of
+ the top and bottom lines are between +45° and -45° (ie still more
+horizontal than vertical).
+* When taking stripes horizontally, start by lerping from top-left to
+bottom-left and from top-right to bottom-right.
+ - This defines our new "stripe" line, which will be somewhere
+between the slopes of the top and bottom rows.
+* Use Bresenham's Algorithm to step through the line:
+ - Precompute (Y2-Y1)/(X2-X1) ie the stripe line's slope M.
+   - Side note: old-school computer graphics often did this as a
+fixed-point fraction, but we'll use a float.
+ - Initialize Y to (float)Y1 + 0.5
+ - For X from X1 to X2:
+   - Y += M
+   - Sample the point at (X, (int)Y)
+* Similarly for vertical stripes, exchanging X and Y
+
+For the advanced (region-finding) algorithm:
+* Convert the four corners into document coordinates.
+* Find the one with the smallest Y value - call it "top". Prefer
+top-right to top-left if equal.
+* Find the one with the greatest Y value - call it "bottom".
+* Designate the other two as "left" and "right" based on X
+coordinates. They could be in either order by Y.
+* Precompute slope ratios (LeftX - TopX) / (LeftY - TopY) and (RightX
+- TopX) / (RightY - TopY)
+* Initialize a "Previous Row" with coordinates from LeftX to RightX,
+all saying "no previous value"
+* For Y from top-Y to bottom-Y:
+ - Lerp from top to left.
+ - Lerp from top to right.
+ - Iterate from X1 to X2
+   - Check pixel above and to the right, compare, match groups, as
+per previous algorithm
+   - The "previous row" will contain at least as many entries as are
+required, but may have spares.
